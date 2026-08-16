@@ -84,13 +84,29 @@ def generate_mock_legal_chunks() -> List[Dict[str, Any]]:
     ]
 
 
-def prepare_qdrant_points(chunks: List[Dict[str, Any]], vector_size: int = 1024) -> List[PointStruct]:
+def prepare_qdrant_points(
+    chunks: List[Dict[str, Any]],
+    vector_size: int = 1024,
+    embedder: Any = None
+) -> List[PointStruct]:
     """
-    Convert raw chunks into Qdrant PointStruct list with vectors and payload metadata.
+    Convert raw chunks into Qdrant PointStruct list with BGE-M3 vectors and payload metadata.
     """
     points = []
-    for chunk in chunks:
-        embedding = generate_mock_embedding(dim=vector_size, seed=chunk.get("seed", 42))
+    texts = [chunk["text"] for chunk in chunks]
+
+    embeddings = []
+    if embedder is not None and hasattr(embedder, "encode"):
+        embeddings = embedder.encode(texts)
+        if not isinstance(embeddings[0], list):
+            embeddings = [embeddings]
+
+    for idx, chunk in enumerate(chunks):
+        if embeddings and idx < len(embeddings):
+            vec = embeddings[idx]
+        else:
+            vec = generate_mock_embedding(dim=vector_size, seed=chunk.get("seed", 42))
+
         payload = {
             "document_id": chunk["document_id"],
             "chunk_id": chunk["chunk_id"],
@@ -104,7 +120,7 @@ def prepare_qdrant_points(chunks: List[Dict[str, Any]], vector_size: int = 1024)
         points.append(
             PointStruct(
                 id=chunk["id"],
-                vector=embedding,
+                vector=vec,
                 payload=payload
             )
         )

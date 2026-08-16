@@ -6,6 +6,8 @@ from rank_bm25 import BM25Okapi
 from src.vector_store.qdrant_manager import QdrantVectorStore
 from src.schemas.m2_contract import ProcessedQuery
 
+from src.retrieval.embedder import BGEM3Embedder
+
 logger = logging.getLogger(__name__)
 
 
@@ -19,11 +21,17 @@ def tokenize_text(text: str) -> List[str]:
 
 class HybridSearcher:
     """
-    Hybrid Search Engine combining Dense Vector Search + Keyword/BM25 Search using Reciprocal Rank Fusion (RRF).
+    Hybrid Search Engine combining Dense Vector Search (BGE-M3) + Keyword/BM25 Search using Reciprocal Rank Fusion (RRF).
     """
 
-    def __init__(self, vector_store: QdrantVectorStore, rrf_k: int = 60):
+    def __init__(
+        self,
+        vector_store: QdrantVectorStore,
+        embedder: Optional[BGEM3Embedder] = None,
+        rrf_k: int = 60
+    ):
         self.vector_store = vector_store
+        self.embedder = embedder or BGEM3Embedder()
         self.rrf_k = rrf_k
 
     def search(self, query: ProcessedQuery, candidate_top_k: int = 20) -> List[Dict[str, Any]]:
@@ -38,9 +46,15 @@ class HybridSearcher:
             extra_filters=query.filters.extra_filters
         )
 
-        # 2. Dense Vector Search
+        # 2. Ensure query embedding is present via BGE-M3
+        query_vector = query.embedding
+        if not query_vector:
+            query_text = query.normalized_text or query.text_original
+            query_vector = self.embedder.encode(query_text)
+
+        # 3. Dense Vector Search
         dense_results = self.vector_store.dense_search(
-            query_vector=query.embedding,
+            query_vector=query_vector,
             query_filter=qdrant_filter,
             top_k=candidate_top_k
         )
