@@ -1,0 +1,22 @@
+qdrant:
+  location: ":memory:"
+  collection_name: "legal_documents"
+  vector_size: 1024
+  distance: "Cosine"
+
+retrieval:
+  candidate_top_k: 20
+  final_top_k: 5
+  rrf_k: 60
+
+reranker:
+  model_name: "BAAI/bge-reranker-v2-m3"
+  use_mock_fallback: true
+
+evaluation:
+  metrics:
+    - "Recall@5"
+    - "Recall@10"
+    - "MRR"
+    - "nDCG"
+    - "latency"
