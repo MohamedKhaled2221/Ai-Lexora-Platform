@@ -1,7 +1,6 @@
-pydantic>=2.0.0
-qdrant-client>=1.7.0
-numpy>=1.24.0
-sentence-transformers>=2.2.2
-pyyaml>=6.0
-rank-bm25>=0.2.2
-pytest>=7.0.0
+FlagEmbedding
+torch
+pydantic
+pydantic-settings
+psutil
+pytest
