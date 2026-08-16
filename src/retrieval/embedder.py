@@ -38,7 +38,7 @@ class BGEM3Embedder:
             from sentence_transformers import SentenceTransformer
             logger.info(f"Loading BGE-M3 Embedding Model: {self.model_name} on device '{self.device}'...")
             self.model = SentenceTransformer(self.model_name, device=self.device)
-            self.vector_dim = self.model.get_sentence_embedding_dimension() or 1024
+            self.vector_dim = self.model.get_embedding_dimension() or 1024
             logger.info(f"BGE-M3 Model loaded successfully with vector dimension = {self.vector_dim}.")
         except Exception as e:
             logger.warning(f"Could not load SentenceTransformer model '{self.model_name}': {e}.")
