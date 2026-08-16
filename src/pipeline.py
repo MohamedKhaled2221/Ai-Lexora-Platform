@@ -1,11 +1,10 @@
 import time
 import logging
-from typing import Dict, Any, Optional, Tuple
+from typing import Optional, Tuple
 
 from src.schemas.m2_contract import ProcessedQuery
 from src.schemas.m4_contract import RetrievedEvidence, EvidenceItem
 from src.vector_store.qdrant_manager import QdrantVectorStore
-from src.retrieval.embedder import BGEM3Embedder
 from src.retrieval.hybrid_search import HybridSearcher
 from src.retrieval.reranker import BGEReranker
 
@@ -15,26 +14,33 @@ logger = logging.getLogger(__name__)
 class M3RetrievalPipeline:
     """
     Module 3 (M3) Master Retrieval & Reranking Pipeline.
-    Connects M2 (ProcessedQuery) to M4 (RetrievedEvidence).
+    Connects M2 (ProcessedQuery with embedding) to M4 (RetrievedEvidence).
+
+    Responsibilities:
+    - Qdrant dense vector search
+    - BM25 keyword search
+    - Reciprocal Rank Fusion (RRF)
+    - BGE-M3 CrossEncoder reranking
+    - Retrieval evaluation metrics
+
+    NOTE: Embedding generation is M2's responsibility.
+          M3 expects query.embedding to be pre-populated.
     """
 
     def __init__(
         self,
         vector_store: Optional[QdrantVectorStore] = None,
-        embedder: Optional[BGEM3Embedder] = None,
         candidate_top_k: int = 20,
         final_top_k: int = 5,
         reranker_model_name: str = "BAAI/bge-reranker-v2-m3",
         use_mock_fallback: bool = True
     ):
         self.vector_store = vector_store or QdrantVectorStore()
-        self.embedder = embedder or BGEM3Embedder(use_mock_fallback=use_mock_fallback)
         self.candidate_top_k = candidate_top_k
         self.final_top_k = final_top_k
 
         self.hybrid_searcher = HybridSearcher(
             vector_store=self.vector_store,
-            embedder=self.embedder,
             rrf_k=60
         )
         self.reranker = BGEReranker(

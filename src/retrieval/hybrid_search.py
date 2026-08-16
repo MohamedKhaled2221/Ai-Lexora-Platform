@@ -6,8 +6,6 @@ from rank_bm25 import BM25Okapi
 from src.vector_store.qdrant_manager import QdrantVectorStore
 from src.schemas.m2_contract import ProcessedQuery
 
-from src.retrieval.embedder import BGEM3Embedder
-
 logger = logging.getLogger(__name__)
 
 
@@ -21,23 +19,26 @@ def tokenize_text(text: str) -> List[str]:
 
 class HybridSearcher:
     """
-    Hybrid Search Engine combining Dense Vector Search (BGE-M3) + Keyword/BM25 Search using Reciprocal Rank Fusion (RRF).
+    Hybrid Search Engine combining Dense Vector Search + BM25 Keyword Search
+    fused via Reciprocal Rank Fusion (RRF).
+
+    Expects query.embedding to be provided by M2 (upstream embedding module).
     """
 
-    def __init__(
-        self,
-        vector_store: QdrantVectorStore,
-        embedder: Optional[BGEM3Embedder] = None,
-        rrf_k: int = 60
-    ):
+    def __init__(self, vector_store: QdrantVectorStore, rrf_k: int = 60):
         self.vector_store = vector_store
-        self.embedder = embedder or BGEM3Embedder()
         self.rrf_k = rrf_k
 
     def search(self, query: ProcessedQuery, candidate_top_k: int = 20) -> List[Dict[str, Any]]:
         """
         Execute Hybrid Search (Dense + BM25) filtered by metadata constraints.
+        Requires query.embedding to be set by M2 upstream.
         """
+        if not query.embedding:
+            raise ValueError(
+                "query.embedding is empty. M2 must provide a dense embedding vector before M3 search."
+            )
+
         # 1. Build Metadata Filter
         qdrant_filter = self.vector_store.build_qdrant_filter(
             document_type=query.filters.document_type,
@@ -46,15 +47,9 @@ class HybridSearcher:
             extra_filters=query.filters.extra_filters
         )
 
-        # 2. Ensure query embedding is present via BGE-M3
-        query_vector = query.embedding
-        if not query_vector:
-            query_text = query.normalized_text or query.text_original
-            query_vector = self.embedder.encode(query_text)
-
-        # 3. Dense Vector Search
+        # 2. Dense Vector Search (embedding provided by M2)
         dense_results = self.vector_store.dense_search(
-            query_vector=query_vector,
+            query_vector=query.embedding,
             query_filter=qdrant_filter,
             top_k=candidate_top_k
         )
@@ -97,7 +92,6 @@ class HybridSearcher:
         bm25 = BM25Okapi(corpus_tokens)
         scores = bm25.get_scores(query_tokens)
 
-        # Pair scores with chunks and sort descending
         scored_chunks = []
         for idx, score in enumerate(scores):
             chunk_copy = dict(chunks[idx])

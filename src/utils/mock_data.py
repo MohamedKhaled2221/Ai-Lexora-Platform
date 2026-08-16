@@ -7,7 +7,8 @@ from src.schemas.m2_contract import ProcessedQuery, QueryFilters
 
 def generate_mock_embedding(dim: int = 1024, seed: int = 42) -> List[float]:
     """
-    Generate normalized mock 1024-dimensional embedding vector mimicking BGE-M3.
+    Generate a normalized mock 1024-dimensional embedding vector.
+    Simulates what M2 (upstream embedding module) provides to M3.
     """
     rng = np.random.default_rng(seed)
     vec = rng.standard_normal(dim)
@@ -84,29 +85,14 @@ def generate_mock_legal_chunks() -> List[Dict[str, Any]]:
     ]
 
 
-def prepare_qdrant_points(
-    chunks: List[Dict[str, Any]],
-    vector_size: int = 1024,
-    embedder: Any = None
-) -> List[PointStruct]:
+def prepare_qdrant_points(chunks: List[Dict[str, Any]], vector_size: int = 1024) -> List[PointStruct]:
     """
-    Convert raw chunks into Qdrant PointStruct list with BGE-M3 vectors and payload metadata.
+    Convert raw chunks into Qdrant PointStruct list using mock embeddings.
+    In production, embeddings are provided by M2 (upstream embedding module).
     """
     points = []
-    texts = [chunk["text"] for chunk in chunks]
-
-    embeddings = []
-    if embedder is not None and hasattr(embedder, "encode"):
-        embeddings = embedder.encode(texts)
-        if not isinstance(embeddings[0], list):
-            embeddings = [embeddings]
-
-    for idx, chunk in enumerate(chunks):
-        if embeddings and idx < len(embeddings):
-            vec = embeddings[idx]
-        else:
-            vec = generate_mock_embedding(dim=vector_size, seed=chunk.get("seed", 42))
-
+    for chunk in chunks:
+        vec = generate_mock_embedding(dim=vector_size, seed=chunk.get("seed", 42))
         payload = {
             "document_id": chunk["document_id"],
             "chunk_id": chunk["chunk_id"],
@@ -136,7 +122,8 @@ def generate_mock_processed_query(
     seed: int = 101
 ) -> ProcessedQuery:
     """
-    Generate mock ProcessedQuery matching M2 contract.
+    Generate mock ProcessedQuery matching M2 output contract.
+    embedding is pre-populated as M2 would provide it.
     """
     return ProcessedQuery(
         query_id=query_id,
