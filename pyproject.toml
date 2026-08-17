@@ -21,6 +21,7 @@ dependencies = [
     "rank-bm25>=0.2.2",
 
     # M4 orchestration
+    "langchain-core",
     "langchain-ollama",
 
     # Delivery API
