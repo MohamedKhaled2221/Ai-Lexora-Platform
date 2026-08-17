@@ -8,8 +8,13 @@ from .llm_service import (
     M4LLMInvocationError,
     M4LLMService,
 )
-from .prompts import M4PromptBuilder, SearchPromptBundle
+from .prompts import (
+    M4PromptBuilder,
+    SearchPromptBundle,
+)
+from .service import M4OrchestrationService
 from .settings import M4Settings
+
 
 __all__ = [
     "M4Settings",
@@ -21,4 +26,5 @@ __all__ = [
     "M4LLMError",
     "M4LLMConnectionError",
     "M4LLMInvocationError",
+    "M4OrchestrationService",
 ]
