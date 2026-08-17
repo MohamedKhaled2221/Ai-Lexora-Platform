@@ -104,11 +104,11 @@ class CitationValidator:
                 )
 
     def _validate_declared_citations(
-        self,
-        *,
-        declared_citation_ids: list[str],
-        answer_citation_ids: list[str],
-        evidence_by_id: dict[str, EvidenceItem],
+    self,
+    *,
+    declared_citation_ids: list[str],
+    answer_citation_ids: list[str],
+    evidence_by_id: dict[str, EvidenceItem],
     ) -> None:
         unknown_declared = [
             evidence_id
@@ -118,28 +118,36 @@ class CitationValidator:
 
         if unknown_declared:
             raise CitationValidationError(
-                "Model referenced evidence that was not supplied: "
+              "Model referenced evidence that was not supplied: "
                 + ", ".join(unknown_declared)
             )
 
         unknown_in_answer = [
-            evidence_id
-            for evidence_id in answer_citation_ids
-            if evidence_id not in evidence_by_id
+         evidence_id
+         for evidence_id in answer_citation_ids
+         if evidence_id not in evidence_by_id
         ]
 
         if unknown_in_answer:
-            raise CitationValidationError(
-                "Answer contains citations that were not supplied: "
-                + ", ".join(unknown_in_answer)
-            )
+           raise CitationValidationError(
+              "Answer contains citations that were not supplied: "
+              + ", ".join(unknown_in_answer)
+          )
 
-        if answer_citation_ids != declared_citation_ids:
-            raise CitationValidationError(
-                "citation_ids must exactly match the unique citation "
-                "markers used in the answer, ordered by first appearance"
-            )
+        undeclared_inline = [
+          evidence_id
+          for evidence_id in answer_citation_ids
+          if evidence_id not in declared_citation_ids
+        ]
 
+        if undeclared_inline:
+         raise CitationValidationError(
+             "Answer contains citation markers that are missing "
+             "from citation_ids: "
+             + ", ".join(undeclared_inline)
+         )
+        
+        
     def _build_trusted_citation(
         self,
         *,

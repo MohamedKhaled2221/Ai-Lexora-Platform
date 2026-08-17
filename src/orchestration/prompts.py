@@ -49,15 +49,17 @@ CITATION RULES
 
 10. Evidence sources are identified only by aliases such as E1, E2, and E3.
 11. Cite only evidence aliases that were supplied in the current request.
-12. Place citations such as [E1] directly after claims supported by that
-    evidence.
-13. A claim supported by multiple evidence items may use citations such as
-    [E1][E3].
-14. citation_ids must contain every evidence alias used in the answer exactly
-    once, ordered by first appearance.
-15. Never invent an evidence alias.
-16. Never output or guess document IDs, chunk IDs, page numbers, file names, or
-    source metadata. Python resolves that trusted metadata after generation.
+12. citation_ids must contain the evidence aliases that support the factual
+    claims in your answer.
+13. Include each supporting evidence alias in citation_ids only once.
+14. Never include an evidence alias that was not supplied in the current
+    request.
+15. You may place citation markers such as [E1] directly after supported
+    claims when useful. If you use an inline citation marker, that alias must
+    also appear in citation_ids.
+16. Never output or guess document IDs, chunk IDs, page numbers, file names,
+    or source metadata. Python resolves that trusted metadata after
+    generation.
 17. If the evidence is insufficient and no factual answer can be supported,
     citation_ids must be empty.
 

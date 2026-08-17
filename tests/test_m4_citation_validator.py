@@ -100,27 +100,26 @@ def test_repeated_inline_citation_is_allowed():
     assert citations[0].evidence_id == "E1"
 
 
-def test_citation_order_must_follow_first_appearance():
+def test_multiple_structured_citations_are_resolved_in_declared_order():
     validator = CitationValidator()
 
     output = M4ModelOutput(
         answer=(
-            "Payment is addressed first [E2]. "
-            "Termination is addressed second [E1]."
+            "Payment and termination provisions both apply."
         ),
-        citation_ids=["E1", "E2"],
+        citation_ids=["E2", "E1"],
         confidence=0.8,
     )
 
-    with pytest.raises(
-        CitationValidationError,
-        match="exactly match",
-    ):
-        validator.validate(
-            model_output=output,
-            evidence_by_id=make_evidence_map(),
-        )
+    citations = validator.validate(
+        model_output=output,
+        evidence_by_id=make_evidence_map(),
+    )
 
+    assert [
+        citation.evidence_id
+        for citation in citations
+    ] == ["E2", "E1"]
 
 def test_unknown_declared_citation_is_rejected():
     validator = CitationValidator()
@@ -174,7 +173,7 @@ def test_inline_citation_missing_from_citation_ids_is_rejected():
 
     with pytest.raises(
         CitationValidationError,
-        match="exactly match",
+        match="missing from citation_ids",
     ):
         validator.validate(
             model_output=output,
@@ -182,24 +181,23 @@ def test_inline_citation_missing_from_citation_ids_is_rejected():
         )
 
 
-def test_unused_declared_citation_is_rejected():
+def test_structured_citation_without_inline_marker_is_allowed():
     validator = CitationValidator()
 
     output = M4ModelOutput(
-        answer="Termination requires notice [E1].",
-        citation_ids=["E1", "E2"],
-        confidence=0.5,
+        answer="Termination requires written notice.",
+        citation_ids=["E1"],
+        confidence=0.9,
     )
 
-    with pytest.raises(
-        CitationValidationError,
-        match="exactly match",
-    ):
-        validator.validate(
-            model_output=output,
-            evidence_by_id=make_evidence_map(),
-        )
+    citations = validator.validate(
+        model_output=output,
+        evidence_by_id=make_evidence_map(),
+    )
 
+    assert len(citations) == 1
+    assert citations[0].evidence_id == "E1"
+    assert citations[0].document_id == "doc_001"
 
 @pytest.mark.parametrize(
     "malformed_marker",

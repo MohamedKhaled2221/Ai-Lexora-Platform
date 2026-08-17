@@ -23,6 +23,8 @@ dependencies = [
     # M4 orchestration
     "langchain-core",
     "langchain-ollama",
+    "httpx",
+    "ollama",
 
     # Delivery API
     "fastapi",
@@ -32,6 +34,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest>=7.0.0",
+    "pytest-asyncio>=1.4.0",
 ]
 
 [tool.uv]

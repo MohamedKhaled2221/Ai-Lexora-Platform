@@ -445,7 +445,8 @@ def test_system_prompt_contains_grounding_and_citation_policy():
     )
 
     assert (
-        "Never invent an evidence alias."
+        "Never include an evidence alias that was not supplied "
+        "in the current request."
         in system_content
     )
 
@@ -455,7 +456,13 @@ def test_system_prompt_contains_grounding_and_citation_policy():
     )
 
     assert (
-        "citation_ids must contain every evidence alias "
-        "used in the answer exactly once"
+        "citation_ids must contain the evidence aliases "
+        "that support the factual claims in your answer."
+        in system_content
+    )
+
+    assert (
+        "If you use an inline citation marker, that alias "
+        "must also appear in citation_ids."
         in system_content
     )

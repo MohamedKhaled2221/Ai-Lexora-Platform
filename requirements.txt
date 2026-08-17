@@ -90,6 +90,7 @@ httptools==0.8.0
     # via uvicorn
 httpx==0.28.1
     # via
+    #   ai-lexora
     #   datasets
     #   huggingface-hub
     #   langchain-core
@@ -123,7 +124,9 @@ jsonpatch==1.33
 jsonpointer==3.1.1
     # via jsonpatch
 langchain-core==1.5.5
-    # via langchain-ollama
+    # via
+    #   ai-lexora
+    #   langchain-ollama
 langchain-ollama==1.1.0
     # via ai-lexora
 langchain-protocol==0.0.18
@@ -208,7 +211,9 @@ nvidia-nvshmem-cu13==3.4.5 ; sys_platform == 'linux'
 nvidia-nvtx==13.0.85 ; (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux')
     # via cuda-toolkit
 ollama==0.6.2
-    # via langchain-ollama
+    # via
+    #   ai-lexora
+    #   langchain-ollama
 orjson==3.12.0 ; platform_python_implementation != 'PyPy'
     # via langsmith
 packaging==26.3
