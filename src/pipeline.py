@@ -1,6 +1,6 @@
 import time
 import logging
-from typing import Dict, Any, Optional, Tuple
+from typing import Optional, Tuple
 
 from src.schemas.m2_contract import ProcessedQuery
 from src.schemas.m4_contract import RetrievedEvidence, EvidenceItem
@@ -14,7 +14,17 @@ logger = logging.getLogger(__name__)
 class M3RetrievalPipeline:
     """
     Module 3 (M3) Master Retrieval & Reranking Pipeline.
-    Connects M2 (ProcessedQuery) to M4 (RetrievedEvidence).
+    Connects M2 (ProcessedQuery with embedding) to M4 (RetrievedEvidence).
+
+    Responsibilities:
+    - Qdrant dense vector search
+    - BM25 keyword search
+    - Reciprocal Rank Fusion (RRF)
+    - BGE-M3 CrossEncoder reranking
+    - Retrieval evaluation metrics
+
+    NOTE: Embedding generation is M2's responsibility.
+          M3 expects query.embedding to be pre-populated.
     """
 
     def __init__(

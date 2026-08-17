@@ -15,15 +15,21 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 def main():
     print("=" * 70)
     print("AI-Lexora: Module M3 (RAG Vector Search & Reranking Engine) Demo")
+    print("Stack: Qdrant DB | BM25 RRF Hybrid Search | BGE-Reranker-v2-M3")
     print("=" * 70)
 
     # 1. Initialize In-Memory Qdrant Store
     print("\n[Step 1] Initializing Qdrant Collection & Indexing Metadata...")
-    vector_store = QdrantVectorStore(location=":memory:", collection_name="legal_documents")
+    vector_store = QdrantVectorStore(
+        location=":memory:",
+        collection_name="legal_documents",
+        vector_size=1024
+    )
 
     # 2. Seed Mock Legal Documents (Arabic & English)
+    # In production, embeddings come from M2 (upstream module)
     chunks = generate_mock_legal_chunks()
-    points = prepare_qdrant_points(chunks)
+    points = prepare_qdrant_points(chunks, vector_size=1024)
     vector_store.upsert_chunks(points)
 
     # 3. Instantiate M3 Pipeline
@@ -32,11 +38,11 @@ def main():
         vector_store=vector_store,
         candidate_top_k=10,
         final_top_k=3,
-        reranker_model_name="",  # Fast offline mode for demo execution
+        reranker_model_name="BAAI/bge-reranker-v2-m3",
         use_mock_fallback=True
     )
 
-    # 4. Simulate M2 Upstream Input (ProcessedQuery)
+    # 4. Simulate M2 Upstream Input (ProcessedQuery with embedding pre-computed by M2)
     query_ar = generate_mock_processed_query(
         query_id="q_001",
         query_text="ما هي شروط الفسخ؟",
@@ -47,7 +53,9 @@ def main():
     )
 
     print("\n[Step 3] Received ProcessedQuery from M2:")
-    print(json.dumps(query_ar.model_dump(), indent=2, ensure_ascii=False))
+    query_dict = query_ar.model_dump()
+    query_dict["embedding"] = f"<Dense Vector float[{len(query_ar.embedding)}] — provided by M2>"
+    print(json.dumps(query_dict, indent=2, ensure_ascii=False))
 
     # 5. Run M3 Pipeline
     print("\n[Step 4] Executing Hybrid Search (Dense + BM25 RRF) + BGE Reranker...")
