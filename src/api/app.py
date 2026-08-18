@@ -1,6 +1,11 @@
 from fastapi import FastAPI
 
-from src.api.routes import router
+from src.api.ai_routes import (
+    router as ai_router,
+)
+from src.api.routes import (
+    router as system_router,
+)
 
 
 def create_app() -> FastAPI:
@@ -16,10 +21,15 @@ def create_app() -> FastAPI:
             "intelligence API"
         ),
     )
-
     app.include_router(
-        router
+        system_router
     )
+    
+    app.include_router(
+        ai_router
+    )
+
+    
 
     return app
 
