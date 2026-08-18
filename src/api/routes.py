@@ -1,14 +1,15 @@
 from fastapi import (
     APIRouter,
     Depends,
+    Request,
     Response,
     status,
 )
 
 from src.api.health import (
     HealthResponse,
-    M4ReadinessChecker,
     ReadinessResponse,
+    SystemReadinessChecker,
 )
 
 
@@ -16,9 +17,19 @@ router = APIRouter()
 
 
 def get_readiness_checker(
-) -> M4ReadinessChecker:
-    return M4ReadinessChecker()
+    request: Request,
+) -> SystemReadinessChecker:
+    rag_service = getattr(
+        request.app.state,
+        "rag_service",
+        None,
+    )
 
+    return SystemReadinessChecker(
+        rag_runtime_initialized=(
+            rag_service is not None
+        )
+    )
 
 @router.get(
     "/health",
@@ -46,17 +57,10 @@ async def health(
 )
 async def ready(
     response: Response,
-    checker: M4ReadinessChecker = Depends(
+    checker: SystemReadinessChecker = Depends(
         get_readiness_checker
     ),
 ) -> ReadinessResponse:
-    """
-    Readiness endpoint.
-
-    Verifies that Ollama is reachable and that the
-    configured M4 model is installed.
-    """
-
     readiness = await checker.check()
 
     if readiness.status != "ready":
