@@ -1,3 +1,4 @@
+import asyncio
 from src.orchestration.service import M4OrchestrationService
 from src.pipeline import M3RetrievalPipeline
 from src.schemas.m2_contract import ProcessedQuery
@@ -44,11 +45,19 @@ class M3M4RAGService:
         self,
         processed_query: ProcessedQuery,
     ) -> AIResponse:
-        retrieved_evidence, _ = self.retrieval_pipeline.run(
-            processed_query
+        retrieved_evidence, _ = (
+            await asyncio.to_thread(
+                self.retrieval_pipeline.run,
+                processed_query,
+            )
         )
 
-        return await self.orchestration_service.aanswer_search(
-            processed_query=processed_query,
-            retrieved_evidence=retrieved_evidence,
+        return await (
+            self.orchestration_service
+            .aanswer_search(
+                processed_query=processed_query,
+                retrieved_evidence=(
+                    retrieved_evidence
+                ),
+            )
         )

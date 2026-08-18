@@ -12,23 +12,21 @@ dependencies = [
     "pydantic>=2.0.0",
     "pydantic-settings",
     "psutil",
-
     # M3 retrieval
     "qdrant-client>=1.7.0",
     "numpy>=1.24.0",
     "sentence-transformers>=2.2.2",
     "PyYAML>=6.0",
     "rank-bm25>=0.2.2",
-
     # M4 orchestration
     "langchain-core",
     "langchain-ollama",
     "httpx",
     "ollama",
-
     # Delivery API
     "fastapi",
     "uvicorn[standard]",
+    "python-dotenv>=1.2.3",
 ]
 
 [dependency-groups]

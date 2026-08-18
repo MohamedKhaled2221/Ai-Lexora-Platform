@@ -33,7 +33,8 @@ class M3RetrievalPipeline:
         candidate_top_k: int = 20,
         final_top_k: int = 5,
         reranker_model_name: str = "BAAI/bge-reranker-v2-m3",
-        use_mock_fallback: bool = True
+        use_mock_fallback: bool = True,
+        reranker_local_files_only: bool = True,
     ):
         self.vector_store = vector_store or QdrantVectorStore()
         self.candidate_top_k = candidate_top_k
@@ -45,7 +46,8 @@ class M3RetrievalPipeline:
         )
         self.reranker = BGEReranker(
             model_name=reranker_model_name,
-            use_mock_fallback=use_mock_fallback
+            use_mock_fallback=use_mock_fallback,
+            local_files_only=reranker_local_files_only,
         )
 
     def run(self, query: ProcessedQuery) -> Tuple[RetrievedEvidence, float]:
