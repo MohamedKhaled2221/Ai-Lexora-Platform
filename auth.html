@@ -1,0 +1,95 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مفتاح | الحساب</title>
+<link rel="stylesheet" href="style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+<header class="navbar">
+<a class="brand" href="index.html">مفتاح</a>
+<nav>
+<a href="index.html">الرئيسية</a>
+<a href="consultation.html">طلب استشارة</a>
+<a href="dashboard.html">لوحة التحكم</a>
+<a class="active" href="auth.html">الحساب</a>
+</nav>
+<a class="nav-action" href="dashboard.html">لوحة التحكم</a>
+</header>
+
+<main>
+<section class="auth-layout">
+<div class="auth-copy">
+<p class="eyebrow">Authentication</p>
+<h1>الدخول للمنصة حسب الدور والصلاحيات</h1>
+<p>هذه الصفحة تعرض واجهات Login / Register / Forgot Password، مع تصور Frontend للأدوار Admin وLawyer وUser.</p>
+<div class="permissions">
+<h2>Roles</h2>
+<div><strong>Admin</strong><span>إدارة المستخدمين والطلبات.</span></div>
+<div><strong>Lawyer</strong><span>مراجعة الطلبات وتحديث الحالات.</span></div>
+<div><strong>User</strong><span>إرسال استشارة ومتابعة طلبه.</span></div>
+</div>
+</div>
+
+<section class="auth-card">
+<div class="tabs">
+<button class="active" type="button" data-auth-tab="login">دخول</button>
+<button type="button" data-auth-tab="register">تسجيل</button>
+<button type="button" data-auth-tab="forgot">نسيت كلمة السر</button>
+</div>
+
+<form class="auth-form active" data-auth-panel="login">
+<h2>تسجيل الدخول</h2>
+<label>البريد الإلكتروني<input type="email" placeholder="admin@miftah.com" required></label>
+<label>كلمة المرور<input type="password" placeholder="••••••••" required></label>
+<label>الدور
+<select>
+<option>Admin</option>
+<option>Lawyer</option>
+<option>User</option>
+</select>
+</label>
+<button class="submit-btn" type="submit">دخول</button>
+</form>
+
+<form class="auth-form" data-auth-panel="register">
+<h2>إنشاء حساب</h2>
+<label>الاسم الكامل<input type="text" placeholder="اسم المستخدم" required></label>
+<label>البريد الإلكتروني<input type="email" placeholder="name@example.com" required></label>
+<label>كلمة المرور<input type="password" placeholder="8 أحرف على الأقل" required></label>
+<label>نوع الحساب
+<select>
+<option>User</option>
+<option>Lawyer</option>
+</select>
+</label>
+<button class="submit-btn" type="submit">إنشاء الحساب</button>
+</form>
+
+<form class="auth-form" data-auth-panel="forgot">
+<h2>استعادة كلمة المرور</h2>
+<p>اكتب بريدك الإلكتروني وسنرسل رابط إعادة التعيين.</p>
+<label>البريد الإلكتروني<input type="email" placeholder="name@example.com" required></label>
+<button class="submit-btn" type="submit">إرسال الرابط</button>
+</form>
+</section>
+</section>
+</main>
+
+<footer class="footer">
+<p>صلاحيات الواجهة قابلة للربط لاحقا مع JWT أو Session من الـBackend.</p>
+<div>
+<a href="dashboard.html">Dashboard</a>
+<a href="consultation.html">Consultation</a>
+</div>
+</footer>
+
+<div class="toast" data-toast>تم تنفيذ العملية بنجاح.</div>
+<script src="script.js"></script>
+</body>
+</html>
+
