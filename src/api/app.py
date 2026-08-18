@@ -1,18 +1,37 @@
+from collections.abc import Callable
+
 from fastapi import FastAPI
 
 from src.api.ai_routes import (
     router as ai_router,
 )
+from src.api.lifespan import (
+    create_lifespan,
+)
+from src.api.rag_routes import (
+    router as rag_router,
+)
 from src.api.routes import (
     router as system_router,
 )
+from src.api.runtime import (
+    build_rag_service,
+)
+from src.orchestration import (
+    M3M4RAGService,
+)
 
 
-def create_app() -> FastAPI:
-    """
-    Create and configure the AI-Lexora FastAPI application.
-    """
-
+def create_app(
+    *,
+    rag_service_factory: (
+        Callable[
+            [],
+            M3M4RAGService,
+        ]
+        | None
+    ) = None,
+) -> FastAPI:
     app = FastAPI(
         title="AI-Lexora API",
         version="0.1.0",
@@ -20,18 +39,30 @@ def create_app() -> FastAPI:
             "Local multilingual legal "
             "intelligence API"
         ),
+        lifespan=create_lifespan(
+            rag_service_factory
+        ),
     )
+
     app.include_router(
         system_router
     )
-    
+
     app.include_router(
         ai_router
     )
 
-    
+    app.include_router(
+        rag_router
+    )
 
     return app
 
 
-app = create_app()
+# Production application.
+#
+# Unit tests that call create_app() without a factory
+# will not load Qdrant or the BGE reranker.
+app = create_app(
+    rag_service_factory=build_rag_service
+)
