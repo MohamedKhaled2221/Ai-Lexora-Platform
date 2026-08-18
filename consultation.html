@@ -1,0 +1,105 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مفتاح | طلب استشارة</title>
+<link rel="stylesheet" href="style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+<header class="navbar">
+<a class="brand" href="index.html">مفتاح</a>
+<nav>
+<a href="index.html">الرئيسية</a>
+<a class="active" href="consultation.html">طلب استشارة</a>
+<a href="dashboard.html">لوحة التحكم</a>
+<a href="auth.html">الحساب</a>
+</nav>
+<a class="nav-action" href="auth.html">دخول</a>
+</header>
+
+<main>
+<section class="page-title">
+<p class="eyebrow">استقبال المشكلات</p>
+<h1>اكتب تفاصيل الاستشارة القانونية</h1>
+<p>النموذج التالي يمثل واجهة إنشاء طلب جديد مع Validation ورسائل خطأ وحالة إرسال.</p>
+</section>
+
+<section class="form-layout">
+<form class="consultation-form" data-consultation-form>
+<h2>بيانات الطلب</h2>
+<div class="form-grid">
+<label>
+الاسم الكامل
+<input name="name" type="text" placeholder="مثال: أحمد محمد" required>
+<small class="field-error">الاسم مطلوب.</small>
+</label>
+<label>
+رقم الهاتف
+<input name="phone" type="tel" placeholder="01xxxxxxxxx" required>
+<small class="field-error">رقم الهاتف مطلوب.</small>
+</label>
+<label>
+البريد الإلكتروني
+<input name="email" type="email" placeholder="name@example.com">
+</label>
+<label>
+نوع المشكلة
+<select name="category" required>
+<option value="">اختر نوع المشكلة</option>
+<option>قضية أسرة</option>
+<option>نزاع عمل</option>
+<option>عقود واتفاقات</option>
+<option>ميراث</option>
+<option>قضية تجارية</option>
+</select>
+<small class="field-error">اختر نوع المشكلة.</small>
+</label>
+<label>
+الأولوية
+<select name="priority">
+<option>عادية</option>
+<option>متوسطة</option>
+<option>عاجلة</option>
+</select>
+</label>
+<label>
+طريقة التواصل المفضلة
+<select name="contact">
+<option>مكالمة هاتفية</option>
+<option>واتساب</option>
+<option>بريد إلكتروني</option>
+</select>
+</label>
+</div>
+<label>
+وصف مختصر للمشكلة
+<textarea name="description" placeholder="اكتب ملخص المشكلة، الأطراف، والتواريخ المهمة..." required></textarea>
+<small class="field-error">الوصف مطلوب.</small>
+</label>
+<label class="checkbox-label">
+<input type="checkbox" required>
+أوافق على إرسال البيانات لمراجعة الطلب.
+</label>
+<button class="submit-btn" type="submit">إرسال الطلب</button>
+</form>
+
+<aside class="info-panel">
+<h2>بعد الإرسال</h2>
+<div class="timeline-item"><strong>1</strong><span>تسجيل الطلب كحالة جديدة.</span></div>
+<div class="timeline-item"><strong>2</strong><span>مراجعة البيانات وتحديد الأولوية.</span></div>
+<div class="timeline-item"><strong>3</strong><span>التواصل مع العميل بالخطوة المناسبة.</span></div>
+<div class="state-card loading-state">جاري إرسال الطلب...</div>
+<div class="state-card error-state">تعذر الإرسال، حاول مرة أخرى.</div>
+</aside>
+</section>
+</main>
+
+<div class="toast" data-toast>تم إرسال الطلب بنجاح.</div>
+<script src="script.js"></script>
+</body>
+</html>
+

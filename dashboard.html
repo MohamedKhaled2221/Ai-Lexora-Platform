@@ -1,0 +1,137 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مفتاح | لوحة التحكم</title>
+<link rel="stylesheet" href="style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-layout">
+<aside class="sidebar">
+<a class="brand light" href="index.html">مفتاح</a>
+<nav>
+<a class="active" href="dashboard.html">الطلبات</a>
+<a href="#">العملاء</a>
+<a href="#">المواعيد</a>
+<a href="#">التقارير</a>
+<a href="auth.html">الصلاحيات</a>
+</nav>
+</aside>
+
+<main class="dashboard-main">
+<header class="dashboard-topbar">
+<div>
+<p class="eyebrow">Admin Dashboard</p>
+<h1>إدارة طلبات الاستشارات</h1>
+</div>
+<div class="topbar-actions">
+<span class="role-badge">Admin</span>
+<button class="primary-btn" type="button" data-open-modal>إضافة طلب</button>
+</div>
+</header>
+
+<section class="dashboard-cards">
+<article class="metric-card"><span>كل الطلبات</span><strong>128</strong><p>+12 هذا الأسبوع</p></article>
+<article class="metric-card"><span>قيد المراجعة</span><strong>34</strong><p>تحتاج متابعة</p></article>
+<article class="metric-card"><span>عاجلة</span><strong>9</strong><p>أولوية عالية</p></article>
+<article class="metric-card"><span>مغلقة</span><strong>85</strong><p>تم الانتهاء منها</p></article>
+</section>
+
+<section class="table-section">
+<div class="table-header">
+<div>
+<h2>قائمة الطلبات</h2>
+<p>واجهة تشمل البحث، الفلترة، الترتيب، الترقيم، وأزرار CRUD.</p>
+</div>
+<div class="table-tools">
+<input data-search type="search" placeholder="ابحث باسم العميل أو نوع القضية">
+<select data-filter>
+<option value="all">كل الحالات</option>
+<option value="قيد المراجعة">قيد المراجعة</option>
+<option value="عاجلة">عاجلة</option>
+<option value="مغلقة">مغلقة</option>
+</select>
+<button class="ghost-btn" type="button" data-sort>ترتيب A-Z</button>
+</div>
+</div>
+
+<div class="state-row" data-empty hidden>لا توجد نتائج مطابقة للبحث الحالي.</div>
+
+<div class="responsive-table">
+<table>
+<thead>
+<tr>
+<th>رقم</th>
+<th>العميل</th>
+<th>نوع القضية</th>
+<th>الأولوية</th>
+<th>الحالة</th>
+<th>آخر تحديث</th>
+<th>إجراءات</th>
+</tr>
+</thead>
+<tbody data-cases-table>
+<tr data-status="قيد المراجعة">
+<td>#1024</td><td>أحمد محمد</td><td>عقود</td><td>متوسطة</td><td><span class="badge review">قيد المراجعة</span></td><td>18 أغسطس</td>
+<td class="actions"><button data-open-modal>تعديل</button><button class="danger-btn">حذف</button></td>
+</tr>
+<tr data-status="عاجلة">
+<td>#1025</td><td>منى علي</td><td>أسرة</td><td>عاجلة</td><td><span class="badge urgent">عاجلة</span></td><td>18 أغسطس</td>
+<td class="actions"><button data-open-modal>تعديل</button><button class="danger-btn">حذف</button></td>
+</tr>
+<tr data-status="مغلقة">
+<td>#1026</td><td>كريم حسن</td><td>ميراث</td><td>عادية</td><td><span class="badge closed">مغلقة</span></td><td>17 أغسطس</td>
+<td class="actions"><button data-open-modal>عرض</button><button class="danger-btn">حذف</button></td>
+</tr>
+<tr data-status="قيد المراجعة">
+<td>#1027</td><td>سارة محمود</td><td>عمل</td><td>متوسطة</td><td><span class="badge review">قيد المراجعة</span></td><td>16 أغسطس</td>
+<td class="actions"><button data-open-modal>تعديل</button><button class="danger-btn">حذف</button></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<div class="pagination">
+<button type="button">السابق</button>
+<button class="active" type="button">1</button>
+<button type="button">2</button>
+<button type="button">التالي</button>
+</div>
+</section>
+
+<section class="api-section">
+<h2>API Endpoints المقترحة</h2>
+<div class="endpoint-grid">
+<code>POST /api/auth/login</code>
+<code>POST /api/auth/register</code>
+<code>GET /api/consultations</code>
+<code>POST /api/consultations</code>
+<code>PUT /api/consultations/:id</code>
+<code>DELETE /api/consultations/:id</code>
+</div>
+</section>
+</main>
+</div>
+
+<div class="modal" data-modal hidden>
+<div class="modal-box">
+<div class="modal-header">
+<h2>إضافة / تعديل طلب</h2>
+<button type="button" data-close-modal>×</button>
+</div>
+<label>اسم العميل<input type="text" placeholder="اسم العميل"></label>
+<label>نوع القضية<select><option>أسرة</option><option>عقود</option><option>عمل</option><option>ميراث</option></select></label>
+<label>الحالة<select><option>قيد المراجعة</option><option>عاجلة</option><option>مغلقة</option></select></label>
+<button class="submit-btn" type="button" data-save-modal>حفظ</button>
+</div>
+</div>
+
+<div class="toast" data-toast>تم حفظ التعديل بنجاح.</div>
+<script src="script.js"></script>
+</body>
+</html>
+
