@@ -13,11 +13,14 @@ class BGEReranker:
     def __init__(
         self,
         model_name: str = "BAAI/bge-reranker-v2-m3",
-        use_mock_fallback: bool = True
+        use_mock_fallback: bool = True,
+        local_files_only: bool = True,
     ):
         self.model_name = model_name
         self.use_mock_fallback = use_mock_fallback
+        self.local_files_only = local_files_only
         self.model = None
+
         self._init_model()
 
     def _init_model(self) -> None:
@@ -31,7 +34,10 @@ class BGEReranker:
         try:
             from sentence_transformers import CrossEncoder
             logger.info(f"Loading CrossEncoder reranker model: {self.model_name}...")
-            self.model = CrossEncoder(self.model_name)
+            self.model = CrossEncoder(
+                self.model_name,
+                local_files_only=self.local_files_only,
+            )
         except Exception as e:
             logger.warning(f"Could not load HuggingFace CrossEncoder '{self.model_name}': {e}.")
             if self.use_mock_fallback:

@@ -1,3 +1,4 @@
+import os
 from pydantic import Field, model_validator
 from pydantic_settings import (
     BaseSettings,
@@ -12,6 +13,29 @@ from src.pipeline import M3RetrievalPipeline
 from src.vector_store.qdrant_manager import (
     QdrantVectorStore,
 )
+
+_TRUE_VALUES = {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
+
+
+def _environment_flag_enabled(
+    name: str,
+) -> bool:
+    value = os.getenv(
+        name,
+        ""
+    )
+
+    return (
+        value.strip().lower()
+        in _TRUE_VALUES
+    )
+
+
 
 
 class RAGRuntimeSettings(BaseSettings):
@@ -55,11 +79,12 @@ class RAGRuntimeSettings(BaseSettings):
     reranker_model_name: str = (
         "BAAI/bge-reranker-v2-m3"
     )
-
+    strict_offline: bool = True
+    reranker_local_files_only: bool = True
     reranker_use_mock_fallback: bool = False
 
     @model_validator(mode="after")
-    def validate_top_k(
+    def validate_runtime(
         self,
     ) -> "RAGRuntimeSettings":
         if (
@@ -71,8 +96,41 @@ class RAGRuntimeSettings(BaseSettings):
                 "candidate_top_k"
             )
 
+        if (
+            self.strict_offline
+            and not self.reranker_local_files_only
+        ):
+            raise ValueError(
+                "reranker_local_files_only must be "
+                "enabled when strict_offline is enabled"
+            )
+
         return self
 
+def validate_offline_runtime_environment(
+    settings: RAGRuntimeSettings,
+) -> None:
+    """
+    Enforce the deployment offline policy before
+    loading Hugging Face-backed runtime components.
+    """
+
+    if not settings.strict_offline:
+        return
+
+    if not _environment_flag_enabled(
+        "HF_HUB_OFFLINE"
+    ):
+        raise RuntimeError(
+            "Strict offline mode requires "
+            "HF_HUB_OFFLINE=1."
+        )
+
+    if not settings.reranker_local_files_only:
+        raise RuntimeError(
+            "Strict offline mode requires "
+            "local-only reranker loading."
+        )
 
 def build_rag_service(
     settings: RAGRuntimeSettings | None = None,
@@ -88,6 +146,10 @@ def build_rag_service(
     settings = (
         settings
         or RAGRuntimeSettings()
+    )
+    
+    validate_offline_runtime_environment(
+        settings
     )
 
     vector_store = QdrantVectorStore(
@@ -113,6 +175,9 @@ def build_rag_service(
         ),
         use_mock_fallback=(
             settings.reranker_use_mock_fallback
+        ),
+        reranker_local_files_only=(
+            settings.reranker_local_files_only
         ),
     )
 

@@ -3,6 +3,7 @@ from pydantic import ValidationError
 
 from src.api.runtime import (
     RAGRuntimeSettings,
+    validate_offline_runtime_environment,
 )
 
 
@@ -65,4 +66,67 @@ def test_final_top_k_cannot_exceed_candidates():
             candidate_top_k=3,
             final_top_k=5,
             _env_file=None,
+        )
+        
+def test_strict_offline_is_default():
+    settings = RAGRuntimeSettings(
+        _env_file=None
+    )
+
+    assert settings.strict_offline is True
+
+    assert (
+        settings.reranker_local_files_only
+        is True
+    )
+
+
+def test_strict_offline_rejects_network_reranker():
+    with pytest.raises(
+        ValidationError
+    ):
+        RAGRuntimeSettings(
+            strict_offline=True,
+            reranker_local_files_only=False,
+            _env_file=None,
+        )
+
+
+def test_offline_environment_is_accepted(
+    monkeypatch,
+):
+    monkeypatch.setenv(
+        "HF_HUB_OFFLINE",
+        "1",
+    )
+
+    settings = RAGRuntimeSettings(
+        strict_offline=True,
+        _env_file=None,
+    )
+
+    validate_offline_runtime_environment(
+        settings
+    )
+
+
+def test_offline_environment_is_required(
+    monkeypatch,
+):
+    monkeypatch.delenv(
+        "HF_HUB_OFFLINE",
+        raising=False,
+    )
+
+    settings = RAGRuntimeSettings(
+        strict_offline=True,
+        _env_file=None,
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="HF_HUB_OFFLINE",
+    ):
+        validate_offline_runtime_environment(
+            settings
         )
