@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*$py.class
+
+.pytest_cache/
+
+.qdrant_storage/
+
+.venv/
+env/
+venv/
+
+.env
+
+# Local/runtime files
+*.log
