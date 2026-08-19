@@ -21,6 +21,13 @@ from src.orchestration import (
     M3M4RAGService,
 )
 
+from src.api.errors import (
+    register_exception_handlers,
+)
+from src.api.observability import (
+    register_observability_middleware,
+)
+
 
 def create_app(
     *,
@@ -42,6 +49,14 @@ def create_app(
         lifespan=create_lifespan(
             rag_service_factory
         ),
+    )
+    
+    register_observability_middleware(
+        app
+    )
+
+    register_exception_handlers(
+        app
     )
 
     app.include_router(

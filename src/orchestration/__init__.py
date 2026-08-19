@@ -12,9 +12,13 @@ from .prompts import (
     M4PromptBuilder,
     SearchPromptBundle,
 )
+from .rag_service import (
+    M3M4RAGService,
+    RAGExecutionMetrics,
+    RAGExecutionResult,
+)
 from .service import M4OrchestrationService
 from .settings import M4Settings
-from .rag_service import M3M4RAGService
 
 
 __all__ = [
@@ -29,4 +33,6 @@ __all__ = [
     "M4LLMInvocationError",
     "M4OrchestrationService",
     "M3M4RAGService",
+    "RAGExecutionMetrics",
+    "RAGExecutionResult",
 ]
