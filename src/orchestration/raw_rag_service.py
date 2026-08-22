@@ -80,7 +80,41 @@ class M2M3M4RAGService:
         query_pipeline: M2QueryPipelineProtocol,
         rag_service: M3M4RAGService,
         expected_embedding_dimension: int = 1024,
+        validated_embedding_dimension: int | None = None,
     ) -> None:
+        if expected_embedding_dimension < 1:
+            raise ValueError(
+                "expected_embedding_dimension "
+                "must be positive"
+            )
+
+        if (
+            validated_embedding_dimension
+            is not None
+            and validated_embedding_dimension
+            != expected_embedding_dimension
+        ):
+            raise ValueError(
+                "validated_embedding_dimension "
+                "must match "
+                "expected_embedding_dimension"
+            )
+
+        self.query_pipeline = (
+            query_pipeline
+        )
+
+        self.rag_service = (
+            rag_service
+        )
+
+        self.expected_embedding_dimension = (
+            expected_embedding_dimension
+        )
+
+        self.validated_embedding_dimension = (
+            validated_embedding_dimension
+        )
         if expected_embedding_dimension < 1:
             raise ValueError(
                 "expected_embedding_dimension "
@@ -97,6 +131,14 @@ class M2M3M4RAGService:
 
         self.expected_embedding_dimension = (
             expected_embedding_dimension
+        )
+    @property
+    def embedding_runtime_ready(
+        self,
+    ) -> bool:
+        return (
+            self.validated_embedding_dimension
+            == self.expected_embedding_dimension
         )
 
     def answer(

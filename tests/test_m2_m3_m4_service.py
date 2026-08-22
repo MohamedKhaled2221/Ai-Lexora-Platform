@@ -198,7 +198,52 @@ def test_sync_composition_copies_embedding_and_filters():
         .embedding
         == []
     )
+def test_embedding_runtime_ready_after_validated_startup():
+    service = M2M3M4RAGService(
+        query_pipeline=(
+            FakeM2QueryPipeline()
+        ),
+        rag_service=FakeRAGService(),
+        expected_embedding_dimension=1024,
+        validated_embedding_dimension=1024,
+    )
 
+    assert (
+        service.embedding_runtime_ready
+        is True
+    )
+
+
+def test_embedding_runtime_not_ready_without_startup_validation():
+    service = M2M3M4RAGService(
+        query_pipeline=(
+            FakeM2QueryPipeline()
+        ),
+        rag_service=FakeRAGService(),
+        expected_embedding_dimension=1024,
+    )
+
+    assert (
+        service.embedding_runtime_ready
+        is False
+    )
+
+
+def test_invalid_validated_startup_dimension_is_rejected():
+    with pytest.raises(
+        ValueError,
+        match=(
+            "validated_embedding_dimension"
+        ),
+    ):
+        M2M3M4RAGService(
+            query_pipeline=(
+                FakeM2QueryPipeline()
+            ),
+            rag_service=FakeRAGService(),
+            expected_embedding_dimension=1024,
+            validated_embedding_dimension=768,
+        )
 
 @pytest.mark.asyncio
 async def test_async_composition_uses_existing_rag_service():

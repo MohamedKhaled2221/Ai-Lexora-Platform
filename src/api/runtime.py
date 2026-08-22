@@ -200,11 +200,13 @@ def build_raw_rag_service(
     settings: RAGRuntimeSettings | None = None,
 ) -> M2M3M4RAGService:
     """
-    Construct the raw-query M2 -> M3 -> M4 runtime.
+    Construct and validate the raw-query
+    M2 -> M3 -> M4 runtime.
 
-    M2QueryPipeline is imported lazily so normal API
-    module imports and unit tests do not unnecessarily
-    import the BGE-M3 runtime.
+    Startup performs one fixed, non-confidential
+    M2 probe so the application does not report
+    readiness when BGE-M3 is unusable or returns
+    the wrong embedding dimension.
     """
 
     settings = (
@@ -220,10 +222,45 @@ def build_raw_rag_service(
         M2QueryPipeline()
     )
 
+    probe = query_pipeline.process(
+        "AI-Lexora local embedding readiness probe"
+    )
+
+    actual_dimension = len(
+        probe.embedding
+    )
+
+    if actual_dimension == 0:
+        raise RuntimeError(
+            "M2 startup probe returned "
+            "an empty embedding."
+        )
+
+    if (
+        probe.dimension
+        != actual_dimension
+    ):
+        raise RuntimeError(
+            "M2 startup probe embedding metadata "
+            "does not match the vector length."
+        )
+
+    if (
+        actual_dimension
+        != settings.qdrant_vector_size
+    ):
+        raise RuntimeError(
+            "M2 startup probe returned an "
+            "unexpected embedding dimension."
+        )
+
     return M2M3M4RAGService(
         query_pipeline=query_pipeline,
         rag_service=rag_service,
         expected_embedding_dimension=(
             settings.qdrant_vector_size
+        ),
+        validated_embedding_dimension=(
+            actual_dimension
         ),
     )
