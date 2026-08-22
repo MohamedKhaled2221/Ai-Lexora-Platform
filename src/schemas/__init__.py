@@ -1,4 +1,11 @@
-from .m2_contract import ProcessedQuery, QueryFilters
+from .m1_contract import DocumentChunk
+from .m2_contract import (
+    EmbeddedDocumentChunk,
+    EmbeddedQuery,
+    IdentifierSet,
+    ProcessedQuery,
+    QueryFilters,
+)
 from .m4_contract import (
     AIResponse,
     Citation,
@@ -8,8 +15,12 @@ from .m4_contract import (
 )
 
 __all__ = [
+    "DocumentChunk",
     "ProcessedQuery",
     "QueryFilters",
+    "IdentifierSet",
+    "EmbeddedDocumentChunk",
+    "EmbeddedQuery",
     "EvidenceItem",
     "RetrievedEvidence",
     "M4ModelOutput",

@@ -1,4 +1,5 @@
 import re
+import uuid
 
 from src.schemas import IdentifierSet, ProcessedQuery
 
@@ -183,9 +184,11 @@ class QueryProcessor:
         variants = self.build_variants(normalized, language)
 
         return ProcessedQuery(
-            original_text=text,
+            query_id=f"q_{uuid.uuid4().hex[:8]}",
+            text_original=text,
             normalized_text=normalized,
             language=language,
             query_variants=variants,
             identifiers=identifiers,
+            embedding=[],
         )

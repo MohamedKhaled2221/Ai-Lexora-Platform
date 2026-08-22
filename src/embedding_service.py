@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from FlagEmbedding import BGEM3FlagModel
 
 from src.config import settings
-from src.schemas import EmbeddedDocumentChunk, EmbeddedQuery, ProcessedQuery
+from src.schemas import DocumentChunk, EmbeddedDocumentChunk, EmbeddedQuery, ProcessedQuery
 
 
 class EmbeddingService:
@@ -198,3 +198,32 @@ class EmbeddingService:
             model=self.model_name,
             dimension=len(vector),
         )
+
+    def embed_document_chunks(
+        self,
+        chunks: Sequence[DocumentChunk],
+    ) -> list[EmbeddedDocumentChunk]:
+        """Embed multiple document chunks efficiently in batches.
+
+        Input:
+            chunks: Sequence of DocumentChunk instances.
+
+        Output:
+            list of EmbeddedDocumentChunk instances.
+        """
+        if not chunks:
+            return []
+            
+        texts = [chunk.text for chunk in chunks]
+        vectors = self.embed_documents(texts)
+        
+        return [
+            EmbeddedDocumentChunk(
+                document_id=chunk.document_id,
+                chunk_id=chunk.chunk_id,
+                embedding=vec,
+                model=self.model_name,
+                dimension=len(vec),
+            )
+            for chunk, vec in zip(chunks, vectors)
+        ]
