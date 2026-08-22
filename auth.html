@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>مفتاح | الحساب</title>
+<title>AI-Lexora | الدخول والصلاحيات</title>
 <link rel="stylesheet" href="style.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,69 +11,67 @@
 </head>
 <body>
 <header class="navbar">
-<a class="brand" href="index.html">مفتاح</a>
+<a class="brand" href="index.html">AI-Lexora</a>
 <nav>
 <a href="index.html">الرئيسية</a>
-<a href="consultation.html">طلب استشارة</a>
-<a href="dashboard.html">لوحة التحكم</a>
-<a class="active" href="auth.html">الحساب</a>
+<a href="dashboard.html">لوحة العمل</a>
+<a href="consultation.html">القضايا</a>
+<a class="active" href="auth.html">الدخول</a>
 </nav>
-<a class="nav-action" href="dashboard.html">لوحة التحكم</a>
+<a class="nav-action" href="dashboard.html">Dashboard</a>
 </header>
 
 <main>
 <section class="auth-layout">
 <div class="auth-copy">
-<p class="eyebrow">Authentication</p>
-<h1>الدخول للمنصة حسب الدور والصلاحيات</h1>
-<p>هذه الصفحة تعرض واجهات Login / Register / Forgot Password، مع تصور Frontend للأدوار Admin وLawyer وUser.</p>
+<p class="eyebrow">Access & Permissions</p>
+<h1>دخول داخلي للمحامين ومديري المكتب</h1>
+<p>الصلاحيات في الواجهة مجهزة للتوسع لاحقا مع نظام مصادقة حقيقي، مع فصل واضح بين دور المحامي ودور المدير.</p>
 <div class="permissions">
-<h2>Roles</h2>
-<div><strong>Admin</strong><span>إدارة المستخدمين والطلبات.</span></div>
-<div><strong>Lawyer</strong><span>مراجعة الطلبات وتحديث الحالات.</span></div>
-<div><strong>User</strong><span>إرسال استشارة ومتابعة طلبه.</span></div>
+<h2>الأدوار</h2>
+<div><strong>Lawyer</strong><span>قضاياه، مستنداته، مهامه، والبحث القانوني.</span></div>
+<div><strong>Manager / Admin</strong><span>كل القضايا، الفريق، العملاء، التقارير، والصلاحيات.</span></div>
 </div>
 </div>
 
 <section class="auth-card">
 <div class="tabs">
 <button class="active" type="button" data-auth-tab="login">دخول</button>
-<button type="button" data-auth-tab="register">تسجيل</button>
-<button type="button" data-auth-tab="forgot">نسيت كلمة السر</button>
+<button type="button" data-auth-tab="register">إضافة موظف</button>
+<button type="button" data-auth-tab="forgot">استعادة كلمة السر</button>
 </div>
 
 <form class="auth-form active" data-auth-panel="login">
 <h2>تسجيل الدخول</h2>
-<label>البريد الإلكتروني<input type="email" placeholder="admin@miftah.com" required></label>
+<label>البريد الإلكتروني<input type="email" placeholder="lawyer@ai-lexora.local" required></label>
 <label>كلمة المرور<input type="password" placeholder="••••••••" required></label>
 <label>الدور
 <select>
-<option>Admin</option>
 <option>Lawyer</option>
-<option>User</option>
+<option>Manager / Admin</option>
 </select>
 </label>
-<button class="submit-btn" type="submit">دخول</button>
+<button class="submit-btn" type="submit">دخول إلى النظام</button>
 </form>
 
 <form class="auth-form" data-auth-panel="register">
-<h2>إنشاء حساب</h2>
-<label>الاسم الكامل<input type="text" placeholder="اسم المستخدم" required></label>
-<label>البريد الإلكتروني<input type="email" placeholder="name@example.com" required></label>
-<label>كلمة المرور<input type="password" placeholder="8 أحرف على الأقل" required></label>
-<label>نوع الحساب
+<h2>إضافة مستخدم داخلي</h2>
+<label>الاسم الكامل<input type="text" placeholder="اسم المحامي أو الموظف" required></label>
+<label>البريد الإلكتروني<input type="email" placeholder="name@ai-lexora.local" required></label>
+<label>كلمة المرور المؤقتة<input type="password" placeholder="8 أحرف على الأقل" required></label>
+<label>الدور
 <select>
-<option>User</option>
 <option>Lawyer</option>
+<option>Manager / Admin</option>
 </select>
 </label>
-<button class="submit-btn" type="submit">إنشاء الحساب</button>
+<button class="submit-btn" type="submit">حفظ المستخدم</button>
 </form>
 
 <form class="auth-form" data-auth-panel="forgot">
 <h2>استعادة كلمة المرور</h2>
-<p>اكتب بريدك الإلكتروني وسنرسل رابط إعادة التعيين.</p>
-<label>البريد الإلكتروني<input type="email" placeholder="name@example.com" required></label>
+<p>أدخل بريدك الداخلي لاستلام رابط إعادة التعيين.</p>
+<label>البريد الإلكتروني<input type="email" placeholder="name@ai-lexora.local" required></label>
 <button class="submit-btn" type="submit">إرسال الرابط</button>
 </form>
 </section>
@@ -81,10 +79,10 @@
 </main>
 
 <footer class="footer">
-<p>صلاحيات الواجهة قابلة للربط لاحقا مع JWT أو Session من الـBackend.</p>
+<p>إدارة الصلاحيات الحالية Frontend-only وجاهزة للربط مع Backend لاحقا.</p>
 <div>
 <a href="dashboard.html">Dashboard</a>
-<a href="consultation.html">Consultation</a>
+<a href="consultation.html">Cases</a>
 </div>
 </footer>
 
@@ -92,4 +90,3 @@
 <script src="script.js"></script>
 </body>
 </html>
-
