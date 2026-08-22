@@ -1,135 +1,177 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI-Lexora | إدارة القضايا</title>
-<link rel="stylesheet" href="style.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI-Lexora | القضايا والبحث القانوني</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
-<header class="navbar">
-<a class="brand" href="index.html">AI-Lexora</a>
-<nav>
-<a href="index.html">الرئيسية</a>
-<a href="dashboard.html">لوحة العمل</a>
-<a class="active" href="consultation.html">القضايا</a>
-<a href="auth.html">الدخول</a>
-</nav>
-<a class="nav-action" href="dashboard.html">Dashboard</a>
-</header>
+  <header class="navbar">
+    <a class="brand" href="index.html">AI-Lexora<small>Cases & Legal Research</small></a>
+    <nav>
+      <a href="index.html">الرئيسية</a>
+      <a href="dashboard.html">لوحة العمل</a>
+      <a class="active" href="consultation.html">القضايا والبحث</a>
+      <a href="auth.html">الدخول والصلاحيات</a>
+    </nav>
+    <div class="nav-tools">
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="تبديل الوضع الليلي" aria-pressed="false">
+        <span class="theme-toggle-track" aria-hidden="true"></span>
+        <span data-theme-label>الوضع الغامق</span>
+      </button>
+      <a class="nav-action" href="dashboard.html">Dashboard</a>
+    </div>
+  </header>
 
-<main>
-<section class="page-title">
-<p class="eyebrow">Case Management</p>
-<h1>إنشاء ومراجعة ملف القضية</h1>
-<p>واجهة داخلية لتسجيل القضية وتحديد المسؤوليات والمواعيد وربط المستندات.</p>
-</section>
+  <main>
+    <section class="page-title">
+      <p class="eyebrow">Case Management</p>
+      <h1>إنشاء قضية وربطها بالمستندات والبحث القانوني.</h1>
+      <p>الصفحة دي مجهزة للأوامر التي يحتاجها الفرنت: حفظ قضية، رفع مستند، فحص جاهزية النظام، وتجربة المساعد القانوني والبحث بالمصادر.</p>
+    </section>
 
-<section class="form-layout">
-<form class="consultation-form" data-consultation-form>
-<h2>بيانات القضية</h2>
-<div class="form-grid">
-<label>
-Case ID
-<input name="caseId" type="text" placeholder="LEX-1028" required>
-<small class="field-error">رقم القضية مطلوب.</small>
-</label>
-<label>
-عنوان القضية
-<input name="title" type="text" placeholder="مثال: دعوى مطالبة مالية" required>
-<small class="field-error">عنوان القضية مطلوب.</small>
-</label>
-<label>
-العميل
-<input name="client" type="text" placeholder="اسم العميل أو الشركة" required>
-<small class="field-error">اسم العميل مطلوب.</small>
-</label>
-<label>
-المحامي المسؤول
-<select name="lawyer" required>
-<option value="">اختر المحامي</option>
-<option>محامي 1</option>
-<option>محامي 2 </option>
-<option>محامي 3 </option>
-</select>
-<small class="field-error">اختيار المحامي مطلوب.</small>
-</label>
-<label>
-نوع القضية
-<select name="category" required>
-<option value="">اختر النوع</option>
-<option>تجاري</option>
-<option>عقود</option>
-<option>عمل</option>
-<option>أسرة</option>
-<option>ميراث</option>
-</select>
-<small class="field-error">نوع القضية مطلوب.</small>
-</label>
-<label>
-الأولوية
-<select name="priority">
-<option>عادية</option>
-<option>متوسطة</option>
-<option>عاجلة</option>
-</select>
-</label>
-<label>
-الحالة
-<select name="status">
-<option>نشطة</option>
-<option>معلقة</option>
-<option>عاجلة</option>
-<option>مغلقة</option>
-</select>
-</label>
-<label>
-الموعد القادم
-<input name="deadline" type="date">
-</label>
-</div>
-<label>
-ملاحظات القضية
-<textarea name="description" placeholder="ملخص الوقائع، الطلبات، المخاطر، والمواعيد المهمة..." required></textarea>
-<small class="field-error">الملاحظات مطلوبة.</small>
-</label>
-<label class="checkbox-label">
-<input type="checkbox" required>
-تمت مراجعة بيانات القضية داخليا.
-</label>
-<button class="submit-btn" type="submit">حفظ ملف القضية</button>
-</form>
+    <section class="form-layout">
+      <form class="consultation-form" data-success="تم حفظ ملف القضية محليا.">
+        <h2>بيانات القضية</h2>
+        <div class="form-grid">
+          <label>Case ID
+            <input name="caseId" type="text" placeholder="LEX-1028" required>
+            <small class="field-error">رقم القضية مطلوب.</small>
+          </label>
+          <label>عنوان القضية
+            <input name="title" type="text" placeholder="دعوى مطالبة مالية" required>
+            <small class="field-error">عنوان القضية مطلوب.</small>
+          </label>
+          <label>العميل
+            <input name="client" type="text" placeholder="اسم العميل أو الشركة" required>
+            <small class="field-error">اسم العميل مطلوب.</small>
+          </label>
+          <label>المحامي المسؤول
+            <select name="lawyer" required>
+              <option value="">اختر المحامي</option>
+              <option>محامي 1</option>
+              <option>محامي 2</option>
+              <option>محامي 3</option>
+            </select>
+            <small class="field-error">اختيار المحامي مطلوب.</small>
+          </label>
+          <label>نوع القضية
+            <select name="category" required>
+              <option value="">اختر النوع</option>
+              <option>تجاري</option>
+              <option>عقود</option>
+              <option>عمل</option>
+              <option>أسرة</option>
+              <option>ميراث</option>
+            </select>
+            <small class="field-error">نوع القضية مطلوب.</small>
+          </label>
+          <label>الأولوية
+            <select name="priority">
+              <option>عادية</option>
+              <option>متوسطة</option>
+              <option>عاجلة</option>
+            </select>
+          </label>
+          <label>الحالة
+            <select name="status">
+              <option>نشطة</option>
+              <option>معلقة</option>
+              <option>عاجلة</option>
+              <option>مغلقة</option>
+            </select>
+          </label>
+          <label>الموعد القادم
+            <input name="deadline" type="date">
+          </label>
+        </div>
+        <label>ملاحظات القضية
+          <textarea name="description" placeholder="ملخص الوقائع، الطلبات، المخاطر، والمواعيد المهمة..." required></textarea>
+          <small class="field-error">الملاحظات مطلوبة.</small>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" required>
+          تمت مراجعة بيانات القضية داخليا.
+        </label>
+        <button class="submit-btn" type="submit">حفظ ملف القضية</button>
+      </form>
 
-<aside class="info-panel">
-<h2>ملف القضية</h2>
-<div class="timeline-item"><strong>1</strong><span>تسجيل البيانات الأساسية والعميل.</span></div>
-<div class="timeline-item"><strong>2</strong><span>تعيين المحامي المسؤول وتحديد الأولوية.</span></div>
-<div class="timeline-item"><strong>3</strong><span>إضافة الوثائق والمهام والمواعيد.</span></div>
-<div class="state-card loading-state">جاهز للربط لاحقا مع API القضايا.</div>
-<div class="state-card error-state">لا يتم إنشاء Endpoint وهمي من الواجهة.</div>
-</aside>
-</section>
+      <aside class="info-panel">
+        <h2>أوامر مرتبطة بالقضية</h2>
+        <div class="timeline-item"><strong>1</strong><span>إنشاء أو تحديث ملف القضية.</span></div>
+        <div class="timeline-item"><strong>2</strong><span>رفع مستند وربطه بالقضية.</span></div>
+        <div class="timeline-item"><strong>3</strong><span>إرسال سؤال قانوني إلى المساعد أو البحث بالمصادر.</span></div>
+        <div class="quick-actions">
+          <button class="ghost-btn" type="button" data-check-health>Health</button>
+          <button class="primary-btn" type="button" data-check-ready>Readiness</button>
+        </div>
+      </aside>
+    </section>
 
-<section class="table-section case-detail-section">
-<div class="table-header">
-<div>
-<h2>مستندات مرتبطة</h2>
-<p>نماذج واجهة لإدارة المستندات المرتبطة بالقضية.</p>
-</div>
-<button class="ghost-btn" type="button" data-show-toast="رفع المستندات يحتاج ربط Backend لاحق.">رفع مستند</button>
-</div>
-<div class="document-grid">
-<article class="document-card"><strong>عقد التوريد.pdf</strong><span>قيد المراجعة</span><p>مرتبط بالقضية LEX-1024</p></article>
-<article class="document-card"><strong>مذكرة دفاع.docx</strong><span>جاهز</span><p>آخر تعديل: 18 أغسطس</p></article>
-<article class="document-card"><strong>محضر جلسة.pdf</strong><span>أرشيف</span><p>تمت مراجعته بواسطة المدير</p></article>
-</div>
-</section>
-</main>
+    <section class="case-detail-section table-section">
+      <div class="table-header">
+        <div>
+          <h2>مستندات مرتبطة</h2>
+          <p>رفع المستند حاليا واجهة فقط، والباك اند الحالي لا يحتوي endpoint upload مباشر.</p>
+        </div>
+        <button class="ghost-btn" type="button" data-show-toast="رفع المستندات يحتاج Endpoint لاحق للـ ingestion والفهرسة.">رفع مستند</button>
+      </div>
+      <div class="document-grid">
+        <article class="document-card"><strong>عقد التوريد.pdf</strong><span>قيد المراجعة</span><p>مرتبط بالقضية LEX-1024</p></article>
+        <article class="document-card"><strong>مذكرة دفاع.docx</strong><span>جاهز</span><p>آخر تعديل: 18 أغسطس</p></article>
+        <article class="document-card"><strong>محضر جلسة.pdf</strong><span>أرشيف</span><p>تمت مراجعته بواسطة المدير</p></article>
+      </div>
+    </section>
 
-<div class="toast" data-toast>تم حفظ ملف القضية بنجاح.</div>
-<script src="script.js"></script>
+    <section class="case-detail-section api-section">
+      <div class="table-header">
+        <div>
+          <p class="eyebrow">Legal AI</p>
+          <h2>تجربة المساعد القانوني والبحث بالمصادر</h2>
+          <p>المساعد القانوني يستخدم مصادر تجريبية. البحث بالمصادر يحتاج تجهيز الفهرسة وقاعدة المصادر وبيانات البحث كاملة.</p>
+        </div>
+        <div class="quick-actions">
+          <button class="ghost-btn" type="button" data-copy-endpoint="/api/v1/ai/answer">نسخ رابط المساعد</button>
+          <button class="ghost-btn" type="button" data-copy-endpoint="/api/v1/rag/answer">نسخ رابط البحث</button>
+        </div>
+      </div>
+
+      <div class="form-layout" style="width:100%;margin:0">
+        <form class="consultation-form" data-ai-form data-output="[data-consultation-output]">
+          <h2>المساعد القانوني</h2>
+          <label>السؤال
+            <textarea name="question" placeholder="ما أثر عدم الإخطار قبل إنهاء العقد؟" required></textarea>
+          </label>
+          <button class="submit-btn" type="submit">توليد إجابة قانونية</button>
+        </form>
+
+        <form class="consultation-form" data-rag-form data-output="[data-consultation-output]">
+          <h2>البحث بالمصادر</h2>
+          <label>سؤال البحث
+            <textarea name="question" placeholder="ابحث عن شروط الإنهاء في مستندات القضية." required></textarea>
+          </label>
+          <button class="submit-btn" type="submit">تشغيل البحث بالمصادر</button>
+        </form>
+      </div>
+
+      <pre class="api-output" data-consultation-output data-api-output>{ "status": "waiting" }</pre>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>إدارة القضايا Frontend-ready، والربط الكامل يحتاج endpoints للحفظ والرفع لاحقا.</p>
+    <div>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="auth.html">Settings</a>
+    </div>
+  </footer>
+
+  <div class="toast" data-toast></div>
+  <script src="script.js"></script>
+  <script type="module" src="/frontend/react/main.jsx"></script>
 </body>
 </html>

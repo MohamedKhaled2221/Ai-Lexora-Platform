@@ -1,97 +1,131 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI-Lexora | مساحة العمل القانونية الداخلية</title>
-<link rel="stylesheet" href="style.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI-Lexora | مساحة العمل القانونية</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
-<header class="navbar">
-<a class="brand" href="index.html">AI-Lexora</a>
-<nav>
-<a class="active" href="index.html">الرئيسية</a>
-<a href="dashboard.html">لوحة العمل</a>
-<a href="consultation.html">القضايا</a>
-<a href="auth.html">الدخول</a>
-</nav>
-<a class="nav-action" href="dashboard.html">فتح النظام</a>
-</header>
+  <header class="navbar">
+    <a class="brand" href="index.html">AI-Lexora<small>Legal Intelligence Workspace</small></a>
+    <nav>
+      <a class="active" href="index.html">الرئيسية</a>
+      <a href="dashboard.html">لوحة العمل</a>
+      <a href="consultation.html">القضايا والبحث</a>
+      <a href="auth.html">الدخول والصلاحيات</a>
+    </nav>
+    <div class="nav-tools">
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="تبديل الوضع الليلي" aria-pressed="false">
+        <span class="theme-toggle-track" aria-hidden="true"></span>
+        <span data-theme-label>الوضع الغامق</span>
+      </button>
+      <a class="nav-action" href="dashboard.html">فتح النظام</a>
+    </div>
+  </header>
 
-<main>
-<section class="hero workspace-hero">
-<div class="hero-content">
-<p class="eyebrow">Internal Legal Management & AI Workspace</p>
-<h1>AI-Lexora لإدارة القضايا والوثائق والبحث القانوني داخل مكتب المحاماة</h1>
-<p class="hero-text">مساحة عمل داخلية تساعد المحامين ومديري المكتب على متابعة القضايا، توزيع العمل، مراجعة المستندات، تتبع المواعيد، واستخدام البحث القانوني المدعوم بالذكاء الاصطناعي من واجهة واحدة.</p>
-<div class="hero-actions">
-<a class="primary-btn" href="dashboard.html">لوحة العمل</a>
-<a class="secondary-btn" href="consultation.html">إدارة القضايا</a>
-</div>
-</div>
-<aside class="hero-panel">
-<h2>مركز تشغيل المكتب</h2>
-<ul class="check-list">
-<li>قضايا مصنفة حسب الحالة والأولوية والمحامي المسؤول.</li>
-<li>وثائق قانونية قابلة للمراجعة والربط بالقضية.</li>
-<li>بحث قانوني ومساعد AI قابلان للربط لاحقا بخدمات RAG الحالية.</li>
-<li>واجهة منفصلة بين دور المحامي ودور مدير المكتب.</li>
-</ul>
-</aside>
-</section>
+  <main>
+    <section class="hero">
+      <div class="hero-content">
+        <p class="eyebrow">إدارة مكتب محاماة + ذكاء اصطناعي قانوني</p>
+        <h1>واجهة واحدة لإدارة القضايا والمستندات وتشغيل البحث القانوني بالمصادر.</h1>
+        <p class="hero-text">AI-Lexora يجمع متابعة القضايا، توزيع العمل، مراجعة المستندات، فحص جاهزية الباك اند، وتجربة إجابات قانونية موثقة من نفس الواجهة.</p>
+        <div class="hero-actions">
+          <a class="primary-btn" href="dashboard.html">لوحة العمل</a>
+          <a class="secondary-btn" href="consultation.html">ابدأ بحث قانوني</a>
+        </div>
+      </div>
+      <aside class="hero-panel">
+        <h2>الأوامر المتاحة من الباك اند</h2>
+        <ul class="check-list">
+          <li>فحص تشغيل FastAPI عبر <strong>/health</strong>.</li>
+          <li>فحص جاهزية خدمات الذكاء الاصطناعي والفهرسة عبر <strong>/ready</strong>.</li>
+          <li>توليد إجابة قانونية موثقة عبر <strong>/api/v1/ai/answer</strong>.</li>
+          <li>تشغيل البحث القانوني بالمصادر عبر <strong>/api/v1/rag/answer</strong>.</li>
+        </ul>
+      </aside>
+    </section>
 
-<section class="stats">
-<div><strong>42</strong><span>قضية نشطة</span></div>
-<div><strong>11</strong><span>مواعيد مهمة هذا الأسبوع</span></div>
-<div><strong>6</strong><span>مستندات تنتظر المراجعة</span></div>
-</section>
+    <section class="stats">
+      <div><strong>42</strong><span>قضية داخل النظام</span></div>
+      <div><strong>11</strong><span>موعد مهم هذا الأسبوع</span></div>
+      <div><strong>6</strong><span>مستندات تنتظر المراجعة</span></div>
+      <div><strong>4</strong><span>Endpoints جاهزة للتجربة</span></div>
+    </section>
 
-<section class="services">
-<div class="section-heading">
-<p class="eyebrow">مسارات العمل</p>
-<h2>واجهة داخلية مصممة للمحامي ومدير المكتب</h2>
-</div>
-<div class="service-grid">
-<article class="service-card">
-<span class="card-icon">01</span>
-<h3>إدارة القضايا</h3>
-<p>عرض القضايا، حالتها، الأولوية، العميل، المحامي المسؤول، والمواعيد القادمة.</p>
-</article>
-<article class="service-card">
-<span class="card-icon">02</span>
-<h3>المستندات</h3>
-<p>متابعة العقود والمذكرات والمرفقات وربطها بالقضايا مع حالة مراجعة واضحة.</p>
-</article>
-<article class="service-card">
-<span class="card-icon">03</span>
-<h3>البحث القانوني</h3>
-<p>مساحة للبحث في المعلومات القانونية والمصادر المسترجعة من طبقة الذكاء الاصطناعي.</p>
-</article>
-<article class="service-card">
-<span class="card-icon">04</span>
-<h3>إدارة الفريق</h3>
-<p>للمدير: متابعة المحامين، توزيع القضايا، مراقبة النشاط، والتقارير التشغيلية.</p>
-</article>
-</div>
-</section>
+    <section class="services">
+      <div class="section-heading">
+        <p class="eyebrow">مسارات العمل</p>
+        <h2>الواجهة متقسمة حسب احتياج المحامي، المدير، وخدمات الذكاء الاصطناعي.</h2>
+      </div>
+      <div class="service-grid">
+        <article class="service-card">
+          <span class="card-icon">01</span>
+          <h3>إدارة القضايا</h3>
+          <p>بحث، فلترة، إضافة قضية، عرض تفاصيل، ومتابعة الحالة والأولوية والمحامي المسؤول.</p>
+        </article>
+        <article class="service-card">
+          <span class="card-icon">02</span>
+          <h3>المستندات</h3>
+          <p>واجهة جاهزة لرفع المستندات وربطها بالقضايا تمهيدا لإرسالها لمسار المعالجة والفهرسة.</p>
+        </article>
+        <article class="service-card">
+          <span class="card-icon">03</span>
+          <h3>المساعد القانوني</h3>
+          <p>زر وتجربة مباشرة لتوليد إجابات قانونية موثقة عند توفر مصادر مناسبة.</p>
+        </article>
+        <article class="service-card">
+          <span class="card-icon">04</span>
+          <h3>البحث بالمصادر</h3>
+          <p>لوحة لفحص الجاهزية وتشغيل البحث داخل المستندات ثم توليد إجابة موثقة.</p>
+        </article>
+      </div>
+    </section>
 
-<section class="requirements-band">
-<h2>ابدأ من لوحة العمل لمتابعة القضايا والمهام والنشاط اليومي للمكتب.</h2>
-<a class="primary-btn" href="dashboard.html">دخول لوحة العمل</a>
-</section>
-</main>
+    <section class="api-band api-section">
+      <div class="table-header">
+        <div>
+          <p class="eyebrow">Backend Control</p>
+          <h2>اختبر اتصال الواجهة بالباك اند</h2>
+          <p>القيمة الافتراضية للـ API هي <strong>http://localhost:8000</strong>.</p>
+        </div>
+        <div class="quick-actions">
+          <button class="ghost-btn" type="button" data-check-health>فحص Health</button>
+          <button class="primary-btn" type="button" data-check-ready>فحص Readiness</button>
+        </div>
+      </div>
+      <div class="status-grid">
+        <article class="status-card" data-health-card data-state="idle">
+          <strong><span class="status-dot"></span><span data-status-label>Health</span></strong>
+          <span data-status-detail>لم يتم الفحص بعد.</span>
+        </article>
+        <article class="status-card" data-ready-card data-state="idle">
+          <strong><span class="status-dot"></span><span data-status-label>Readiness</span></strong>
+          <span data-status-detail>لم يتم الفحص بعد.</span>
+        </article>
+      </div>
+      <pre class="api-output" data-api-output>{ "status": "waiting" }</pre>
+    </section>
 
-<footer class="footer">
-<p>AI-Lexora - Internal Legal Management & AI Workspace.</p>
-<div>
-<a href="dashboard.html">Dashboard</a>
-<a href="auth.html">Settings</a>
-</div>
-</footer>
+    <section class="requirements-band">
+      <h2>ابدأ من لوحة العمل لمتابعة القضايا، أو افتح صفحة القضايا لتجربة المساعد والبحث بالمصادر.</h2>
+      <a class="primary-btn" href="consultation.html">فتح صفحة البحث</a>
+    </section>
+  </main>
 
-<script src="script.js"></script>
+  <footer class="footer">
+    <p>AI-Lexora - Internal Legal Management & AI Workspace.</p>
+    <div>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="auth.html">Settings</a>
+    </div>
+  </footer>
+
+  <div class="toast" data-toast></div>
+  <script src="script.js"></script>
+  <script type="module" src="/frontend/react/main.jsx"></script>
 </body>
 </html>

@@ -1,162 +1,205 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI-Lexora | لوحة العمل</title>
-<link rel="stylesheet" href="style.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI-Lexora | لوحة العمل</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
-<div class="app-layout">
-<aside class="sidebar">
-<a class="brand light" href="index.html">AI-Lexora</a>
-<nav>
-<a class="active" href="dashboard.html">Dashboard</a>
-<a href="consultation.html" data-nav-lawyer>My Cases</a>
-<a href="consultation.html" data-nav-manager>All Cases</a>
-<a href="#" data-nav-manager>Lawyers</a>
-<a href="#" data-nav-manager>Clients</a>
-<a href="#">Documents</a>
-<a href="#">Legal Research</a>
-<a href="#">AI Assistant</a>
-<a href="#">Tasks</a>
-<a href="#" data-nav-manager>Reports</a>
-<a href="auth.html">Settings</a>
-</nav>
-</aside>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <a class="brand light" href="index.html">AI-Lexora<small>Operations Console</small></a>
+      <nav>
+        <a class="active" href="dashboard.html">لوحة العمل</a>
+        <a href="consultation.html" data-nav-lawyer>قضاياي</a>
+        <a href="consultation.html" data-nav-manager>كل القضايا</a>
+        <a href="#" data-nav-manager data-show-toast="إدارة الفريق جاهزة للتوصيل بقاعدة البيانات.">الفريق</a>
+        <a href="#" data-nav-manager data-show-toast="إدارة العملاء تحتاج Endpoint لاحق.">العملاء</a>
+        <a href="consultation.html">المستندات</a>
+        <a href="consultation.html">Legal Research</a>
+        <a href="#ai-console">AI Assistant</a>
+        <a href="#" data-show-toast="المهام محفوظة حاليا كواجهة فقط.">المهام</a>
+        <a href="#" data-nav-manager data-show-toast="التقارير تحتاج API إحصائيات لاحق.">التقارير</a>
+        <a href="auth.html">الصلاحيات</a>
+      </nav>
+      <button class="theme-toggle" type="button" data-theme-toggle>
+        <span class="theme-toggle-track" aria-hidden="true"></span>
+        <span data-theme-label>الوضع الغامق</span>
+      </button>
+      <p class="sidebar-footer">API Base: http://localhost:8000</p>
+    </aside>
 
-<main class="dashboard-main">
-<header class="dashboard-topbar">
-<div>
-<p class="eyebrow">Law Firm Operations</p>
-<h1>لوحة عمل المكتب القانونية</h1>
-</div>
-<div class="topbar-actions">
-<label class="role-switch">الدور
-<select data-role-switch>
-<option value="lawyer">Lawyer</option>
-<option value="manager">Manager / Admin</option>
-</select>
-</label>
-<button class="primary-btn" type="button" data-open-modal>إضافة قضية</button>
-</div>
-</header>
+    <main class="dashboard-main">
+      <header class="dashboard-topbar">
+        <div>
+          <p class="eyebrow">Law Firm Operations</p>
+          <h1>لوحة تشغيل المكتب القانوني</h1>
+        </div>
+        <div class="topbar-actions">
+          <label class="role-switch">الدور
+            <select data-role-switch>
+              <option value="lawyer">Lawyer</option>
+              <option value="manager">Manager / Admin</option>
+            </select>
+          </label>
+          <button class="ghost-btn" type="button" data-check-health>Health</button>
+          <button class="primary-btn" type="button" data-open-modal>إضافة قضية</button>
+        </div>
+      </header>
 
-<section class="dashboard-cards" data-role-panel="lawyer">
-<article class="metric-card"><span>قضاياي</span><strong>18</strong><p>5 تحتاج إجراء اليوم</p></article>
-<article class="metric-card"><span>قضايا نشطة</span><strong>12</strong><p>ضمن نطاق عملي</p></article>
-<article class="metric-card"><span>مهام معلقة</span><strong>7</strong><p>مذكرات ومراجعات</p></article>
-<article class="metric-card"><span>مواعيد قادمة</span><strong>4</strong><p>جلسات وتسليمات</p></article>
-</section>
+      <section class="dashboard-cards" data-role-panel="lawyer">
+        <article class="metric-card"><span>قضاياي</span><strong>18</strong><p>5 تحتاج إجراء اليوم</p></article>
+        <article class="metric-card"><span>نشطة</span><strong>12</strong><p>داخل نطاق عملي</p></article>
+        <article class="metric-card"><span>مهام معلقة</span><strong>7</strong><p>مذكرات ومراجعات</p></article>
+        <article class="metric-card"><span>مواعيد قادمة</span><strong>4</strong><p>جلسات وتسليمات</p></article>
+      </section>
 
-<section class="dashboard-cards" data-role-panel="manager" hidden>
-<article class="metric-card"><span>كل القضايا</span><strong>42</strong><p>+6 هذا الشهر</p></article>
-<article class="metric-card"><span>قضايا نشطة</span><strong>29</strong><p>قيد المتابعة</p></article>
-<article class="metric-card"><span>محامون</span><strong>8</strong><p>فريق المكتب</p></article>
-<article class="metric-card"><span>قضايا عاجلة</span><strong>5</strong><p>تحتاج متابعة إدارية</p></article>
-</section>
+      <section class="dashboard-cards" data-role-panel="manager" hidden>
+        <article class="metric-card"><span>كل القضايا</span><strong>42</strong><p>+6 هذا الشهر</p></article>
+        <article class="metric-card"><span>نشطة</span><strong>29</strong><p>قيد المتابعة</p></article>
+        <article class="metric-card"><span>محامون</span><strong>8</strong><p>فريق المكتب</p></article>
+        <article class="metric-card"><span>عاجلة</span><strong>5</strong><p>تحتاج قرار إداري</p></article>
+      </section>
 
-<section class="workspace-grid">
-<article class="table-section">
-<div class="table-header">
-<div>
-<h2 data-title-lawyer>قضاياي الحالية</h2>
-<h2 data-title-manager hidden>كل قضايا المكتب</h2>
-<p>متابعة الحالة، الأولوية، المحامي المسؤول، وآخر نشاط.</p>
-</div>
-<div class="table-tools">
-<input data-search type="search" placeholder="ابحث برقم القضية أو العميل أو النوع">
-<select data-filter>
-<option value="all">كل الحالات</option>
-<option value="نشطة">نشطة</option>
-<option value="معلقة">معلقة</option>
-<option value="عاجلة">عاجلة</option>
-<option value="مغلقة">مغلقة</option>
-</select>
-<button class="ghost-btn" type="button" data-sort>ترتيب حسب العميل</button>
-</div>
-</div>
+      <section class="workspace-grid">
+        <article class="table-section">
+          <div class="table-header">
+            <div>
+              <h2 data-title-lawyer>قضاياي الحالية</h2>
+              <h2 data-title-manager hidden>كل قضايا المكتب</h2>
+              <p>بحث وفلترة حسب الحالة، العميل، المحامي، أو رقم القضية.</p>
+            </div>
+            <div class="table-tools">
+              <input data-search type="search" placeholder="ابحث برقم القضية أو العميل">
+              <select data-filter>
+                <option value="all">كل الحالات</option>
+                <option value="نشطة">نشطة</option>
+                <option value="معلقة">معلقة</option>
+                <option value="عاجلة">عاجلة</option>
+                <option value="مغلقة">مغلقة</option>
+              </select>
+              <button class="ghost-btn" type="button" data-sort>ترتيب العملاء</button>
+            </div>
+          </div>
 
-<div class="state-row" data-empty hidden>لا توجد قضايا مطابقة للبحث الحالي.</div>
+          <div class="state-row" data-empty hidden>لا توجد قضايا مطابقة للبحث الحالي.</div>
 
-<div class="responsive-table">
-<table>
-<thead>
-<tr>
-<th>Case ID</th>
-<th>القضية</th>
-<th>العميل</th>
-<th>المحامي</th>
-<th>النوع</th>
-<th>الأولوية</th>
-<th>الحالة</th>
-<th>الموعد القادم</th>
-<th>إجراءات</th>
-</tr>
-</thead>
-<tbody data-cases-table>
-<tr data-status="نشطة" data-scope="lawyer">
-<td>LEX-1024</td><td>نزاع عقد توريد</td><td>شركة النور</td><td>أ. مريم علي</td><td>تجاري</td><td>متوسطة</td><td><span class="badge active-case">نشطة</span></td><td>24 أغسطس</td>
-<td class="actions"><button data-open-modal>عرض</button><button type="button" data-show-toast="تم فتح مستندات القضية.">مستندات</button></td>
-</tr>
-<tr data-status="عاجلة" data-scope="lawyer">
-<td>LEX-1025</td><td>استئناف حكم عمالي</td><td>أحمد سالم</td><td>أ. مريم علي</td><td>عمل</td><td>عاجلة</td><td><span class="badge urgent">عاجلة</span></td><td>25 أغسطس</td>
-<td class="actions"><button data-open-modal>عرض</button><button type="button" data-show-toast="تم فتح مهام القضية.">مهام</button></td>
-</tr>
-<tr data-status="معلقة" data-scope="manager">
-<td>LEX-1026</td><td>قسمة تركة</td><td>عائلة حسن</td><td>أ. خالد منصور</td><td>ميراث</td><td>عادية</td><td><span class="badge review">معلقة</span></td><td>28 أغسطس</td>
-<td class="actions"><button data-open-modal>تعيين</button><button type="button" data-show-toast="تم فتح سجل النشاط.">نشاط</button></td>
-</tr>
-<tr data-status="مغلقة" data-scope="manager">
-<td>LEX-1027</td><td>مراجعة اتفاقية شراكة</td><td>بيتا للاستثمار</td><td>أ. ياسين فؤاد</td><td>عقود</td><td>منخفضة</td><td><span class="badge closed">مغلقة</span></td><td>لا يوجد</td>
-<td class="actions"><button data-open-modal>عرض</button><button type="button" data-show-toast="تم فتح أرشيف القضية.">أرشيف</button></td>
-</tr>
-</tbody>
-</table>
-</div>
-</article>
+          <div class="responsive-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Case ID</th>
+                  <th>القضية</th>
+                  <th>العميل</th>
+                  <th>المحامي</th>
+                  <th>النوع</th>
+                  <th>الأولوية</th>
+                  <th>الحالة</th>
+                  <th>الموعد القادم</th>
+                  <th>إجراءات</th>
+                </tr>
+              </thead>
+              <tbody data-cases-table>
+                <tr data-status="نشطة" data-scope="lawyer">
+                  <td>LEX-1024</td><td>نزاع عقد توريد</td><td>شركة النور</td><td>محامي 1</td><td>تجاري</td><td>متوسطة</td><td><span class="badge active-case">نشطة</span></td><td>24 أغسطس</td>
+                  <td class="actions"><button type="button" data-open-modal>عرض</button><button type="button" data-show-toast="تم فتح مستندات القضية.">مستندات</button></td>
+                </tr>
+                <tr data-status="عاجلة" data-scope="lawyer">
+                  <td>LEX-1025</td><td>استئناف حكم عمالي</td><td>أحمد سالم</td><td>محامي 1</td><td>عمل</td><td>عاجلة</td><td><span class="badge urgent">عاجلة</span></td><td>25 أغسطس</td>
+                  <td class="actions"><button type="button" data-open-modal>عرض</button><button type="button" data-show-toast="تم فتح مهام القضية.">مهام</button></td>
+                </tr>
+                <tr data-status="معلقة" data-scope="manager">
+                  <td>LEX-1026</td><td>قسمة تركة</td><td>عائلة حسن</td><td>محامي 2</td><td>ميراث</td><td>عادية</td><td><span class="badge review">معلقة</span></td><td>28 أغسطس</td>
+                  <td class="actions"><button type="button" data-open-modal>تعيين</button><button type="button" data-show-toast="تم فتح سجل النشاط.">نشاط</button></td>
+                </tr>
+                <tr data-status="مغلقة" data-scope="manager">
+                  <td>LEX-1027</td><td>مراجعة اتفاقية شراكة</td><td>بيتا للاستثمار</td><td>محامي 3</td><td>عقود</td><td>منخفضة</td><td><span class="badge closed">مغلقة</span></td><td>لا يوجد</td>
+                  <td class="actions"><button type="button" data-open-modal>عرض</button><button type="button" data-show-toast="تم فتح أرشيف القضية.">أرشيف</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
 
-<aside class="side-stack">
-<section class="panel-card">
-<h2>مواعيد مهمة</h2>
-<div class="timeline-item"><strong>24</strong><span>تسليم مذكرة دفاع في LEX-1024</span></div>
-<div class="timeline-item"><strong>25</strong><span>جلسة استئناف عمالي في LEX-1025</span></div>
-<div class="timeline-item"><strong>28</strong><span>مراجعة مستندات ميراث في LEX-1026</span></div>
-</section>
-<section class="panel-card">
-<h2>النشاط الأخير</h2>
-<div class="activity-item">تم رفع عقد جديد على قضية LEX-1024</div>
-<div class="activity-item">تم تغيير أولوية LEX-1025 إلى عاجلة</div>
-<div class="activity-item" data-manager-only>تم تعيين LEX-1026 إلى أ. خالد منصور</div>
-</section>
-<section class="panel-card">
-<h2>Legal Research</h2>
-<p>ابحث في العقود، السوابق، والملاحظات القانونية المرتبطة بالقضايا.</p>
-<button class="submit-btn" type="button" data-show-toast="مساحة البحث القانوني جاهزة للربط بخدمة AI-Lexora.">فتح البحث</button>
-</section>
-</aside>
-</section>
-</main>
-</div>
+        <aside class="side-stack">
+          <section class="panel-card">
+            <h2>حالة الباك اند</h2>
+            <div class="status-grid">
+              <article class="status-card" data-health-card data-state="idle">
+                <strong><span class="status-dot"></span><span data-status-label>Health</span></strong>
+                <span data-status-detail>اضغط Health للفحص.</span>
+              </article>
+              <article class="status-card" data-ready-card data-state="idle">
+                <strong><span class="status-dot"></span><span data-status-label>البحث</span></strong>
+                <span data-status-detail>اضغط Readiness للفحص.</span>
+              </article>
+            </div>
+            <div class="quick-actions">
+              <button class="ghost-btn" type="button" data-check-health>Health</button>
+              <button class="ghost-btn" type="button" data-check-ready>Readiness</button>
+            </div>
+          </section>
 
-<div class="modal" data-modal hidden>
-<div class="modal-box">
-<div class="modal-header">
-<h2>بيانات القضية</h2>
-<button type="button" data-close-modal>×</button>
-</div>
-<label>عنوان القضية<input type="text" placeholder="مثال: نزاع عقد توريد"></label>
-<label>العميل<input type="text" placeholder="اسم العميل أو الشركة"></label>
-<label>المحامي المسؤول<select><option>محامي 1</option><option>محامي 2</option><option>محامي 3</option></select></label>
-<label>الحالة<select><option>نشطة</option><option>معلقة</option><option>عاجلة</option><option>مغلقة</option></select></label>
-<button class="submit-btn" type="button" data-save-modal>حفظ القضية</button>
-</div>
-</div>
+          <section class="panel-card">
+            <h2>مواعيد مهمة</h2>
+            <div class="timeline-item"><strong>24</strong><span>تسليم مذكرة دفاع في LEX-1024</span></div>
+            <div class="timeline-item"><strong>25</strong><span>جلسة استئناف عمالي في LEX-1025</span></div>
+            <div class="timeline-item"><strong>28</strong><span>مراجعة مستندات ميراث في LEX-1026</span></div>
+          </section>
 
-<div class="toast" data-toast>تم حفظ التعديل بنجاح.</div>
-<script src="script.js"></script>
+          <section class="panel-card">
+            <h2>النشاط الأخير</h2>
+            <div class="activity-item">تم رفع عقد جديد على قضية LEX-1024</div>
+            <div class="activity-item">تم تغيير أولوية LEX-1025 إلى عاجلة</div>
+            <div class="activity-item" data-manager-only>تم تعيين LEX-1026 إلى محامي 2</div>
+          </section>
+        </aside>
+      </section>
+
+      <section class="api-section" id="ai-console">
+        <div class="table-header">
+          <div>
+            <p class="eyebrow">AI Console</p>
+            <h2>مساعد الإجابات القانونية</h2>
+            <p>هذه التجربة ترسل سؤالا مع مصادر تجريبية إلى خدمة المساعد القانوني.</p>
+          </div>
+        <button class="ghost-btn" type="button" data-copy-endpoint="/api/v1/ai/answer">نسخ رابط الخدمة</button>
+        </div>
+        <form data-ai-form data-output="[data-dashboard-output]">
+          <label>السؤال القانوني
+            <textarea name="question" placeholder="مثال: هل يجوز إنهاء العقد بدون إخطار كتابي؟" required></textarea>
+          </label>
+          <button class="submit-btn" type="submit">توليد إجابة قانونية</button>
+        </form>
+        <pre class="api-output" data-dashboard-output data-api-output>{ "status": "waiting" }</pre>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal" data-modal hidden>
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2>بيانات القضية</h2>
+        <button type="button" data-close-modal aria-label="إغلاق">×</button>
+      </div>
+      <label>عنوان القضية<input type="text" placeholder="مثال: نزاع عقد توريد"></label>
+      <label>العميل<input type="text" placeholder="اسم العميل أو الشركة"></label>
+      <label>المحامي المسؤول
+        <select><option>محامي 1</option><option>محامي 2</option><option>محامي 3</option></select>
+      </label>
+      <label>الحالة
+        <select><option>نشطة</option><option>معلقة</option><option>عاجلة</option><option>مغلقة</option></select>
+      </label>
+      <button class="submit-btn" type="button" data-save-modal>حفظ القضية</button>
+    </div>
+  </div>
+
+  <div class="toast" data-toast></div>
+  <script src="script.js"></script>
+  <script type="module" src="/frontend/react/main.jsx"></script>
 </body>
 </html>

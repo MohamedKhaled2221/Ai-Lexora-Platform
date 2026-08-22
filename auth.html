@@ -1,92 +1,150 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI-Lexora | الدخول والصلاحيات</title>
-<link rel="stylesheet" href="style.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI-Lexora | الدخول والصلاحيات</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
-<header class="navbar">
-<a class="brand" href="index.html">AI-Lexora</a>
-<nav>
-<a href="index.html">الرئيسية</a>
-<a href="dashboard.html">لوحة العمل</a>
-<a href="consultation.html">القضايا</a>
-<a class="active" href="auth.html">الدخول</a>
-</nav>
-<a class="nav-action" href="dashboard.html">Dashboard</a>
-</header>
+  <header class="navbar">
+    <a class="brand" href="index.html">AI-Lexora<small>Access & Permissions</small></a>
+    <nav>
+      <a href="index.html">الرئيسية</a>
+      <a href="dashboard.html">لوحة العمل</a>
+      <a href="consultation.html">القضايا والبحث</a>
+      <a class="active" href="auth.html">الدخول والصلاحيات</a>
+    </nav>
+    <div class="nav-tools">
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="تبديل الوضع الليلي" aria-pressed="false">
+        <span class="theme-toggle-track" aria-hidden="true"></span>
+        <span data-theme-label>الوضع الغامق</span>
+      </button>
+      <a class="nav-action" href="dashboard.html">Dashboard</a>
+    </div>
+  </header>
 
-<main>
-<section class="auth-layout">
-<div class="auth-copy">
-<p class="eyebrow">Access & Permissions</p>
-<h1>دخول داخلي للمحامين ومديري المكتب</h1>
-<p>الصلاحيات في الواجهة مجهزة للتوسع لاحقا مع نظام مصادقة حقيقي، مع فصل واضح بين دور المحامي ودور المدير.</p>
-<div class="permissions">
-<h2>الأدوار</h2>
-<div><strong>Lawyer</strong><span>قضاياه، مستنداته، مهامه، والبحث القانوني.</span></div>
-<div><strong>Manager / Admin</strong><span>كل القضايا، الفريق، العملاء، التقارير، والصلاحيات.</span></div>
-</div>
-</div>
+  <main>
+    <section class="auth-layout">
+      <div class="auth-copy">
+        <p class="eyebrow">Access Control</p>
+        <h1>دخول داخلي للمحامين والمديرين مع فصل واضح للصلاحيات.</h1>
+        <p>الباك اند الحالي لا يحتوي authentication endpoints، لذلك الصفحة مجهزة كواجهة Frontend-ready لحين إضافة login/register/password reset API.</p>
 
-<section class="auth-card">
-<div class="tabs">
-<button class="active" type="button" data-auth-tab="login">دخول</button>
-<button type="button" data-auth-tab="register">إضافة موظف</button>
-<button type="button" data-auth-tab="forgot">استعادة كلمة السر</button>
-</div>
+        <div class="permissions">
+          <h2>الأدوار</h2>
+          <div><strong>Lawyer</strong><span>قضاياه، مستنداته، مهامه، والبحث القانوني.</span></div>
+          <div><strong>Manager / Admin</strong><span>كل القضايا، الفريق، العملاء، التقارير، والصلاحيات.</span></div>
+        </div>
 
-<form class="auth-form active" data-auth-panel="login">
-<h2>تسجيل الدخول</h2>
-<label>البريد الإلكتروني<input type="email" placeholder="lawyer@ai-lexora.local" required></label>
-<label>كلمة المرور<input type="password" placeholder="••••••••" required></label>
-<label>الدور
-<select>
-<option>Lawyer</option>
-<option>Manager / Admin</option>
-</select>
-</label>
-<button class="submit-btn" type="submit">دخول إلى النظام</button>
-</form>
+        <section class="api-section" style="width:100%;margin:22px 0 0">
+          <div class="table-header">
+            <div>
+              <h2>فحص النظام قبل الدخول</h2>
+              <p>يفيد في معرفة هل خدمات AI جاهزة للمستخدمين.</p>
+            </div>
+            <div class="quick-actions">
+              <button class="ghost-btn" type="button" data-check-health>Health</button>
+              <button class="ghost-btn" type="button" data-check-ready>Readiness</button>
+            </div>
+          </div>
+          <pre class="api-output" data-api-output>{ "status": "waiting" }</pre>
+        </section>
+      </div>
 
-<form class="auth-form" data-auth-panel="register">
-<h2>إضافة مستخدم داخلي</h2>
-<label>الاسم الكامل<input type="text" placeholder="اسم المحامي أو الموظف" required></label>
-<label>البريد الإلكتروني<input type="email" placeholder="name@ai-lexora.local" required></label>
-<label>كلمة المرور المؤقتة<input type="password" placeholder="8 أحرف على الأقل" required></label>
-<label>الدور
-<select>
-<option>Lawyer</option>
-<option>Manager / Admin</option>
-</select>
-</label>
-<button class="submit-btn" type="submit">حفظ المستخدم</button>
-</form>
+      <section class="auth-card">
+        <div class="tabs">
+          <button class="active" type="button" data-auth-tab="login">دخول</button>
+          <button type="button" data-auth-tab="register">إضافة موظف</button>
+          <button type="button" data-auth-tab="forgot">استعادة كلمة السر</button>
+        </div>
 
-<form class="auth-form" data-auth-panel="forgot">
-<h2>استعادة كلمة المرور</h2>
-<p>أدخل بريدك الداخلي لاستلام رابط إعادة التعيين.</p>
-<label>البريد الإلكتروني<input type="email" placeholder="name@ai-lexora.local" required></label>
-<button class="submit-btn" type="submit">إرسال الرابط</button>
-</form>
-</section>
-</section>
-</main>
+        <form class="auth-form active" data-auth-panel="login" data-success="تم تسجيل الدخول تجريبيا.">
+          <h2>تسجيل الدخول</h2>
+          <label>البريد الإلكتروني
+            <input type="email" placeholder="lawyer@ai-lexora.local" required>
+          </label>
+          <label>كلمة المرور
+            <input type="password" placeholder="••••••••" required>
+          </label>
+          <label>الدور
+            <select>
+              <option>Lawyer</option>
+              <option>Manager / Admin</option>
+            </select>
+          </label>
+          <button class="submit-btn" type="submit">دخول إلى النظام</button>
+        </form>
 
-<footer class="footer">
-<p>إدارة الصلاحيات الحالية Frontend-only وجاهزة للربط مع Backend لاحقا.</p>
-<div>
-<a href="dashboard.html">Dashboard</a>
-<a href="consultation.html">Cases</a>
-</div>
-</footer>
+        <form class="auth-form" data-auth-panel="register" data-success="تم حفظ المستخدم تجريبيا.">
+          <h2>إضافة مستخدم داخلي</h2>
+          <label>الاسم الكامل
+            <input type="text" placeholder="اسم المحامي أو الموظف" required>
+          </label>
+          <label>البريد الإلكتروني
+            <input type="email" placeholder="name@ai-lexora.local" required>
+          </label>
+          <label>كلمة المرور المؤقتة
+            <input type="password" placeholder="8 أحرف على الأقل" required minlength="8">
+          </label>
+          <label>الدور
+            <select>
+              <option>Lawyer</option>
+              <option>Manager / Admin</option>
+            </select>
+          </label>
+          <button class="submit-btn" type="submit">حفظ المستخدم</button>
+        </form>
 
-<div class="toast" data-toast>تم تنفيذ العملية بنجاح.</div>
-<script src="script.js"></script>
+        <form class="auth-form" data-auth-panel="forgot" data-success="تم إرسال رابط الاستعادة تجريبيا.">
+          <h2>استعادة كلمة المرور</h2>
+          <p>أدخل البريد الداخلي لاستلام رابط إعادة التعيين عند إضافة خدمة البريد.</p>
+          <label>البريد الإلكتروني
+            <input type="email" placeholder="name@ai-lexora.local" required>
+          </label>
+          <button class="submit-btn" type="submit">إرسال الرابط</button>
+        </form>
+      </section>
+    </section>
+
+    <section class="api-band api-section">
+      <div class="section-heading">
+        <p class="eyebrow">Endpoints مقترحة لاحقا</p>
+        <h2>أزرار الصلاحيات جاهزة، لكن تحتاج API مخصص للمستخدمين.</h2>
+      </div>
+      <div class="endpoint-grid">
+        <article class="endpoint-card">
+          <h3>Login</h3>
+          <p>تسجيل دخول وإرجاع session/token.</p>
+          <code>POST /api/v1/auth/login</code>
+        </article>
+        <article class="endpoint-card">
+          <h3>Users</h3>
+          <p>إضافة وتعديل مستخدمين داخليين.</p>
+          <code>POST /api/v1/users</code>
+        </article>
+        <article class="endpoint-card">
+          <h3>Roles</h3>
+          <p>صلاحيات Lawyer وManager/Admin.</p>
+          <code>GET /api/v1/roles</code>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>إدارة الصلاحيات حاليا Frontend-only وجاهزة للربط عند إضافة endpoints.</p>
+    <div>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="consultation.html">Cases</a>
+    </div>
+  </footer>
+
+  <div class="toast" data-toast></div>
+  <script src="script.js"></script>
+  <script type="module" src="/frontend/react/main.jsx"></script>
 </body>
 </html>
