@@ -178,7 +178,9 @@ def test_validation_error_uses_common_format():
         == payload["error"]["request_id"]
     )
 
-def test_unexpected_error_is_sanitized():
+def test_unexpected_error_is_sanitized(
+    caplog,
+):
     app = create_app()
 
     @app.get(
@@ -188,6 +190,11 @@ def test_unexpected_error_is_sanitized():
         raise RuntimeError(
             "secret internal diagnostic"
         )
+
+    caplog.set_level(
+        logging.ERROR,
+        logger="ai_lexora.errors",
+    )
 
     with TestClient(
         app,
@@ -211,6 +218,39 @@ def test_unexpected_error_is_sanitized():
         not in str(payload)
     )
 
+    records = [
+        record
+        for record in caplog.records
+        if (
+            record.name
+            == "ai_lexora.errors"
+            and record.getMessage()
+            == "unexpected_api_error"
+        )
+    ]
+
+    assert len(records) == 1
+
+    record = records[0]
+
+    assert (
+        record.error_type
+        == "RuntimeError"
+    )
+
+    assert (
+        record.request_id
+        == response.headers[
+            "X-Request-ID"
+        ]
+    )
+
+    assert record.exc_info is None
+
+    assert (
+        "secret internal diagnostic"
+        not in caplog.text
+    )
 
 def test_http_log_contains_safe_metadata(
     caplog,

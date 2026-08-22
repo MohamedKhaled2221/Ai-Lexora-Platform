@@ -73,8 +73,13 @@ async def answer(
         ) from exc
 
     except M4LLMConnectionError as exc:
-        logger.exception(
-            "M4 could not connect to Ollama."
+        logger.error(
+            "m4_ollama_connection_failed",
+            extra={
+                "error_type": (
+                    type(exc).__name__
+                ),
+            },
         )
 
         raise HTTPException(
@@ -91,8 +96,13 @@ async def answer(
         M4LLMInvocationError,
         CitationValidationError,
     ) as exc:
-        logger.exception(
-            "M4 answer generation failed."
+        logger.error(
+            "m4_generation_failed",
+            extra={
+                "error_type": (
+                    type(exc).__name__
+                ),
+            },
         )
 
         raise HTTPException(

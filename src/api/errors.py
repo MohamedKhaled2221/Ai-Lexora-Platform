@@ -150,13 +150,16 @@ def register_exception_handlers(
         request: Request,
         exc: Exception,
     ) -> JSONResponse:
-        logger.exception(
+        logger.error(
             "unexpected_api_error",
             extra={
                 "request_id": (
                     get_request_id(
                         request
                     )
+                ),
+                "error_type": (
+                    type(exc).__name__
                 ),
             },
         )

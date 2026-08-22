@@ -251,8 +251,12 @@ class SystemReadinessChecker:
             ValueError,
         ) as exc:
             logger.warning(
-                "Ollama readiness check failed: %s",
-                exc,
+                "ollama_readiness_check_failed",
+                extra={
+                    "error_type": (
+                        type(exc).__name__
+                    ),
+                },
             )
 
             return False, False
@@ -347,8 +351,12 @@ class SystemReadinessChecker:
             ValueError,
         ) as exc:
             logger.warning(
-                "Qdrant readiness check failed: %s",
-                exc,
+                "qdrant_readiness_check_failed",
+                extra={
+                    "error_type": (
+                        type(exc).__name__
+                    ),
+                },
             )
 
             return False, False
