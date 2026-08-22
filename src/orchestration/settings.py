@@ -26,7 +26,7 @@ class M4Settings(BaseSettings):
     )
 
     model_name: str = Field(
-        default="qwen2.5:7b-instruct-q4_K_M",
+        default="qwen3.5:4b",
         min_length=1,
         description="Ollama model used by M4",
     )
