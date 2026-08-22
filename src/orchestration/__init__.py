@@ -17,6 +17,12 @@ from .rag_service import (
     RAGExecutionMetrics,
     RAGExecutionResult,
 )
+from .raw_rag_service import (
+    M2EmbeddingContractError,
+    M2M3M4RAGService,
+    M2QueryRuntimeError,
+    M2QueryValidationError,
+)
 from .service import M4OrchestrationService
 from .settings import M4Settings
 
@@ -35,4 +41,8 @@ __all__ = [
     "M3M4RAGService",
     "RAGExecutionMetrics",
     "RAGExecutionResult",
+    "M2M3M4RAGService",
+    "M2QueryValidationError",
+    "M2EmbeddingContractError",
+    "M2QueryRuntimeError",
 ]

@@ -1,9 +1,39 @@
-from pydantic import BaseModel, ConfigDict
+from typing import Annotated
 
-from src.schemas.m2_contract import ProcessedQuery
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+)
+
+from src.schemas.m2_contract import (
+    ProcessedQuery,
+    QueryFilters,
+)
 from src.schemas.m4_contract import RetrievedEvidence
 
+class RawRAGAnswerRequest(BaseModel):
+    """
+    Frontend-friendly request for the complete
+    raw-question M2 -> M3 -> M4 pipeline.
+    """
 
+    model_config = ConfigDict(
+        extra="forbid"
+    )
+
+    question: Annotated[
+        str,
+        StringConstraints(
+            strip_whitespace=True,
+            min_length=1,
+        ),
+    ]
+
+    filters: QueryFilters = Field(
+        default_factory=QueryFilters
+    )
 class RAGAnswerRequest(BaseModel):
     """
     Request contract for M3 -> M4 RAG generation.

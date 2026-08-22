@@ -22,12 +22,14 @@ from src.api.routes import (
 )
 from src.api.runtime import (
     build_rag_service,
+    build_raw_rag_service,
 )
 from src.api.security import (
     APISecuritySettings,
     register_api_security_middleware,
 )
 from src.orchestration import (
+    M2M3M4RAGService,
     M3M4RAGService,
 )
 
@@ -38,6 +40,13 @@ def create_app(
         Callable[
             [],
             M3M4RAGService,
+        ]
+        | None
+    ) = None,
+    raw_rag_service_factory: (
+        Callable[
+            [M3M4RAGService],
+            M2M3M4RAGService,
         ]
         | None
     ) = None,
@@ -81,7 +90,8 @@ def create_app(
             else None
         ),
         lifespan=create_lifespan(
-            rag_service_factory
+            rag_service_factory,
+            raw_rag_service_factory,
         ),
     )
 
@@ -122,5 +132,8 @@ def create_app(
 # Unit tests that call create_app() without a factory
 # will not load Qdrant or the BGE reranker.
 app = create_app(
-    rag_service_factory=build_rag_service
+    rag_service_factory=build_rag_service,
+    raw_rag_service_factory=(
+        build_raw_rag_service
+    ),
 )

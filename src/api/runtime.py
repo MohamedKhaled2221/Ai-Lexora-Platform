@@ -6,6 +6,7 @@ from pydantic_settings import (
 )
 
 from src.orchestration import (
+    M2M3M4RAGService,
     M3M4RAGService,
     M4OrchestrationService,
 )
@@ -191,5 +192,38 @@ def build_rag_service(
         ),
         orchestration_service=(
             orchestration_service
+        ),
+    )
+
+def build_raw_rag_service(
+    rag_service: M3M4RAGService,
+    settings: RAGRuntimeSettings | None = None,
+) -> M2M3M4RAGService:
+    """
+    Construct the raw-query M2 -> M3 -> M4 runtime.
+
+    M2QueryPipeline is imported lazily so normal API
+    module imports and unit tests do not unnecessarily
+    import the BGE-M3 runtime.
+    """
+
+    settings = (
+        settings
+        or RAGRuntimeSettings()
+    )
+
+    from src.query_pipeline import (
+        M2QueryPipeline,
+    )
+
+    query_pipeline = (
+        M2QueryPipeline()
+    )
+
+    return M2M3M4RAGService(
+        query_pipeline=query_pipeline,
+        rag_service=rag_service,
+        expected_embedding_dimension=(
+            settings.qdrant_vector_size
         ),
     )
