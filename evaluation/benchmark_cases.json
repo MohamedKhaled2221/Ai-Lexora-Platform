@@ -1,0 +1,124 @@
+{
+  "cases": [
+    {
+      "case_id": "ar_contract_termination_egypt",
+      "category": "supported_filtered",
+      "language": "ar",
+      "question": "ما هي شروط الفسخ؟",
+      "filters": {
+        "document_type": "contract",
+        "jurisdiction": "Egypt"
+      },
+      "ground_truth_chunk_ids": [
+        "chunk_017"
+      ],
+      "expect_supported": true
+    },
+    {
+      "case_id": "en_contract_termination_egypt",
+      "category": "supported_cross_lingual",
+      "language": "en",
+      "question": "What are the conditions for termination?",
+      "filters": {
+        "document_type": "contract",
+        "jurisdiction": "Egypt"
+      },
+      "ground_truth_chunk_ids": [
+        "chunk_017"
+      ],
+      "expect_supported": true
+    },
+    {
+      "case_id": "mixed_contract_termination",
+      "category": "supported_mixed_language",
+      "language": "mixed",
+      "question": "ما هي termination conditions في العقد؟",
+      "filters": {
+        "document_type": "contract",
+        "jurisdiction": "Egypt"
+      },
+      "ground_truth_chunk_ids": [
+        "chunk_017"
+      ],
+      "expect_supported": true
+    },
+    {
+      "case_id": "ar_force_majeure_egypt",
+      "category": "supported_filtered",
+      "language": "ar",
+      "question": "ماذا يحدث للالتزامات في حالة القوة القاهرة؟",
+      "filters": {
+        "document_type": "contract",
+        "jurisdiction": "Egypt"
+      },
+      "ground_truth_chunk_ids": [
+        "chunk_018"
+      ],
+      "expect_supported": true
+    },
+    {
+      "case_id": "ar_civil_code_article_157",
+      "category": "supported_identifier",
+      "language": "ar",
+      "question": "ماذا تنص المادة 157 من القانون المدني بشأن فسخ العقد؟",
+      "filters": {
+        "document_type": "law",
+        "jurisdiction": "Egypt"
+      },
+      "ground_truth_chunk_ids": [
+        "chunk_005"
+      ],
+      "expect_supported": true
+    },
+    {
+      "case_id": "en_ksa_termination",
+      "category": "supported_filtered",
+      "language": "en",
+      "question": "When may a party terminate the agreement by written notice?",
+      "filters": {
+        "document_type": "contract",
+        "jurisdiction": "KSA"
+      },
+      "ground_truth_chunk_ids": [
+        "chunk_010"
+      ],
+      "expect_supported": true
+    },
+    {
+      "case_id": "ar_egypt_dispute_jurisdiction",
+      "category": "supported_filtered",
+      "language": "ar",
+      "question": "ما هي المحكمة المختصة بالنزاعات الناشئة عن العقد؟",
+      "filters": {
+        "document_type": "contract",
+        "jurisdiction": "Egypt"
+      },
+      "ground_truth_chunk_ids": [
+        "chunk_002"
+      ],
+      "expect_supported": true
+    },
+    {
+      "case_id": "ar_termination_unfiltered",
+      "category": "supported_unfiltered",
+      "language": "ar",
+      "question": "ما هي الأحكام المتعلقة بفسخ العقد؟",
+      "filters": {},
+      "ground_truth_chunk_ids": [
+        "chunk_017",
+        "chunk_005",
+        "chunk_010"
+      ],
+      "expect_supported": true
+    },
+    {
+      "case_id": "unsupported_annual_leave",
+      "category": "unsupported",
+      "language": "en",
+      "question": "How many days of annual paid leave is the employee entitled to?",
+      "filters": {},
+      "ground_truth_chunk_ids": [],
+      "expect_supported": false
+    }
+  ]
+}
