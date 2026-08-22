@@ -1,0 +1,67 @@
+{
+  "samples": [
+    {
+      "group_name": "عقود الإيجار",
+      "chunks": [
+        {
+          "document_id": "doc_001",
+          "chunk_id": "chunk_017",
+          "text": "يحق لأحد الطرفين فسخ العقد في حالة خرق البند السابع والتأخر عن السداد لمدة تزيد عن ثلاثين يوماً من تاريخ الإخطار الرسمي.",
+          "page": 12,
+          "section": "شروط الفسخ والإنهاء",
+          "language": "ar",
+          "metadata": {
+            "document_type": "contract",
+            "jurisdiction": "Egypt"
+          }
+        },
+        {
+          "document_id": "doc_001",
+          "chunk_id": "chunk_018",
+          "text": "في حالة القوة القاهرة، يتم تعليق التزامات الطرفين لمدة لا تجاوز ستين يوماً دون فرض أي غرامات تأخير.",
+          "page": 13,
+          "section": "القوة القاهرة",
+          "language": "ar",
+          "metadata": {
+            "document_type": "contract",
+            "jurisdiction": "Egypt"
+          }
+        }
+      ]
+    },
+    {
+      "group_name": "القانون المدني",
+      "chunks": [
+        {
+          "document_id": "doc_002",
+          "chunk_id": "chunk_005",
+          "text": "تنص المادة 157 من القانون المدني المصري على أنه في العقود الملزمة للجانبين، إذا لم يوف أحد المتعاقدين بالتزامه جاز للمتعاقد الآخر أن يطالب بفسخ العقد.",
+          "page": 45,
+          "section": "القانون المدني - الفسخ القضائي",
+          "language": "ar",
+          "metadata": {
+            "document_type": "law",
+            "jurisdiction": "Egypt"
+          }
+        }
+      ]
+    },
+    {
+      "group_name": "English Contracts",
+      "chunks": [
+        {
+          "document_id": "doc_003",
+          "chunk_id": "chunk_010",
+          "text": "Either party may terminate this agreement immediately by written notice if the other party breaches any material term of this contract.",
+          "page": 8,
+          "section": "Termination Clause",
+          "language": "en",
+          "metadata": {
+            "document_type": "contract",
+            "jurisdiction": "KSA"
+          }
+        }
+      ]
+    }
+  ]
+}
