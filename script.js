@@ -43,17 +43,54 @@ const searchInput = document.querySelector("[data-search]");
 const filterSelect = document.querySelector("[data-filter]");
 const tableBody = document.querySelector("[data-cases-table]");
 const emptyState = document.querySelector("[data-empty]");
+const roleSwitch = document.querySelector("[data-role-switch]");
+
+function getSelectedRole() {
+  return roleSwitch?.value || "lawyer";
+}
+
+function applyRoleView() {
+  const role = getSelectedRole();
+
+  document.querySelectorAll("[data-role-panel]").forEach((panel) => {
+    panel.hidden = panel.dataset.rolePanel !== role;
+  });
+
+  document.querySelectorAll("[data-nav-lawyer]").forEach((item) => {
+    item.hidden = role !== "lawyer";
+  });
+
+  document.querySelectorAll("[data-nav-manager]").forEach((item) => {
+    item.hidden = role !== "manager";
+  });
+
+  document.querySelectorAll("[data-manager-only]").forEach((item) => {
+    item.hidden = role !== "manager";
+  });
+
+  document.querySelectorAll("[data-title-lawyer]").forEach((item) => {
+    item.hidden = role !== "lawyer";
+  });
+
+  document.querySelectorAll("[data-title-manager]").forEach((item) => {
+    item.hidden = role !== "manager";
+  });
+
+  applyTableFilters();
+}
 
 function applyTableFilters() {
   if (!tableBody) return;
   const query = (searchInput?.value || "").trim().toLowerCase();
   const status = filterSelect?.value || "all";
+  const role = getSelectedRole();
   let visibleRows = 0;
 
   tableBody.querySelectorAll("tr").forEach((row) => {
     const matchesSearch = row.textContent.toLowerCase().includes(query);
     const matchesStatus = status === "all" || row.dataset.status === status;
-    const shouldShow = matchesSearch && matchesStatus;
+    const matchesRole = role === "manager" || row.dataset.scope !== "manager";
+    const shouldShow = matchesSearch && matchesStatus && matchesRole;
     row.hidden = !shouldShow;
     if (shouldShow) visibleRows += 1;
   });
@@ -63,12 +100,13 @@ function applyTableFilters() {
 
 searchInput?.addEventListener("input", applyTableFilters);
 filterSelect?.addEventListener("change", applyTableFilters);
+roleSwitch?.addEventListener("change", applyRoleView);
 
 document.querySelector("[data-sort]")?.addEventListener("click", () => {
   if (!tableBody) return;
   const rows = Array.from(tableBody.querySelectorAll("tr"));
   rows
-    .sort((a, b) => a.children[1].textContent.localeCompare(b.children[1].textContent, "ar"))
+    .sort((a, b) => a.children[2].textContent.localeCompare(b.children[2].textContent, "ar"))
     .forEach((row) => tableBody.appendChild(row));
   applyTableFilters();
   showToast("تم ترتيب الجدول أبجديا.");
@@ -83,4 +121,12 @@ document.querySelectorAll("[data-auth-tab]").forEach((tab) => {
     document.querySelector(`[data-auth-panel="${target}"]`)?.classList.add("active");
   });
 });
+
+document.querySelectorAll("[data-show-toast]").forEach((button) => {
+  button.addEventListener("click", () => {
+    showToast(button.dataset.showToast);
+  });
+});
+
+applyRoleView();
 

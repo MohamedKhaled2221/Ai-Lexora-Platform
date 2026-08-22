@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>مفتاح | طلب استشارة</title>
+<title>AI-Lexora | إدارة القضايا</title>
 <link rel="stylesheet" href="style.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,52 +11,63 @@
 </head>
 <body>
 <header class="navbar">
-<a class="brand" href="index.html">مفتاح</a>
+<a class="brand" href="index.html">AI-Lexora</a>
 <nav>
 <a href="index.html">الرئيسية</a>
-<a class="active" href="consultation.html">طلب استشارة</a>
-<a href="dashboard.html">لوحة التحكم</a>
-<a href="auth.html">الحساب</a>
+<a href="dashboard.html">لوحة العمل</a>
+<a class="active" href="consultation.html">القضايا</a>
+<a href="auth.html">الدخول</a>
 </nav>
-<a class="nav-action" href="auth.html">دخول</a>
+<a class="nav-action" href="dashboard.html">Dashboard</a>
 </header>
 
 <main>
 <section class="page-title">
-<p class="eyebrow">استقبال المشكلات</p>
-<h1>اكتب تفاصيل الاستشارة القانونية</h1>
-<p>النموذج التالي يمثل واجهة إنشاء طلب جديد مع Validation ورسائل خطأ وحالة إرسال.</p>
+<p class="eyebrow">Case Management</p>
+<h1>إنشاء ومراجعة ملف القضية</h1>
+<p>واجهة داخلية لتسجيل القضية وتحديد المسؤوليات والمواعيد وربط المستندات.</p>
 </section>
 
 <section class="form-layout">
 <form class="consultation-form" data-consultation-form>
-<h2>بيانات الطلب</h2>
+<h2>بيانات القضية</h2>
 <div class="form-grid">
 <label>
-الاسم الكامل
-<input name="name" type="text" placeholder="مثال: أحمد محمد" required>
-<small class="field-error">الاسم مطلوب.</small>
+Case ID
+<input name="caseId" type="text" placeholder="LEX-1028" required>
+<small class="field-error">رقم القضية مطلوب.</small>
 </label>
 <label>
-رقم الهاتف
-<input name="phone" type="tel" placeholder="01xxxxxxxxx" required>
-<small class="field-error">رقم الهاتف مطلوب.</small>
+عنوان القضية
+<input name="title" type="text" placeholder="مثال: دعوى مطالبة مالية" required>
+<small class="field-error">عنوان القضية مطلوب.</small>
 </label>
 <label>
-البريد الإلكتروني
-<input name="email" type="email" placeholder="name@example.com">
+العميل
+<input name="client" type="text" placeholder="اسم العميل أو الشركة" required>
+<small class="field-error">اسم العميل مطلوب.</small>
 </label>
 <label>
-نوع المشكلة
-<select name="category" required>
-<option value="">اختر نوع المشكلة</option>
-<option>قضية أسرة</option>
-<option>نزاع عمل</option>
-<option>عقود واتفاقات</option>
-<option>ميراث</option>
-<option>قضية تجارية</option>
+المحامي المسؤول
+<select name="lawyer" required>
+<option value="">اختر المحامي</option>
+<option>محامي 1</option>
+<option>محامي 2 </option>
+<option>محامي 3 </option>
 </select>
-<small class="field-error">اختر نوع المشكلة.</small>
+<small class="field-error">اختيار المحامي مطلوب.</small>
+</label>
+<label>
+نوع القضية
+<select name="category" required>
+<option value="">اختر النوع</option>
+<option>تجاري</option>
+<option>عقود</option>
+<option>عمل</option>
+<option>أسرة</option>
+<option>ميراث</option>
+</select>
+<small class="field-error">نوع القضية مطلوب.</small>
 </label>
 <label>
 الأولوية
@@ -67,39 +78,58 @@
 </select>
 </label>
 <label>
-طريقة التواصل المفضلة
-<select name="contact">
-<option>مكالمة هاتفية</option>
-<option>واتساب</option>
-<option>بريد إلكتروني</option>
+الحالة
+<select name="status">
+<option>نشطة</option>
+<option>معلقة</option>
+<option>عاجلة</option>
+<option>مغلقة</option>
 </select>
+</label>
+<label>
+الموعد القادم
+<input name="deadline" type="date">
 </label>
 </div>
 <label>
-وصف مختصر للمشكلة
-<textarea name="description" placeholder="اكتب ملخص المشكلة، الأطراف، والتواريخ المهمة..." required></textarea>
-<small class="field-error">الوصف مطلوب.</small>
+ملاحظات القضية
+<textarea name="description" placeholder="ملخص الوقائع، الطلبات، المخاطر، والمواعيد المهمة..." required></textarea>
+<small class="field-error">الملاحظات مطلوبة.</small>
 </label>
 <label class="checkbox-label">
 <input type="checkbox" required>
-أوافق على إرسال البيانات لمراجعة الطلب.
+تمت مراجعة بيانات القضية داخليا.
 </label>
-<button class="submit-btn" type="submit">إرسال الطلب</button>
+<button class="submit-btn" type="submit">حفظ ملف القضية</button>
 </form>
 
 <aside class="info-panel">
-<h2>بعد الإرسال</h2>
-<div class="timeline-item"><strong>1</strong><span>تسجيل الطلب كحالة جديدة.</span></div>
-<div class="timeline-item"><strong>2</strong><span>مراجعة البيانات وتحديد الأولوية.</span></div>
-<div class="timeline-item"><strong>3</strong><span>التواصل مع العميل بالخطوة المناسبة.</span></div>
-<div class="state-card loading-state">جاري إرسال الطلب...</div>
-<div class="state-card error-state">تعذر الإرسال، حاول مرة أخرى.</div>
+<h2>ملف القضية</h2>
+<div class="timeline-item"><strong>1</strong><span>تسجيل البيانات الأساسية والعميل.</span></div>
+<div class="timeline-item"><strong>2</strong><span>تعيين المحامي المسؤول وتحديد الأولوية.</span></div>
+<div class="timeline-item"><strong>3</strong><span>إضافة الوثائق والمهام والمواعيد.</span></div>
+<div class="state-card loading-state">جاهز للربط لاحقا مع API القضايا.</div>
+<div class="state-card error-state">لا يتم إنشاء Endpoint وهمي من الواجهة.</div>
 </aside>
+</section>
+
+<section class="table-section case-detail-section">
+<div class="table-header">
+<div>
+<h2>مستندات مرتبطة</h2>
+<p>نماذج واجهة لإدارة المستندات المرتبطة بالقضية.</p>
+</div>
+<button class="ghost-btn" type="button" data-show-toast="رفع المستندات يحتاج ربط Backend لاحق.">رفع مستند</button>
+</div>
+<div class="document-grid">
+<article class="document-card"><strong>عقد التوريد.pdf</strong><span>قيد المراجعة</span><p>مرتبط بالقضية LEX-1024</p></article>
+<article class="document-card"><strong>مذكرة دفاع.docx</strong><span>جاهز</span><p>آخر تعديل: 18 أغسطس</p></article>
+<article class="document-card"><strong>محضر جلسة.pdf</strong><span>أرشيف</span><p>تمت مراجعته بواسطة المدير</p></article>
+</div>
 </section>
 </main>
 
-<div class="toast" data-toast>تم إرسال الطلب بنجاح.</div>
+<div class="toast" data-toast>تم حفظ ملف القضية بنجاح.</div>
 <script src="script.js"></script>
 </body>
 </html>
-
