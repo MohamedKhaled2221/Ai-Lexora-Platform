@@ -127,12 +127,27 @@ def validate_offline_runtime_environment(
             "HF_HUB_OFFLINE=1."
         )
 
+    if not _environment_flag_enabled(
+        "TRANSFORMERS_OFFLINE"
+    ):
+        raise RuntimeError(
+            "Strict offline mode requires "
+            "TRANSFORMERS_OFFLINE=1."
+        )
+
+    if not _environment_flag_enabled(
+        "HF_DATASETS_OFFLINE"
+    ):
+        raise RuntimeError(
+            "Strict offline mode requires "
+            "HF_DATASETS_OFFLINE=1."
+        )
+
     if not settings.reranker_local_files_only:
         raise RuntimeError(
             "Strict offline mode requires "
             "local-only reranker loading."
         )
-
 def build_rag_service(
     settings: RAGRuntimeSettings | None = None,
 ) -> M3M4RAGService:
