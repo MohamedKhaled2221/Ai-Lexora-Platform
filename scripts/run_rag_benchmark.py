@@ -1,4 +1,5 @@
 import argparse
+import random
 from datetime import (
     datetime,
     timezone,
@@ -38,6 +39,7 @@ def parse_args():
             "evaluation/results"
         ),
     )
+    
 
     parser.add_argument(
         "--repetitions",
@@ -49,6 +51,16 @@ def parse_args():
         "--warmup",
         type=int,
         default=1,
+    )
+
+    parser.add_argument(
+        "--shuffle-seed",
+        type=int,
+        default=42,
+        help=(
+            "Base seed used to deterministically "
+            "shuffle case order per repetition."
+        ),
     )
 
     return parser.parse_args()
@@ -152,6 +164,7 @@ def main() -> None:
             sample = runner.run_case(
                 case=warmup_case,
                 repetition=-index,
+                sequence_index=0,
             )
 
             if (
@@ -176,10 +189,29 @@ def main() -> None:
             f"{args.repetitions}"
         )
 
-        for case in cases:
+        repetition_cases = list(
+            cases
+        )
+
+        rng = random.Random(
+            args.shuffle_seed
+            + repetition
+        )
+
+        rng.shuffle(
+            repetition_cases
+        )
+
+        for sequence_index, case in enumerate(
+            repetition_cases,
+            start=1,
+        ):
             sample = runner.run_case(
                 case=case,
                 repetition=repetition,
+                sequence_index=(
+                    sequence_index
+                ),
             )
 
             samples.append(
@@ -187,6 +219,8 @@ def main() -> None:
             )
 
             print(
+                f"[{sequence_index}/"
+                f"{len(repetition_cases)}] "
                 f"{case.case_id}: "
                 f"status={sample.status}, "
                 f"M2={sample.m2_ms}ms, "

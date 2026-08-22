@@ -161,6 +161,7 @@ def test_runner_collects_retrieval_and_citation_metrics():
     sample = runner.run_case(
         case=make_case(),
         repetition=1,
+        sequence_index=1,
     )
 
     assert sample.status == "success"
@@ -220,6 +221,7 @@ def test_runner_preserves_case_filters():
     sample = runner.run_case(
         case=make_case(),
         repetition=1,
+        sequence_index=1,
     )
 
     assert sample.status == "success"
@@ -244,6 +246,7 @@ def test_csv_does_not_store_question_or_answer(
     sample = runner.run_case(
         case=make_case(),
         repetition=1,
+        sequence_index=1,
     )
 
     path = (
@@ -297,6 +300,7 @@ def test_unsupported_case_has_no_retrieval_ground_truth_metrics():
     sample = runner.run_case(
         case=case,
         repetition=1,
+        sequence_index=1,
     )
 
     assert sample.recall_at_5 is None
@@ -309,4 +313,52 @@ def test_unsupported_case_has_no_retrieval_ground_truth_metrics():
     assert (
         sample.unsupported_pass
         is False
+    )
+    
+def test_sequence_index_is_recorded():
+    runner = RAGBenchmarkRunner(
+        query_pipeline=(
+            FakeM2Pipeline()
+        ),
+        retrieval_pipeline=(
+            FakeRetrievalPipeline()
+        ),
+        orchestration_service=(
+            FakeM4Service()
+        ),
+        expected_embedding_dimension=3,
+    )
+
+    sample = runner.run_case(
+        case=make_case(),
+        repetition=2,
+        sequence_index=7,
+    )
+
+    assert sample.repetition == 2
+    assert sample.sequence_index == 7
+    
+def test_optional_float_handles_unsupported_gpu_values():
+    assert (
+        RAGBenchmarkRunner
+        ._optional_float("N/A")
+        is None
+    )
+
+    assert (
+        RAGBenchmarkRunner
+        ._optional_float("[N/A]")
+        is None
+    )
+
+    assert (
+        RAGBenchmarkRunner
+        ._optional_float("65")
+        == 65.0
+    )
+
+    assert (
+        RAGBenchmarkRunner
+        ._optional_float("42.75")
+        == 42.75
     )

@@ -79,6 +79,7 @@ class BenchmarkSample:
     detected_language: str
 
     repetition: int
+    sequence_index: int
 
     status: str
     error_type: str | None
@@ -113,6 +114,10 @@ class BenchmarkSample:
     system_ram_used_mb: float | None
     system_ram_available_mb: float | None
     gpu_memory_used_mib: float | None
+    gpu_utilization_pct: float | None
+    gpu_temperature_c: float | None
+    gpu_sm_clock_mhz: float | None
+    gpu_power_w: float | None
 
     def to_row(
         self,
@@ -184,6 +189,7 @@ class RAGBenchmarkRunner:
         *,
         case: BenchmarkCase,
         repetition: int,
+        sequence_index: int,
     ) -> BenchmarkSample:
         overall_start = (
             time.perf_counter()
@@ -344,6 +350,7 @@ class RAGBenchmarkRunner:
                     detected_language
                 ),
                 repetition=repetition,
+                sequence_index=sequence_index,
                 status="success",
                 error_type=None,
                 m2_ms=round(
@@ -437,6 +444,26 @@ class RAGBenchmarkRunner:
                         "gpu_memory_used_mib"
                     ]
                 ),
+                gpu_utilization_pct=(
+                    resources[
+                        "gpu_utilization_pct"
+                    ]
+                ),
+                gpu_temperature_c=(
+                    resources[
+                        "gpu_temperature_c"
+                    ]
+                ),
+                gpu_sm_clock_mhz=(
+                    resources[
+                        "gpu_sm_clock_mhz"
+                    ]
+                ),
+                gpu_power_w=(
+                    resources[
+                        "gpu_power_w"
+                    ]
+                ),
             )
 
         except Exception as exc:
@@ -457,6 +484,7 @@ class RAGBenchmarkRunner:
                     detected_language
                 ),
                 repetition=repetition,
+                sequence_index=sequence_index,
                 status="error",
                 error_type=(
                     type(exc).__name__
@@ -509,6 +537,26 @@ class RAGBenchmarkRunner:
                 gpu_memory_used_mib=(
                     resources[
                         "gpu_memory_used_mib"
+                    ]
+                ),
+                gpu_utilization_pct=(
+                    resources[
+                        "gpu_utilization_pct"
+                    ]
+                ),
+                gpu_temperature_c=(
+                    resources[
+                        "gpu_temperature_c"
+                    ]
+                ),
+                gpu_sm_clock_mhz=(
+                    resources[
+                        "gpu_sm_clock_mhz"
+                    ]
+                ),
+                gpu_power_w=(
+                    resources[
+                        "gpu_power_w"
                     ]
                 ),
             )
@@ -656,6 +704,11 @@ class RAGBenchmarkRunner:
             / (1024 * 1024)
         )
 
+        gpu = (
+            RAGBenchmarkRunner
+            ._gpu_snapshot()
+        )
+
         return {
             "process_rss_mb": round(
                 rss_mb,
@@ -669,22 +722,33 @@ class RAGBenchmarkRunner:
                 available_mb,
                 2,
             ),
-            "gpu_memory_used_mib": (
-                RAGBenchmarkRunner
-                ._gpu_memory_used_mib()
-            ),
+            **gpu,
+        }
+    @staticmethod
+    def _gpu_snapshot(
+    ) -> dict[
+        str,
+        float | None,
+    ]:
+        empty_snapshot = {
+            "gpu_memory_used_mib": None,
+            "gpu_utilization_pct": None,
+            "gpu_temperature_c": None,
+            "gpu_sm_clock_mhz": None,
+            "gpu_power_w": None,
         }
 
-    @staticmethod
-    def _gpu_memory_used_mib(
-    ) -> float | None:
         try:
             result = subprocess.run(
                 [
                     "nvidia-smi",
                     (
                         "--query-gpu="
-                        "memory.used"
+                        "memory.used,"
+                        "utilization.gpu,"
+                        "temperature.gpu,"
+                        "clocks.current.sm,"
+                        "power.draw"
                     ),
                     (
                         "--format="
@@ -703,18 +767,80 @@ class RAGBenchmarkRunner:
                 .splitlines()[0]
             )
 
-            return float(
-                first_line.strip()
-            )
+            values = [
+                item.strip()
+                for item
+                in first_line.split(",")
+            ]
+
+            if len(values) != 5:
+                return empty_snapshot
+
+            return {
+                "gpu_memory_used_mib": (
+                    RAGBenchmarkRunner
+                    ._optional_float(
+                        values[0]
+                    )
+                ),
+                "gpu_utilization_pct": (
+                    RAGBenchmarkRunner
+                    ._optional_float(
+                        values[1]
+                    )
+                ),
+                "gpu_temperature_c": (
+                    RAGBenchmarkRunner
+                    ._optional_float(
+                        values[2]
+                    )
+                ),
+                "gpu_sm_clock_mhz": (
+                    RAGBenchmarkRunner
+                    ._optional_float(
+                        values[3]
+                    )
+                ),
+                "gpu_power_w": (
+                    RAGBenchmarkRunner
+                    ._optional_float(
+                        values[4]
+                    )
+                ),
+            }
 
         except (
             FileNotFoundError,
             subprocess.SubprocessError,
-            ValueError,
             IndexError,
         ):
+            return empty_snapshot
+
+    @staticmethod
+    def _optional_float(
+        value: str,
+    ) -> float | None:
+        normalized = (
+            value
+            .strip()
+            .lower()
+        )
+
+        if normalized in {
+            "",
+            "n/a",
+            "na",
+            "[n/a]",
+            "not supported",
+        }:
             return None
 
+        try:
+            return float(
+                normalized
+            )
+        except ValueError:
+            return None
 
 def load_benchmark_cases(
     path: Path,
