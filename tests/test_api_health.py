@@ -23,6 +23,10 @@ def make_readiness(
             "legal_documents"
         ),
         "rag_runtime_initialized": True,
+        "raw_rag_runtime_initialized": True,
+        "embedding_runtime_ready": True,
+        "embedding_dimension": 1024,
+        "expected_embedding_dimension": 1024,
         "detail": None,
     }
 
@@ -108,6 +112,33 @@ def test_ready_when_all_components_are_ready():
             "rag_runtime_initialized"
         ]
         is True
+    )
+    assert (
+    payload[
+        "raw_rag_runtime_initialized"
+    ]
+    is True
+    )
+
+    assert (
+        payload[
+            "embedding_runtime_ready"
+        ]
+        is True
+    )
+
+    assert (
+        payload[
+            "embedding_dimension"
+        ]
+        == 1024
+    )
+
+    assert (
+        payload[
+            "expected_embedding_dimension"
+        ]
+        == 1024
     )
 
     assert payload["detail"] is None
@@ -251,4 +282,94 @@ def test_ready_returns_503_when_rag_runtime_is_missing():
             "rag_runtime_initialized"
         ]
         is False
+    )
+    
+def test_ready_returns_503_when_raw_rag_runtime_is_missing():
+    app = create_app()
+
+    override_checker(
+        app,
+        make_readiness(
+            status="not_ready",
+            raw_rag_runtime_initialized=False,
+            embedding_runtime_ready=False,
+            embedding_dimension=None,
+            detail=(
+                "Raw-query RAG runtime "
+                "is not initialized.; "
+                "M2 embedding runtime "
+                "is not ready."
+            ),
+        ),
+    )
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/ready"
+        )
+
+    assert response.status_code == 503
+
+    payload = response.json()
+
+    assert (
+        payload[
+            "raw_rag_runtime_initialized"
+        ]
+        is False
+    )
+
+    assert (
+        payload[
+            "embedding_runtime_ready"
+        ]
+        is False
+    )
+
+
+def test_ready_returns_503_when_embedding_runtime_is_invalid():
+    app = create_app()
+
+    override_checker(
+        app,
+        make_readiness(
+            status="not_ready",
+            embedding_runtime_ready=False,
+            embedding_dimension=768,
+            expected_embedding_dimension=1024,
+            detail=(
+                "M2 embedding runtime "
+                "is not ready."
+            ),
+        ),
+    )
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/ready"
+        )
+
+    assert response.status_code == 503
+
+    payload = response.json()
+
+    assert (
+        payload[
+            "embedding_runtime_ready"
+        ]
+        is False
+    )
+
+    assert (
+        payload[
+            "embedding_dimension"
+        ]
+        == 768
+    )
+
+    assert (
+        payload[
+            "expected_embedding_dimension"
+        ]
+        == 1024
     )

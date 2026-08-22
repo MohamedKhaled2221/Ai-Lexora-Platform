@@ -67,7 +67,7 @@ def test_final_top_k_cannot_exceed_candidates():
             final_top_k=5,
             _env_file=None,
         )
-        
+
 def test_strict_offline_is_default():
     settings = RAGRuntimeSettings(
         _env_file=None
@@ -100,6 +100,16 @@ def test_offline_environment_is_accepted(
         "1",
     )
 
+    monkeypatch.setenv(
+        "TRANSFORMERS_OFFLINE",
+        "1",
+    )
+
+    monkeypatch.setenv(
+        "HF_DATASETS_OFFLINE",
+        "1",
+    )
+
     settings = RAGRuntimeSettings(
         strict_offline=True,
         _env_file=None,
@@ -108,7 +118,6 @@ def test_offline_environment_is_accepted(
     validate_offline_runtime_environment(
         settings
     )
-
 
 def test_offline_environment_is_required(
     monkeypatch,
@@ -126,6 +135,71 @@ def test_offline_environment_is_required(
     with pytest.raises(
         RuntimeError,
         match="HF_HUB_OFFLINE",
+    ):
+        validate_offline_runtime_environment(
+            settings
+        )
+
+def test_strict_offline_requires_transformers_offline(
+    monkeypatch,
+):
+    monkeypatch.setenv(
+        "HF_HUB_OFFLINE",
+        "1",
+    )
+
+    monkeypatch.delenv(
+        "TRANSFORMERS_OFFLINE",
+        raising=False,
+    )
+
+    monkeypatch.setenv(
+        "HF_DATASETS_OFFLINE",
+        "1",
+    )
+
+    settings = RAGRuntimeSettings(
+        _env_file=None,
+        strict_offline=True,
+        reranker_local_files_only=True,
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="TRANSFORMERS_OFFLINE",
+    ):
+        validate_offline_runtime_environment(
+            settings
+        )
+
+
+def test_strict_offline_requires_datasets_offline(
+    monkeypatch,
+):
+    monkeypatch.setenv(
+        "HF_HUB_OFFLINE",
+        "1",
+    )
+
+    monkeypatch.setenv(
+        "TRANSFORMERS_OFFLINE",
+        "1",
+    )
+
+    monkeypatch.delenv(
+        "HF_DATASETS_OFFLINE",
+        raising=False,
+    )
+
+    settings = RAGRuntimeSettings(
+        _env_file=None,
+        strict_offline=True,
+        reranker_local_files_only=True,
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="HF_DATASETS_OFFLINE",
     ):
         validate_offline_runtime_environment(
             settings

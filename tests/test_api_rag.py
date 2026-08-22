@@ -6,6 +6,11 @@ from src.schemas import (
     Citation,
 )
 
+from src.orchestration import (
+    RAGExecutionMetrics,
+    RAGExecutionResult,
+)
+
 
 def make_request_body() -> dict:
     return {
@@ -35,11 +40,11 @@ def make_request_body() -> dict:
 
 
 class FakeRAGService:
-    async def aanswer(
+    async def aanswer_with_metrics(
         self,
         processed_query,
     ):
-        return AIResponse(
+        response = AIResponse(
             query_id=processed_query.query_id,
             answer=(
                 "Termination is allowed after "
@@ -57,6 +62,16 @@ class FakeRAGService:
             confidence=0.95,
         )
 
+        return RAGExecutionResult(
+            response=response,
+            metrics=RAGExecutionMetrics(
+                retrieval_ms=50.0,
+                generation_ms=120.0,
+                total_rag_ms=171.0,
+                retrieved_chunk_count=3,
+                citation_count=1,
+            ),
+        )
 
 def test_rag_answer_endpoint():
     app = create_app(
@@ -95,11 +110,22 @@ def test_rag_endpoint_returns_503_without_runtime():
 
     assert response.status_code == 503
 
-    assert response.json() == {
-        "detail": (
-            "The RAG runtime is not initialized."
-        )
-    }
+    payload = response.json()
+
+    assert payload["error"]["code"] == (
+        "HTTP_ERROR"
+    )
+
+    assert payload["error"]["message"] == (
+        "The RAG runtime is not initialized."
+    )
+
+    assert payload["error"]["request_id"]
+
+    assert (
+        response.headers["X-Request-ID"]
+        == payload["error"]["request_id"]
+    )
 
 
 def test_rag_endpoint_rejects_invalid_request():

@@ -39,6 +39,13 @@ class ReadinessResponse(BaseModel):
     qdrant_collection_name: str
 
     rag_runtime_initialized: bool
+    raw_rag_runtime_initialized: bool
+
+    embedding_runtime_ready: bool
+
+    embedding_dimension: int | None
+
+    expected_embedding_dimension: int
 
     detail: str | None = None
 
@@ -62,6 +69,9 @@ class SystemReadinessChecker:
         m4_settings: M4Settings | None = None,
         rag_settings: RAGRuntimeSettings | None = None,
         rag_runtime_initialized: bool = False,
+        raw_rag_runtime_initialized: bool = False,
+        embedding_runtime_ready: bool = False,
+        embedding_dimension: int | None = None,
     ) -> None:
         self.m4_settings = (
             m4_settings
@@ -75,6 +85,18 @@ class SystemReadinessChecker:
 
         self.rag_runtime_initialized = (
             rag_runtime_initialized
+        )
+        
+        self.raw_rag_runtime_initialized = (
+            raw_rag_runtime_initialized
+        )
+
+        self.embedding_runtime_ready = (
+            embedding_runtime_ready
+        )
+
+        self.embedding_dimension = (
+            embedding_dimension
         )
 
     async def check(
@@ -136,6 +158,16 @@ class SystemReadinessChecker:
             issues.append(
                 "RAG runtime is not initialized."
             )
+        
+        if not self.raw_rag_runtime_initialized:
+            issues.append(
+                "Raw-query RAG runtime is not initialized."
+            )
+
+        if not self.embedding_runtime_ready:
+            issues.append(
+                "M2 embedding runtime is not ready."
+            )
 
         ready = (
             ollama_reachable
@@ -143,6 +175,8 @@ class SystemReadinessChecker:
             and qdrant_reachable
             and qdrant_collection_available
             and self.rag_runtime_initialized
+            and self.raw_rag_runtime_initialized
+            and self.embedding_runtime_ready
         )
 
         return ReadinessResponse(
@@ -172,6 +206,19 @@ class SystemReadinessChecker:
             ),
             rag_runtime_initialized=(
                 self.rag_runtime_initialized
+            ),
+            raw_rag_runtime_initialized=(
+                self.raw_rag_runtime_initialized
+            ),
+            embedding_runtime_ready=(
+                self.embedding_runtime_ready
+            ),
+            embedding_dimension=(
+                self.embedding_dimension
+            ),
+            expected_embedding_dimension=(
+                self.rag_settings
+                .qdrant_vector_size
             ),
             detail=(
                 "; ".join(issues)
@@ -204,8 +251,12 @@ class SystemReadinessChecker:
             ValueError,
         ) as exc:
             logger.warning(
-                "Ollama readiness check failed: %s",
-                exc,
+                "ollama_readiness_check_failed",
+                extra={
+                    "error_type": (
+                        type(exc).__name__
+                    ),
+                },
             )
 
             return False, False
@@ -300,8 +351,12 @@ class SystemReadinessChecker:
             ValueError,
         ) as exc:
             logger.warning(
-                "Qdrant readiness check failed: %s",
-                exc,
+                "qdrant_readiness_check_failed",
+                extra={
+                    "error_type": (
+                        type(exc).__name__
+                    ),
+                },
             )
 
             return False, False

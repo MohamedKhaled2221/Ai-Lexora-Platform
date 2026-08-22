@@ -1,6 +1,9 @@
 import pytest
 
-from src.orchestration import M3M4RAGService
+from src.orchestration import (
+    M3M4RAGService,
+    RAGExecutionResult,
+)
 from src.schemas import (
     AIResponse,
     Citation,
@@ -139,6 +142,117 @@ def test_m3_output_is_passed_to_m4():
         .document_id
         == "doc_001"
     )
+    
+def test_sync_rag_execution_metrics():
+    retrieval = FakeRetrievalPipeline()
+    orchestration = FakeOrchestrationService()
+
+    service = M3M4RAGService(
+        retrieval_pipeline=retrieval,
+        orchestration_service=orchestration,
+    )
+
+    query = make_query()
+
+    result = service.answer_with_metrics(
+        query
+    )
+
+    assert isinstance(
+        result,
+        RAGExecutionResult,
+    )
+
+    assert result.response.query_id == (
+        query.query_id
+    )
+
+    assert (
+        result.metrics.retrieval_ms
+        == 12.5
+    )
+
+    assert (
+        result.metrics.generation_ms
+        >= 0
+    )
+
+    assert (
+        result.metrics.total_rag_ms
+        >= result.metrics.generation_ms
+    )
+
+    assert (
+        result.metrics
+        .retrieved_chunk_count
+        == 1
+    )
+
+    assert (
+        result.metrics.citation_count
+        == 1
+    )
+
+    assert retrieval.run_calls == 1
+    assert orchestration.sync_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_async_rag_execution_metrics():
+    retrieval = FakeRetrievalPipeline()
+    orchestration = FakeOrchestrationService()
+
+    service = M3M4RAGService(
+        retrieval_pipeline=retrieval,
+        orchestration_service=orchestration,
+    )
+
+    query = make_query()
+
+    result = (
+        await service
+        .aanswer_with_metrics(
+            query
+        )
+    )
+
+    assert isinstance(
+        result,
+        RAGExecutionResult,
+    )
+
+    assert result.response.query_id == (
+        query.query_id
+    )
+
+    assert (
+        result.metrics.retrieval_ms
+        == 12.5
+    )
+
+    assert (
+        result.metrics.generation_ms
+        >= 0
+    )
+
+    assert (
+        result.metrics.total_rag_ms
+        >= result.metrics.generation_ms
+    )
+
+    assert (
+        result.metrics
+        .retrieved_chunk_count
+        == 1
+    )
+
+    assert (
+        result.metrics.citation_count
+        == 1
+    )
+
+    assert retrieval.run_calls == 1
+    assert orchestration.async_calls == 1
     
 @pytest.mark.asyncio
 async def test_async_m3_output_is_passed_to_m4():

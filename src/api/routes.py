@@ -25,12 +25,44 @@ def get_readiness_checker(
         None,
     )
 
+    raw_rag_service = getattr(
+        request.app.state,
+        "raw_rag_service",
+        None,
+    )
+
+    embedding_runtime_ready = False
+    embedding_dimension = None
+
+    if raw_rag_service is not None:
+        embedding_runtime_ready = bool(
+            getattr(
+                raw_rag_service,
+                "embedding_runtime_ready",
+                False,
+            )
+        )
+
+        embedding_dimension = getattr(
+            raw_rag_service,
+            "validated_embedding_dimension",
+            None,
+        )
+
     return SystemReadinessChecker(
         rag_runtime_initialized=(
             rag_service is not None
-        )
+        ),
+        raw_rag_runtime_initialized=(
+            raw_rag_service is not None
+        ),
+        embedding_runtime_ready=(
+            embedding_runtime_ready
+        ),
+        embedding_dimension=(
+            embedding_dimension
+        ),
     )
-
 @router.get(
     "/health",
     response_model=HealthResponse,

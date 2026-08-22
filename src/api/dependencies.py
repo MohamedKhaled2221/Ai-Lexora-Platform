@@ -1,6 +1,7 @@
 from functools import lru_cache
 
 from src.orchestration import (
+    M2M3M4RAGService,
     M4OrchestrationService,
     M3M4RAGService,
 )
@@ -37,6 +38,32 @@ def get_rag_service(
 
     return service
 
+def get_raw_rag_service(
+    request: Request,
+) -> M2M3M4RAGService:
+    """
+    Retrieve the process-wide raw-query
+    M2 -> M3 -> M4 service.
+    """
+
+    service = getattr(
+        request.app.state,
+        "raw_rag_service",
+        None,
+    )
+
+    if service is None:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_503_SERVICE_UNAVAILABLE
+            ),
+            detail=(
+                "The raw-query RAG runtime "
+                "is not initialized."
+            ),
+        )
+
+    return service
 
 @lru_cache(maxsize=1)
 def get_m4_orchestration_service(

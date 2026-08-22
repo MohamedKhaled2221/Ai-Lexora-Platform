@@ -174,12 +174,23 @@ def test_answer_endpoint_returns_503_when_ollama_unavailable():
 
     assert response.status_code == 503
 
-    assert response.json() == {
-        "detail": (
-            "The local AI runtime is "
-            "currently unavailable."
-        )
-    }
+    payload = response.json()
+
+    assert payload["error"]["code"] == (
+        "HTTP_ERROR"
+    )
+
+    assert payload["error"]["message"] == (
+        "The local AI runtime is "
+        "currently unavailable."
+    )
+
+    assert payload["error"]["request_id"]
+
+    assert (
+        response.headers["X-Request-ID"]
+        == payload["error"]["request_id"]
+    )
 
 
 class InvalidGenerationM4Service:
