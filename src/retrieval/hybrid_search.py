@@ -105,11 +105,13 @@ class HybridSearcher:
         self,
         dense_results: List[Dict[str, Any]],
         bm25_results: List[Dict[str, Any]],
-        top_k: int = 20
+        top_k: int = 20,
+        dense_weight: float = 0.9,
+        bm25_weight: float = 0.1
     ) -> List[Dict[str, Any]]:
         """
-        Combine Dense & BM25 rankings using Reciprocal Rank Fusion (RRF).
-        RRF_Score = sum(1 / (k + rank))
+        Combine Dense & BM25 rankings using Weighted Reciprocal Rank Fusion (RRF).
+        RRF_Score = sum(weight * (1 / (k + rank)))
         """
         rrf_scores: Dict[str, float] = {}
         chunk_map: Dict[str, Dict[str, Any]] = {}
@@ -118,13 +120,13 @@ class HybridSearcher:
         for rank, item in enumerate(dense_results, start=1):
             chunk_id = item["chunk_id"]
             chunk_map[chunk_id] = item
-            rrf_scores[chunk_id] = rrf_scores.get(chunk_id, 0.0) + (1.0 / (self.rrf_k + rank))
+            rrf_scores[chunk_id] = rrf_scores.get(chunk_id, 0.0) + dense_weight * (1.0 / (self.rrf_k + rank))
 
         # Process BM25 Ranks
         for rank, item in enumerate(bm25_results, start=1):
             chunk_id = item["chunk_id"]
             chunk_map[chunk_id] = item
-            rrf_scores[chunk_id] = rrf_scores.get(chunk_id, 0.0) + (1.0 / (self.rrf_k + rank))
+            rrf_scores[chunk_id] = rrf_scores.get(chunk_id, 0.0) + bm25_weight * (1.0 / (self.rrf_k + rank))
 
         # Sort combined results by RRF score descending
         sorted_chunk_ids = sorted(rrf_scores.keys(), key=lambda cid: rrf_scores[cid], reverse=True)

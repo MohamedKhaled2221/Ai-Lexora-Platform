@@ -40,7 +40,7 @@ class RetrievalEvaluator:
 
         dcg = 0.0
         for i, cid in enumerate(retrieved_chunk_ids[:k], start=1):
-            if cid in ground_truth_truth_ids if False else cid in ground_truth_chunk_ids:
+           if cid in ground_truth_chunk_ids:
                 dcg += 1.0 / math.log2(i + 1)
 
         idcg = sum(1.0 / math.log2(i + 1) for i in range(1, min(len(ground_truth_chunk_ids), k) + 1))
