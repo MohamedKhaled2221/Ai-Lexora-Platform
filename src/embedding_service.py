@@ -2,8 +2,13 @@ from collections.abc import Sequence
 
 from FlagEmbedding import BGEM3FlagModel
 
-from src.config import settings
-from src.schemas import DocumentChunk, EmbeddedDocumentChunk, EmbeddedQuery, ProcessedQuery
+from config import settings
+from schemas import (
+    DocumentChunk,
+    EmbeddedDocumentChunk,
+    EmbeddedQuery,
+    ProcessedQuery,
+)
 
 
 class EmbeddingService:
@@ -11,9 +16,9 @@ class EmbeddingService:
 
     Responsibilities:
         - Load BGE-M3.
-        - Embed legal document chunks.
-        - Embed processed user queries.
-        - Keep model/dimension information explicit.
+        - Embed legal document chunks received from M1.
+        - Embed legal user queries.
+        - Keep model and dimension information explicit.
 
     Non-responsibilities:
         - Qdrant indexing.
@@ -29,30 +34,16 @@ class EmbeddingService:
         batch_size: int = settings.batch_size,
         max_length: int = settings.max_length,
     ) -> None:
-        """Load BGE-M3 and store inference configuration.
-
-        Input:
-            model_name: Hugging Face model identifier.
-            use_fp16: Use half precision when supported.
-            batch_size: Batch size for document embedding.
-            max_length: Maximum encoded token length.
-
-        Output:
-            None.
-
-        Side effects:
-            Loads the model into RAM/VRAM.
-
-        Edge cases:
-            Model download failures and insufficient memory are propagated.
-        """
+        """Load BGE-M3 and store inference configuration."""
         self.model_name = model_name
         self.batch_size = batch_size
         self.max_length = max_length
+
         self.model = BGEM3FlagModel(
             model_name,
             use_fp16=use_fp16,
         )
+
         self._dimension: int | None = None
 
     @property
@@ -61,23 +52,10 @@ class EmbeddingService:
         return self._dimension
 
     def _encode(self, texts: Sequence[str]) -> list[list[float]]:
-        """Encode a non-empty sequence with BGE-M3.
-
-        Input:
-            texts: Text strings.
-
-        Output:
-            Dense vectors as Python float lists.
-
-        Side effects:
-            Uses the loaded BGE-M3 model.
-
-        Edge cases:
-            Empty strings are rejected because they are invalid embedding
-            inputs for this service.
-        """
+        """Encode a non-empty sequence with BGE-M3."""
         if not texts:
             raise ValueError("texts must not be empty")
+
         if any(not text or not text.strip() for text in texts):
             raise ValueError("texts must not contain empty strings")
 
@@ -86,78 +64,45 @@ class EmbeddingService:
             batch_size=self.batch_size,
             max_length=self.max_length,
         )
+
         vectors = result["dense_vecs"]
 
         output = [vector.tolist() for vector in vectors]
+
         if output:
             self._dimension = len(output[0])
 
         return output
 
     def embed_text(self, text: str) -> list[float]:
-        """Embed one legal text.
-
-        Input:
-            text: Arabic, English, or mixed legal text.
-
-        Output:
-            One dense embedding vector.
-
-        Side effects:
-            Model inference.
-
-        Edge cases:
-            Empty text raises ValueError.
-        """
+        """Embed one legal text."""
         return self._encode([text])[0]
 
-    def embed_documents(self, texts: Sequence[str]) -> list[list[float]]:
-        """Embed multiple legal chunks using batching.
-
-        Input:
-            Sequence of document chunk texts.
-
-        Output:
-            One vector per input text, preserving order.
-
-        Side effects:
-            Model inference.
-
-        Important constraint:
-            The caller must keep the original chunk IDs separately.
-        """
+    def embed_documents(
+        self,
+        texts: Sequence[str],
+    ) -> list[list[float]]:
+        """Embed multiple legal texts using batching."""
         return self._encode(texts)
 
-    def embed_query(self, query: str | ProcessedQuery) -> list[float]:
-        """Embed a raw query or an already processed query.
+    def embed_query(
+        self,
+        query: str | ProcessedQuery,
+    ) -> list[float]:
+        """Embed a raw query or an already processed query."""
+        text = (
+            query.normalized_text
+            if isinstance(query, ProcessedQuery)
+            else query
+        )
 
-        Input:
-            query: Raw string or ProcessedQuery.
-
-        Output:
-            Dense query embedding.
-
-        Side effects:
-            Model inference.
-
-        Edge cases:
-            Empty raw strings are rejected.
-        """
-        text = query.normalized_text if isinstance(query, ProcessedQuery) else query
         return self.embed_text(text)
 
-    def embed_processed_query(self, query: ProcessedQuery) -> EmbeddedQuery:
-        """Produce the complete M2 query handoff object.
-
-        Input:
-            ProcessedQuery from QueryProcessor.
-
-        Output:
-            EmbeddedQuery containing processed query + embedding + model info.
-
-        Side effects:
-            Model inference.
-        """
+    def embed_processed_query(
+        self,
+        query: ProcessedQuery,
+    ) -> EmbeddedQuery:
+        """Produce the complete M2 query handoff object."""
         vector = self.embed_query(query)
 
         return EmbeddedQuery(
@@ -173,27 +118,13 @@ class EmbeddingService:
         chunk_id: str,
         text: str,
     ) -> EmbeddedDocumentChunk:
-        """Produce an embedding result for one M1 document chunk.
-
-        Input:
-            document_id: Source document ID.
-            chunk_id: Stable chunk ID.
-            text: Chunk text.
-
-        Output:
-            EmbeddedDocumentChunk.
-
-        Side effects:
-            Model inference.
-
-        Constraint:
-            Page/section metadata remain owned by M1 and/or the storage layer.
-        """
+        """Embed one document chunk received from M1."""
         vector = self.embed_text(text)
 
         return EmbeddedDocumentChunk(
             document_id=document_id,
             chunk_id=chunk_id,
+            text=text,
             embedding=vector,
             model=self.model_name,
             dimension=len(vector),
@@ -203,27 +134,37 @@ class EmbeddingService:
         self,
         chunks: Sequence[DocumentChunk],
     ) -> list[EmbeddedDocumentChunk]:
-        """Embed multiple document chunks efficiently in batches.
+        """Embed document chunks received from M1.
 
-        Input:
-            chunks: Sequence of DocumentChunk instances.
-
-        Output:
-            list of EmbeddedDocumentChunk instances.
+        M1 provides DocumentChunk objects.
+        M2 embeds their text using BGE-M3 while preserving
+        all source information required by downstream consumers.
         """
         if not chunks:
-            return []
-            
+            raise ValueError("chunks must not be empty")
+
         texts = [chunk.text for chunk in chunks]
-        vectors = self.embed_documents(texts)
-        
-        return [
-            EmbeddedDocumentChunk(
-                document_id=chunk.document_id,
-                chunk_id=chunk.chunk_id,
-                embedding=vec,
-                model=self.model_name,
-                dimension=len(vec),
+
+        vectors = self._encode(texts)
+
+        results: list[EmbeddedDocumentChunk] = []
+
+        for chunk, vector in zip(chunks, vectors):
+            results.append(
+                EmbeddedDocumentChunk(
+                    document_id=chunk.document_id,
+                    chunk_id=chunk.chunk_id,
+                    text=chunk.text,
+                    page=chunk.page,
+                    section=chunk.section,
+                    clause=chunk.clause,
+                    language=chunk.language,
+                    document_type=chunk.document_type,
+                    metadata=chunk.metadata,
+                    embedding=vector,
+                    model=self.model_name,
+                    dimension=len(vector),
+                )
             )
-            for chunk, vec in zip(chunks, vectors)
-        ]
+
+        return results
