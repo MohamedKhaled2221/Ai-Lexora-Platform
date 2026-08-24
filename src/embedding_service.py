@@ -2,8 +2,8 @@ from collections.abc import Sequence
 
 from FlagEmbedding import BGEM3FlagModel
 
-from config import settings
-from schemas import (
+from src.config import settings
+from src.schemas import (
     DocumentChunk,
     EmbeddedDocumentChunk,
     EmbeddedQuery,
