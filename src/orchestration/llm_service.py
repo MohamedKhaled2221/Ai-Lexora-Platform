@@ -1,6 +1,6 @@
 import asyncio
 import time
-from typing import Sequence
+from typing import Sequence, TypeVar
 
 import httpx
 from langchain_core.messages import BaseMessage
@@ -9,6 +9,9 @@ from ollama import ResponseError
 
 from src.orchestration.settings import M4Settings
 from src.schemas.m4_contract import M4ModelOutput
+
+
+T = TypeVar("T")
 
 
 class M4LLMError(RuntimeError):
@@ -35,22 +38,29 @@ class M4LLMService:
 
     Responsibilities:
     - configure ChatOllama from M4Settings
-    - enforce M4ModelOutput structured output
+    - support configurable Pydantic structured outputs
     - provide synchronous and asynchronous invocation
     - retry transient local Ollama failures
     - convert provider/runtime errors into M4-specific exceptions
 
-    Prompt construction and citation validation intentionally live in
-    separate orchestration components.
+    The default output schema remains M4ModelOutput,
+    so the existing M4 orchestration workflow is preserved.
+
+    Other modules, such as M5, can provide their own
+    Pydantic output schema when using the same local LLM service.
     """
 
     def __init__(
         self,
         settings: M4Settings | None = None,
         *,
+        output_schema: type[T] = M4ModelOutput,
         structured_llm=None,
     ) -> None:
+
         self.settings = settings or M4Settings()
+
+        self.output_schema = output_schema
 
         if structured_llm is not None:
             # Dependency injection for tests and future alternate runtimes.
@@ -61,7 +71,7 @@ class M4LLMService:
         self._llm = self._build_llm()
 
         self._structured_llm = self._llm.with_structured_output(
-            M4ModelOutput,
+            self.output_schema,
             method="json_schema",
             include_raw=False,
         )
@@ -87,7 +97,7 @@ class M4LLMService:
     def invoke(
         self,
         messages: Sequence[BaseMessage],
-    ) -> M4ModelOutput:
+    ) -> T:
         """
         Generate a validated structured response synchronously.
         """
@@ -127,7 +137,7 @@ class M4LLMService:
     async def ainvoke(
         self,
         messages: Sequence[BaseMessage],
-    ) -> M4ModelOutput:
+    ) -> T:
         """
         Generate a validated structured response asynchronously.
         """
@@ -167,18 +177,27 @@ class M4LLMService:
     def _ensure_model_output(
         self,
         result,
-    ) -> M4ModelOutput:
-        if isinstance(result, M4ModelOutput):
+    ) -> T:
+        """
+        Validate the model result against the configured
+        Pydantic output schema.
+        """
+
+        if isinstance(
+            result,
+            self.output_schema,
+        ):
             return result
 
         try:
-            return M4ModelOutput.model_validate(
+            return self.output_schema.model_validate(
                 result
             )
+
         except Exception as exc:
             raise M4LLMInvocationError(
                 "Ollama returned output that could not be "
-                "validated as M4ModelOutput"
+                "validated against the configured output schema"
             ) from exc
 
     def _should_retry(
@@ -187,6 +206,7 @@ class M4LLMService:
         exc: Exception,
         attempt: int,
     ) -> bool:
+
         if attempt >= self.settings.max_retries:
             return False
 
@@ -228,6 +248,7 @@ class M4LLMService:
         self,
         attempt: int,
     ) -> None:
+
         time.sleep(
             self._retry_delay_seconds(attempt)
         )
@@ -236,6 +257,7 @@ class M4LLMService:
         self,
         exc: Exception,
     ) -> M4LLMError:
+
         if isinstance(
             exc,
             (
