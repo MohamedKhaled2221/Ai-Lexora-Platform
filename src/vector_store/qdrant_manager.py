@@ -135,7 +135,7 @@ class QdrantVectorStore:
         for res in search_result:
             payload = res.payload or {}
             results.append({
-                "point_id": res.id,
+                "point_d": res.id,
                 "score": float(res.score),
                 "document_id": payload.get("document_id", ""),
                 "chunk_id": payload.get("chunk_id", str(res.id)),
