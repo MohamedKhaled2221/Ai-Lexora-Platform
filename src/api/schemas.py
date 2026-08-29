@@ -13,6 +13,13 @@ from src.schemas.m2_contract import (
 )
 from src.schemas.m4_contract import RetrievedEvidence
 
+
+from typing import Any, Dict, List
+
+from pydantic import BaseModel, Field
+
+from src.schemas.m6_contract import ContractRisk
+
 class RawRAGAnswerRequest(BaseModel):
     """
     Frontend-friendly request for the complete
@@ -61,3 +68,17 @@ class M4AnswerRequest(BaseModel):
 
     processed_query: ProcessedQuery
     retrieved_evidence: RetrievedEvidence
+
+
+class M6RiskRequest(BaseModel):
+    clauses: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="Contract clauses produced by M5",
+    )
+
+
+class M6RiskResponse(BaseModel):
+    risks: List[ContractRisk] = Field(
+        default_factory=list,
+        description="Risks detected by M6",
+    )

@@ -33,6 +33,8 @@ from src.orchestration import (
     M3M4RAGService,
 )
 
+from src.api.risk_routes import router as risk_router
+
 
 def create_app(
     *,
@@ -124,6 +126,11 @@ def create_app(
         rag_router
     )
 
+    app.include_router(
+        risk_router
+    )
+
+    
     return app
 
 

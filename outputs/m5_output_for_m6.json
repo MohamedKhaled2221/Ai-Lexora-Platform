@@ -1,0 +1,232 @@
+{
+  "clauses": [
+    {
+      "clause_id": "doc_95fceef5860e-chunk_001-1-clause",
+      "type": "unknown",
+      "text": "قانون رقم 44 لسنة 2026\nباصدار قانون تنظيم عقود الاستشارات الهندسية",
+      "entities": {},
+      "page": 1,
+      "similarity_score": 0.0,
+      "is_modified": false,
+      "confidence": 0.2
+    },
+    {
+      "clause_id": "doc_95fceef5860e-chunk_001-2-clause",
+      "type": "unknown",
+      "text": "باسم الشعب\nرئيس الجمهورية\nقرر مجلس النواب القانون الاتي نصه، وقد اصدرناه:",
+      "entities": {},
+      "page": 1,
+      "similarity_score": 0.0,
+      "is_modified": false,
+      "confidence": 0.2
+    },
+    {
+      "clause_id": "doc_95fceef5860e-chunk_003-art_2-clause",
+      "type": "unknown",
+      "text": "المادة 2\nالمادة الثانية\nيصدر رئيس مجلس الوزراء اللائحة التنفيذية لهذا القانون خلال ستة اشهر من\n\nتاريخ العمل به، والي ان تصدر يستمر العمل باللوائح القائمة فيما لا يتعارض\n\nمع احكامه.",
+      "entities": {
+        "legal_reference": [
+          {
+            "value": "المادة 2",
+            "normalized_value": "المادة 2",
+            "start": 0,
+            "end": 8,
+            "confidence": 0.9
+          },
+          {
+            "value": "المادة الثانية",
+            "normalized_value": "المادة الثانية",
+            "start": 9,
+            "end": 23,
+            "confidence": 0.9
+          }
+        ]
+      },
+      "page": 1,
+      "similarity_score": 0.0,
+      "is_modified": false,
+      "confidence": 0.2
+    },
+    {
+      "clause_id": "doc_95fceef5860e-chunk_006-art_1-clause",
+      "type": "unknown",
+      "text": "الفصل الاول\nتعريفات واحكام عامة\n\nالمادة 1\nفي تطبيق احكام هذا القانون يقصد بالالفاظ والعبارات التالية المعني المبين\n\nقرين كل منها:\n\nالجهة الادارية: الوزارة او المصلحة او الهيئة العامة التي تبرم العقد.\nالمستشار: الشخص الطبيعي او الاعتباري المرخص له بمزاولة اعمال الاستشارات.\n\nالعقد: الاتفاق المكتوب المبرم بين الجهة الادارية والمستشار.",
+      "entities": {
+        "legal_reference": [
+          {
+            "value": "المادة 1",
+            "normalized_value": "المادة 1",
+            "start": 33,
+            "end": 41,
+            "confidence": 0.9
+          }
+        ]
+      },
+      "page": 2,
+      "similarity_score": 0.0,
+      "is_modified": false,
+      "confidence": 0.2
+    },
+    {
+      "clause_id": "doc_b23c833e9192-chunk_003-cl_1-clause",
+      "type": "dispute_resolution",
+      "text": "Clause 1\n1. The Claimant filed its Request for Arbitration on 14 January 2026.\n2. The Respondent filed its Answer on 27 February 2026, raising an objection\nto jurisdiction on the ground that the arbitration agreement had expired.\n3. The Tribunal was constituted on 11 March 2026 and held a case management\nconference on 2 April 2026.\n\nII. THE PARTIES' POSITIONS",
+      "entities": {
+        "legal_reference": [
+          {
+            "value": "Clause 1",
+            "normalized_value": "clause 1",
+            "start": 0,
+            "end": 8,
+            "confidence": 0.9
+          }
+        ]
+      },
+      "page": 1,
+      "similarity_score": 0.0,
+      "is_modified": false,
+      "confidence": 0.6548
+    },
+    {
+      "clause_id": "doc_b23c833e9192-chunk_004-cl_4-clause",
+      "type": "payment",
+      "text": "Clause 4\n4. The Claimant seeks payment of EGP 2,450,000 said to be outstanding under\nthe Supply Agreement dated 15 January 2025, together with interest.\n5. The Respondent denies liability and counterclaims for EGP 610,000 in\nrespect of defective goods delivered in November 2025.\n\nIII. JURISDICTION",
+      "entities": {
+        "money": [
+          {
+            "value": "EGP 2,450,000",
+            "normalized_value": "egp 2,450,000",
+            "start": 42,
+            "end": 55,
+            "confidence": 0.9
+          },
+          {
+            "value": "EGP 610,000",
+            "normalized_value": "egp 610,000",
+            "start": 210,
+            "end": 221,
+            "confidence": 0.9
+          }
+        ],
+        "legal_reference": [
+          {
+            "value": "Clause 4",
+            "normalized_value": "clause 4",
+            "start": 0,
+            "end": 8,
+            "confidence": 0.9
+          }
+        ]
+      },
+      "page": 1,
+      "similarity_score": 0.0,
+      "is_modified": false,
+      "confidence": 0.5823
+    },
+    {
+      "clause_id": "doc_b23c833e9192-chunk_005-cl_6-clause",
+      "type": "unknown",
+      "text": "Clause 6\n6. The Tribunal has considered the Respondent's objection and finds that the\narbitration clause at Article 19 of the Supply Agreement survives termination\nof the substantive obligations, applying the principle of separability.",
+      "entities": {
+        "legal_reference": [
+          {
+            "value": "Clause 6",
+            "normalized_value": "clause 6",
+            "start": 0,
+            "end": 8,
+            "confidence": 0.9
+          },
+          {
+            "value": "clause at",
+            "normalized_value": "clause at",
+            "start": 98,
+            "end": 107,
+            "confidence": 0.9
+          },
+          {
+            "value": "Article 19",
+            "normalized_value": "article 19",
+            "start": 108,
+            "end": 118,
+            "confidence": 0.9
+          }
+        ]
+      },
+      "page": 2,
+      "similarity_score": 0.0,
+      "is_modified": false,
+      "confidence": 0.4936
+    },
+    {
+      "clause_id": "doc_a214a19820a9-chunk_002-sec_SUPPLY_AND_INSTALLATION_AGREEMENT-clause",
+      "type": "unknown",
+      "text": "SUPPLY AND INSTALLATION AGREEMENT\n\n[SYNTHETIC TEST DOCUMENT - FABRICATED DATA]\n\n12 شارع النيل، الدقي، الجيزة (طرف اول). ثانيا: شركة دلتا طنطا للمقاولات العامة، ومقرها 44 شارع الجيش، طنطا، الغربية (طرف ثان).\n\nانه في يوم الاحد الموافق 15 يناير 2026 تحرر هذا العقد بين كل من: اولا: شركة النيل الازرق للتوريدات الهندسية ش.م.م، ومقرها\n\nMade on 15 January 2026 between Blue Nile Engineering Supplies S.A.E. (the \"First Party\") and Delta\nTanta General Contracting Co. (the \"Second Party\").",
+      "entities": {},
+      "page": 1,
+      "similarity_score": 0.0,
+      "is_modified": false,
+      "confidence": 0.2
+    },
+    {
+      "clause_id": "doc_a214a19820a9-chunk_006-art_3-clause",
+      "type": "payment",
+      "text": "المادة (3) : قيمة العقد وطريقة السداد\n\nوخمسون الف جنيه مصري لا غير) شاملة ضريبة القيمة المضافة. ويتم السداد علي الدفعات المبينة بالجدول المرفق بالمادة (3) مكرر.\n\nحدد الطرفان قيمة هذا العقد بمبلغ اجمالي وقدره 2٬450٬000 جنيه مصري (فقط مليونان واربعمائة\n\nجدول الدفعات - Payment Schedule\n\nMilestoneالدفعة\nالقيمة (جنيه)النسبة %\nتاريخ الاستحقاق\n\nAdvance on signatureالاولي\n25\n612،500\n2026-01-15\n\nDelivery of phase 1الثانية\n30\n735،000\n2026-05-30\n\nDelivery of phase 2الثالثة\n30\n735،000\n2026-11-30\n\nFinal acceptanceالرابعة\n15\n367،500\n2027-06-30",
+      "entities": {
+        "date": [
+          {
+            "value": "2026-01-15",
+            "normalized_value": "2026-01-15",
+            "start": 378,
+            "end": 388,
+            "confidence": 0.9
+          },
+          {
+            "value": "2026-05-30",
+            "normalized_value": "2026-05-30",
+            "start": 428,
+            "end": 438,
+            "confidence": 0.9
+          },
+          {
+            "value": "2026-11-30",
+            "normalized_value": "2026-11-30",
+            "start": 478,
+            "end": 488,
+            "confidence": 0.9
+          },
+          {
+            "value": "2027-06-30",
+            "normalized_value": "2027-06-30",
+            "start": 525,
+            "end": 535,
+            "confidence": 0.9
+          }
+        ]
+      },
+      "page": 1,
+      "similarity_score": 0.0,
+      "is_modified": false,
+      "confidence": 0.7026
+    },
+    {
+      "clause_id": "doc_a214a19820a9-chunk_017-art_8-clause",
+      "type": "dispute_resolution",
+      "text": "Article 8. Governing Law and Dispute Resolution\n\nThis Agreement shall be governed by and construed in accordance with the laws of the Arab Republic of\nEgypt. Any dispute shall first be settled amicably within thirty (30) days, failing which the North Cairo Court\nof First Instance shall have exclusive jurisdiction.\n\nالتوقيعات - Signatures\n\nالطرف الثاني / Second Partyالطرف الاول / First Party\n\nشركة النيل الازرق للتوريدات الهندسية ش.م.م\nشركة دلتا طنطا للمقاولات العامة\n\n____\n____\n\nخاتم الشركة\nخاتم الشركة",
+      "entities": {
+        "legal_reference": [
+          {
+            "value": "Article 8",
+            "normalized_value": "article 8",
+            "start": 0,
+            "end": 9,
+            "confidence": 0.9
+          }
+        ]
+      },
+      "page": 3,
+      "similarity_score": 0.0,
+      "is_modified": false,
+      "confidence": 0.6203
+    }
+  ]
+}
