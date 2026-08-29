@@ -10,69 +10,38 @@ export async function requestApi(path, options = {}) {
   });
 
   const text = await response.text();
-  const payload = text ? JSON.parse(text) : {};
+  let payload = {};
+
+  try {
+    payload = text ? JSON.parse(text) : {};
+  } catch {
+    payload = { error: { message: text || "The server returned an invalid response." } };
+  }
 
   if (!response.ok) {
-    const detail = payload.detail || `Request failed with status ${response.status}`;
+    const detail = payload.error?.message || payload.detail || `Request failed with status ${response.status}`;
     const message = Array.isArray(detail)
-      ? detail.map((item) => item.msg).join(", ")
+      ? detail.map((item) => item.msg || item.message).join(", ")
       : detail;
 
-    throw new Error(message);
+    const error = new Error(message);
+    error.code = payload.error?.code;
+    error.requestId = payload.error?.request_id;
+    throw error;
   }
 
   return payload;
 }
 
-export function buildProcessedQuery(text, language = "ar") {
-  const normalizedText = text.trim();
-
+export function buildRawRagRequest(question, filters = {}) {
   return {
-    query_id: `q_front_${Date.now()}`,
-    text_original: text,
-    normalized_text: normalizedText,
-    language,
-    embedding: [],
-    sparse_embedding: null,
+    question: question.trim(),
     filters: {
-      document_type: null,
-      jurisdiction: "Egypt",
-      language: null,
+      document_type: filters.document_type || null,
+      jurisdiction: filters.jurisdiction || "Egypt",
+      language: filters.language || null,
       extra_filters: {},
     },
-    query_variants: [normalizedText],
-    identifiers: {
-      article_numbers: [],
-      case_numbers: [],
-      dates: [],
-      monetary_values: [],
-      party_names: [],
-    },
   };
 }
 
-export function buildDemoEvidence(queryId) {
-  return {
-    query_id: queryId,
-    retrieved_evidence: [
-      {
-        document_id: "demo_contract_001",
-        chunk_id: "chunk_12",
-        text: "Contract termination requires prior written notice and a reasonable cure period.",
-        page: 4,
-        section: "Termination clause",
-        language: "en",
-        score: 0.92,
-      },
-      {
-        document_id: "demo_labor_002",
-        chunk_id: "chunk_07",
-        text: "Penalties and notice duties should be grounded in the contract and applicable law.",
-        page: 9,
-        section: "Duties",
-        language: "en",
-        score: 0.81,
-      },
-    ],
-  };
-}

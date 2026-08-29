@@ -135,30 +135,82 @@
           <p>المساعد القانوني يستخدم مصادر تجريبية. البحث بالمصادر يحتاج تجهيز الفهرسة وقاعدة المصادر وبيانات البحث كاملة.</p>
         </div>
         <div class="quick-actions">
-          <button class="ghost-btn" type="button" data-copy-endpoint="/api/v1/ai/answer">نسخ رابط المساعد</button>
-          <button class="ghost-btn" type="button" data-copy-endpoint="/api/v1/rag/answer">نسخ رابط البحث</button>
+          <button class="ghost-btn" type="button" data-copy-endpoint="/api/v1/rag/ask">نسخ رابط البحث</button>
         </div>
       </div>
 
-      <div class="form-layout" style="width:100%;margin:0">
-        <form class="consultation-form" data-ai-form data-output="[data-consultation-output]">
-          <h2>المساعد القانوني</h2>
-          <label>السؤال
-            <textarea name="question" placeholder="ما أثر عدم الإخطار قبل إنهاء العقد؟" required></textarea>
-          </label>
-          <button class="submit-btn" type="submit">توليد إجابة قانونية</button>
-        </form>
-
-        <form class="consultation-form" data-rag-form data-output="[data-consultation-output]">
-          <h2>البحث بالمصادر</h2>
-          <label>سؤال البحث
-            <textarea name="question" placeholder="ابحث عن شروط الإنهاء في مستندات القضية." required></textarea>
-          </label>
-          <button class="submit-btn" type="submit">تشغيل البحث بالمصادر</button>
-        </form>
+      <div class="form-layout react-preview-grid" style="width:100%;margin:0">
+        <div class="consultation-form" data-react-widget="legal-assistant" data-mode="ai">
+          <div class="react-widget legal-agent-widget">
+            <div class="table-header">
+              <div>
+                <p class="eyebrow">AI Agent Workspace</p>
+                <h2>اسأل المساعد القانوني</h2>
+                <p>اكتب السؤال واضف مستندات أو صور من جهازك أو من الكاميرا.</p>
+              </div>
+            </div>
+            <form class="assistant-form" data-agent-form>
+              <label class="assistant-composer-label">السؤال
+                <div class="assistant-composer">
+                  <div class="attachment-menu-wrap">
+                    <button class="attach-button" type="button" data-attachment-toggle aria-label="إضافة ملف أو صورة" aria-expanded="false">+</button>
+                    <div class="attachment-menu" data-attachment-menu hidden>
+                      <button type="button" data-pick-camera aria-label="فتح الكاميرا" title="فتح الكاميرا"><img src="assets/icons/camera.png" alt="" aria-hidden="true">الكاميرا</button>
+                      <button type="button" data-pick-image aria-label="اختيار صورة" title="اختيار صورة"><img src="assets/icons/image.png" alt="" aria-hidden="true">صورة</button>
+                      <button type="button" data-pick-files aria-label="اختيار ملف" title="اختيار ملف"><img src="assets/icons/file.png" alt="" aria-hidden="true">ملف</button>
+                    </div>
+                  </div>
+                  <textarea name="question" placeholder="اكتب سؤالك القانوني هنا..." required></textarea>
+                </div>
+              </label>
+              <input class="visually-hidden" type="file" multiple accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.webp,image/*" data-file-input>
+              <input class="visually-hidden" type="file" accept="image/*" capture="environment" data-camera-input>
+              <input class="visually-hidden" type="file" multiple accept="image/*,.png,.jpg,.jpeg,.webp" data-image-input>
+              <div class="attachment-list" data-attachment-list aria-label="المرفقات المختارة"></div>
+              <button class="submit-btn" type="submit">إرسال السؤال</button>
+            </form>
+            <div class="agent-result" data-agent-output data-state="waiting">
+              <h3>في انتظار السؤال</h3>
+              <p>الإجابة هتظهر هنا بشكل واضح .</p>
+            </div>
+          </div>
+        </div>
+        <div class="consultation-form" data-react-widget="legal-assistant" data-mode="search">
+          <div class="react-widget legal-agent-widget">
+            <div class="table-header">
+              <div>
+                <p class="eyebrow">AI Agent Workspace</p>
+                <h2>البحث القانوني بالمصادر</h2>
+                <p>واجهة جاهزة للبحث الكامل عند توفر embedding و upload endpoint في الباك.</p>
+              </div>
+            </div>
+            <form class="assistant-form" data-agent-form data-agent-mode="search">
+              <label class="assistant-composer-label">سؤال البحث
+                <div class="assistant-composer">
+                  <div class="attachment-menu-wrap">
+                    <button class="attach-button" type="button" data-attachment-toggle aria-label="إضافة ملف أو صورة" aria-expanded="false">+</button>
+                    <div class="attachment-menu" data-attachment-menu hidden>
+                      <button type="button" data-pick-camera aria-label="فتح الكاميرا" title="فتح الكاميرا"><img src="assets/icons/camera.png" alt="" aria-hidden="true">الكاميرا</button>
+                      <button type="button" data-pick-image aria-label="اختيار صورة" title="اختيار صورة"><img src="assets/icons/image.png" alt="" aria-hidden="true">صورة</button>
+                      <button type="button" data-pick-files aria-label="اختيار ملف" title="اختيار ملف"><img src="assets/icons/file.png" alt="" aria-hidden="true">ملف</button>
+                    </div>
+                  </div>
+                  <textarea name="question" placeholder="اكتب سؤال البحث هنا..." required></textarea>
+                </div>
+              </label>
+              <input class="visually-hidden" type="file" multiple accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.webp,image/*" data-file-input>
+              <input class="visually-hidden" type="file" accept="image/*" capture="environment" data-camera-input>
+              <input class="visually-hidden" type="file" multiple accept="image/*,.png,.jpg,.jpeg,.webp" data-image-input>
+              <div class="attachment-list" data-attachment-list aria-label="المرفقات المختارة"></div>
+              <button class="submit-btn" type="submit">تشغيل البحث بالمصادر</button>
+            </form>
+            <div class="agent-result" data-agent-output data-state="waiting">
+              <h3>في انتظار البحث</h3>
+              <p>نتيجة البحث هتظهر هنا بشكل منظم عند الربط الكامل بالباك.</p>
+            </div>
+          </div>
+        </div>
       </div>
-
-      <pre class="api-output" data-consultation-output data-api-output>{ "status": "waiting" }</pre>
     </section>
   </main>
 
@@ -171,7 +223,7 @@
   </footer>
 
   <div class="toast" data-toast></div>
-  <script src="script.js"></script>
+  <script type="module" src="script.js"></script>
   <script type="module" src="/frontend/react/main.jsx"></script>
 </body>
 </html>

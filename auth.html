@@ -41,17 +41,7 @@
         </div>
 
         <section class="api-section" style="width:100%;margin:22px 0 0">
-          <div class="table-header">
-            <div>
-              <h2>فحص النظام قبل الدخول</h2>
-              <p>يفيد في معرفة هل خدمات AI جاهزة للمستخدمين.</p>
-            </div>
-            <div class="quick-actions">
-              <button class="ghost-btn" type="button" data-check-health>Health</button>
-              <button class="ghost-btn" type="button" data-check-ready>Readiness</button>
-            </div>
-          </div>
-          <pre class="api-output" data-api-output>{ "status": "waiting" }</pre>
+          <div data-react-widget="backend-status"></div>
         </section>
       </div>
 
@@ -144,7 +134,7 @@
   </footer>
 
   <div class="toast" data-toast></div>
-  <script src="script.js"></script>
+  <script type="module" src="script.js"></script>
   <script type="module" src="/frontend/react/main.jsx"></script>
 </body>
 </html>

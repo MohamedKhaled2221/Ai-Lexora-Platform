@@ -1,4 +1,10 @@
 const API_BASE = window.AI_LEXORA_API_BASE || "http://localhost:8000";
+let documentParserPromise;
+
+function loadDocumentParser() {
+  documentParserPromise ||= import("./frontend/utils/documentParser.js");
+  return documentParserPromise;
+}
 
 const toast = document.querySelector("[data-toast]");
 const themeToggles = document.querySelectorAll("[data-theme-toggle]");
@@ -46,7 +52,7 @@ async function requestApi(path, options = {}) {
   const payload = text ? JSON.parse(text) : {};
 
   if (!response.ok) {
-    const message = payload.detail || `Request failed with status ${response.status}`;
+    const message = payload.error?.message || payload.detail || `Request failed with status ${response.status}`;
     throw new Error(Array.isArray(message) ? message.map((item) => item.msg).join("، ") : message);
   }
 
@@ -58,6 +64,34 @@ function renderJson(target, payload) {
   target.textContent = JSON.stringify(payload, null, 2);
 }
 
+function escapeHtml(value) {
+  return value.replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#039;",
+  }[char]));
+}
+
+function renderAgentResult(target, payload) {
+  if (!target) return;
+
+  const state = payload.status === "error" ? "error" : "success";
+  target.dataset.state = state;
+
+  const meta = [];
+  if (payload.endpoint) meta.push(payload.endpoint);
+  if (payload.attachments?.length) meta.push(`${payload.attachments.length} مرفقات`);
+  if (payload.confidence !== undefined) meta.push(`ثقة ${Math.round(payload.confidence * 100)}%`);
+
+  target.innerHTML = `
+    <h3>${escapeHtml(payload.title || "نتيجة المساعد")}</h3>
+    <p>${escapeHtml(payload.answer || payload.message || "تم تجهيز السؤال للربط مع خدمة الذكاء الاصطناعي.")}</p>
+    ${meta.length ? `<div class="agent-meta">${meta.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>` : ""}
+  `;
+}
+
 function renderApiResult(target, endpoint, result) {
   renderJson(target, {
     status: "success",
@@ -66,16 +100,6 @@ function renderApiResult(target, endpoint, result) {
     confidence: result.confidence,
     citations: result.citations || [],
     query_id: result.query_id,
-  });
-}
-
-function renderRagCompatibilityNotice(target, payload) {
-  renderJson(target, {
-    status: "needs_backend_pipeline",
-    endpoint: "/api/v1/rag/answer",
-    message: "مسار RAG الحالي في الباك يحتاج processed_query يحتوي embedding حقيقي من M2، والفرنت لا يستطيع توليده وحده.",
-    required_backend_change: "إضافة endpoint يستقبل السؤال الخام ثم يشغل QueryPipeline قبل /api/v1/rag/answer.",
-    current_payload_preview: payload,
   });
 }
 
@@ -136,57 +160,6 @@ document.querySelectorAll("[data-check-ready]").forEach((button) => {
   });
 });
 
-function buildProcessedQuery(text, language = "ar") {
-  return {
-    query_id: `q_front_${Date.now()}`,
-    text_original: text,
-    normalized_text: text.trim(),
-    language,
-    embedding: [],
-    sparse_embedding: null,
-    filters: {
-      document_type: null,
-      jurisdiction: "Egypt",
-      language: null,
-      extra_filters: {},
-    },
-    query_variants: [text.trim()],
-    identifiers: {
-      article_numbers: [],
-      case_numbers: [],
-      dates: [],
-      monetary_values: [],
-      party_names: [],
-    },
-  };
-}
-
-function buildDemoEvidence(queryId) {
-  return {
-    query_id: queryId,
-    retrieved_evidence: [
-      {
-        document_id: "demo_contract_001",
-        chunk_id: "chunk_12",
-        text: "لا يجوز إنهاء العقد إلا بعد إخطار كتابي سابق ومنح الطرف الآخر مهلة مناسبة للمعالجة.",
-        page: 4,
-        section: "شرط الإنهاء",
-        language: "ar",
-        score: 0.92,
-      },
-      {
-        document_id: "demo_labor_002",
-        chunk_id: "chunk_07",
-        text: "يجب أن تكون الجزاءات والتزامات الإخطار مرتبطة بنصوص العقد والقانون المنظم للعلاقة.",
-        page: 9,
-        section: "الالتزامات",
-        language: "ar",
-        score: 0.81,
-      },
-    ],
-  };
-}
-
 document.querySelectorAll("[data-ai-form]").forEach((form) => {
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -199,24 +172,20 @@ document.querySelectorAll("[data-ai-form]").forEach((form) => {
       return;
     }
 
-    const processedQuery = buildProcessedQuery(question);
-    const payload = {
-      processed_query: processedQuery,
-      retrieved_evidence: buildDemoEvidence(processedQuery.query_id),
-    };
+    const payload = { question, filters: { jurisdiction: "Egypt" } };
 
     button.disabled = true;
-    renderJson(output, { status: "sending", endpoint: "/api/v1/ai/answer", payload });
+    renderJson(output, { status: "sending", endpoint: "/api/v1/rag/ask", payload });
 
     try {
-      const result = await requestApi("/api/v1/ai/answer", {
+      const result = await requestApi("/api/v1/rag/ask", {
         method: "POST",
         body: JSON.stringify(payload),
       });
-      renderApiResult(output, "/api/v1/ai/answer", result);
+      renderApiResult(output, "/api/v1/rag/ask", result);
       showToast("تم توليد إجابة قانونية بالمصادر.", "success");
     } catch (error) {
-      renderJson(output, { error: error.message, endpoint: "/api/v1/ai/answer", payload });
+      renderJson(output, { error: error.message, endpoint: "/api/v1/rag/ask", payload });
       showToast("تعذر توليد الإجابة. تأكد من خدمة الذكاء الاصطناعي.", "error");
     } finally {
       button.disabled = false;
@@ -236,18 +205,13 @@ document.querySelectorAll("[data-rag-form]").forEach((form) => {
       return;
     }
 
-    const payload = { processed_query: buildProcessedQuery(question) };
-    if (!payload.processed_query.embedding.length) {
-      renderRagCompatibilityNotice(output, payload);
-      showToast("البحث الكامل يحتاج embedding من الباك قبل استدعاء RAG.", "error");
-      return;
-    }
+    const payload = { question, filters: { jurisdiction: "Egypt" } };
 
     button.disabled = true;
-    renderJson(output, { status: "sending", endpoint: "/api/v1/rag/answer", payload });
+    renderJson(output, { status: "sending", endpoint: "/api/v1/rag/ask", payload });
 
     try {
-      const result = await requestApi("/api/v1/rag/answer", {
+      const result = await requestApi("/api/v1/rag/ask", {
         method: "POST",
         body: JSON.stringify(payload),
       });
@@ -257,7 +221,7 @@ document.querySelectorAll("[data-rag-form]").forEach((form) => {
       renderJson(output, {
         error: error.message,
         note: "هذا المسار يحتاج بيانات بحث مفهرسة وقاعدة مصادر جاهزة.",
-        endpoint: "/api/v1/rag/answer",
+        endpoint: "/api/v1/rag/ask",
         payload,
       });
       showToast("البحث بالمصادر يحتاج تجهيز الفهرسة وقاعدة المصادر.", "error");
@@ -267,7 +231,7 @@ document.querySelectorAll("[data-rag-form]").forEach((form) => {
   });
 });
 
-document.querySelectorAll("form:not([data-ai-form]):not([data-rag-form])").forEach((form) => {
+document.querySelectorAll("form:not([data-ai-form]):not([data-rag-form]):not([data-file-search-form]):not([data-agent-form])").forEach((form) => {
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     form.classList.add("was-validated");
@@ -394,6 +358,345 @@ document.querySelectorAll("[data-copy-endpoint]").forEach((button) => {
     } catch {
       showToast(`${API_BASE}${endpoint}`);
     }
+  });
+});
+
+function formatAttachmentSize(size) {
+  if (!size) return "0 KB";
+  if (size < 1024 * 1024) return `${Math.ceil(size / 1024)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+document.querySelectorAll("[data-agent-form]").forEach((form) => {
+  const attachmentToggle = form.querySelector("[data-attachment-toggle]");
+  const attachmentMenu = form.querySelector("[data-attachment-menu]");
+  const fileInput = form.querySelector("[data-file-input]");
+  const imageInput = form.querySelector("[data-image-input]");
+  const cameraInput = form.querySelector("[data-camera-input]");
+  const filePicker = form.querySelector("[data-pick-files]");
+  const cameraPicker = form.querySelector("[data-pick-camera]");
+  const imagePicker = form.querySelector("[data-pick-image]");
+  const attachmentList = form.querySelector("[data-attachment-list]");
+  const output = form.parentElement?.querySelector("[data-agent-output]");
+  const attachments = [];
+
+  function closeAttachmentMenu() {
+    if (!attachmentMenu || !attachmentToggle) return;
+    attachmentMenu.hidden = true;
+    attachmentToggle.setAttribute("aria-expanded", "false");
+  }
+
+  function renderAttachments() {
+    if (!attachmentList) return;
+    attachmentList.innerHTML = "";
+
+    attachments.forEach((attachment) => {
+      const chip = document.createElement("span");
+      chip.className = "attachment-chip";
+
+      const text = document.createElement("span");
+      text.textContent = attachment.name;
+
+      const meta = document.createElement("small");
+      meta.textContent = `${attachment.source === "camera" ? "كاميرا" : attachment.source === "image" ? "صورة" : "ملف"} - ${attachment.sizeLabel}`;
+      text.appendChild(meta);
+
+      const removeButton = document.createElement("button");
+      removeButton.type = "button";
+      removeButton.textContent = "x";
+      removeButton.setAttribute("aria-label", `حذف ${attachment.name}`);
+      removeButton.addEventListener("click", () => {
+        const index = attachments.findIndex((item) => item.id === attachment.id);
+        if (index >= 0) attachments.splice(index, 1);
+        renderAttachments();
+      });
+
+      chip.append(text, removeButton);
+      attachmentList.appendChild(chip);
+    });
+  }
+
+  function addAttachments(fileList, source) {
+    Array.from(fileList || []).forEach((file) => {
+      const attachment = {
+        id: `${source}_${file.name}_${file.lastModified}_${file.size}`,
+        name: file.name || "camera-image",
+        type: file.type || "unknown",
+        size: file.size,
+        sizeLabel: formatAttachmentSize(file.size),
+        source,
+      };
+
+      if (!attachments.some((item) => item.id === attachment.id)) {
+        attachments.push(attachment);
+      }
+    });
+
+    renderAttachments();
+    closeAttachmentMenu();
+  }
+
+  attachmentToggle?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!attachmentMenu || !attachmentToggle) return;
+    const shouldOpen = attachmentMenu.hidden;
+    attachmentMenu.hidden = !shouldOpen;
+    attachmentToggle.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+  });
+
+  filePicker?.addEventListener("click", () => fileInput?.click());
+  imagePicker?.addEventListener("click", () => imageInput?.click());
+  cameraPicker?.addEventListener("click", () => cameraInput?.click());
+
+  fileInput?.addEventListener("change", (event) => {
+    addAttachments(event.target.files, "local_file");
+    event.target.value = "";
+  });
+
+  cameraInput?.addEventListener("change", (event) => {
+    addAttachments(event.target.files, "camera");
+    event.target.value = "";
+  });
+
+  imageInput?.addEventListener("change", (event) => {
+    addAttachments(event.target.files, "image");
+    event.target.value = "";
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const question = new FormData(form).get("question")?.toString().trim();
+
+    if (!question) {
+      showToast("اكتب السؤال القانوني الأول.", "error");
+      return;
+    }
+
+    const attachmentSummary = attachments.map(({ name, type, size, source }) => ({
+        name,
+        type,
+        size,
+        source,
+      }));
+
+    const payload = { question, filters: { jurisdiction: "Egypt" } };
+
+    renderAgentResult(output, {
+      status: "success",
+      title: "جاري تجهيز الإجابة",
+      message: "يتم إرسال السؤال للمساعد القانوني...",
+      endpoint: "/api/v1/rag/ask",
+      attachments: attachmentSummary,
+    });
+
+    try {
+      const result = await requestApi("/api/v1/rag/ask", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      renderAgentResult(output, {
+        status: "success",
+        title: "الإجابة",
+        answer: result.answer,
+        confidence: result.confidence,
+        endpoint: "/api/v1/rag/ask",
+        attachments: attachmentSummary,
+      });
+      showToast("تم عرض الإجابة.", "success");
+    } catch (error) {
+      renderAgentResult(output, {
+        status: "error",
+        title: "تعذر جلب الإجابة",
+        message: error.message,
+        endpoint: "/api/v1/rag/ask",
+        attachments: attachmentSummary,
+      });
+      showToast("تعذر الاتصال بخدمة الإجابة.", "error");
+    }
+  });
+});
+
+document.querySelectorAll("[data-file-search-form]").forEach((form) => {
+  const fileInput = form.querySelector("[data-search-files]");
+  const clearButton = form.querySelector("[data-clear-search-files]");
+  const fileList = form.querySelector("[data-search-file-list]");
+  const output = form.parentElement?.querySelector("[data-file-search-output]");
+  let selectedFiles = [];
+
+  function renderSearchFiles() {
+    if (!fileList) return;
+    fileList.innerHTML = "";
+
+    selectedFiles.forEach((item, fileIndex) => {
+      const chip = document.createElement("span");
+      chip.className = "attachment-chip";
+
+      const text = document.createElement("span");
+      text.textContent = `${item.file.name} (${item.extension || "غير معروف"})`;
+
+      const meta = document.createElement("small");
+      meta.textContent = item.status === "error"
+        ? item.error
+        : `${item.status === "ready" ? "تمت القراءة" : "قيد القراءة"} - ${formatAttachmentSize(item.file.size)}`;
+      text.appendChild(meta);
+
+      const removeButton = document.createElement("button");
+      removeButton.type = "button";
+      removeButton.setAttribute("aria-label", `حذف ${item.file.name}`);
+      removeButton.addEventListener("click", () => {
+        selectedFiles.splice(fileIndex, 1);
+        renderSearchFiles();
+      });
+
+      chip.append(text, removeButton);
+      fileList.appendChild(chip);
+    });
+  }
+
+  function highlightText(text, term) {
+    const escapedText = escapeHtml(text);
+    const escapedTerm = escapeHtml(term);
+
+    if (!escapedTerm) return escapedText;
+
+    return escapedText.replace(
+      new RegExp(escapedTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"),
+      (match) => `<mark class="search-highlight">${match}</mark>`
+    );
+  }
+
+  function readFileAsText(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => resolve("");
+      reader.readAsText(file);
+    });
+  }
+
+  function renderFileSearchResults(results, term) {
+    if (!output) return;
+    output.dataset.state = results.length ? "success" : "waiting";
+
+    if (!selectedFiles.length) {
+      output.innerHTML = `
+        <h3>ارفع ملف أولا</h3>
+        <p>اختار ملف أو أكثر قبل البحث.</p>
+      `;
+      return;
+    }
+
+    if (!results.length) {
+      output.innerHTML = `
+        <h3>لا توجد نتيجة مطابقة</h3>
+        <p>جرب كلمة مختلفة أو تحقق من حالة قراءة الملفات.</p>
+      `;
+      return;
+    }
+
+    output.innerHTML = results.map((result) => `
+      <article class="file-result-card">
+        <strong>${escapeHtml(result.fileName)} <small>${escapeHtml(result.fileType)}</small></strong>
+        <p>${highlightText(result.preview, term)}</p>
+        ${result.pages.length ? `<span>الصفحات المطابقة: ${result.pages.map((page) => page.page).join(", ")}</span>` : ""}
+      </article>
+    `).join("");
+  }
+
+  fileInput?.addEventListener("change", async (event) => {
+    const incomingFiles = Array.from(event.target.files || []);
+    const knownKeys = new Set(selectedFiles.map(({ file }) => `${file.name}_${file.size}_${file.lastModified}`));
+    const newItems = incomingFiles.filter((file) => !knownKeys.has(`${file.name}_${file.size}_${file.lastModified}`));
+    let parser;
+
+    try {
+      parser = await loadDocumentParser();
+    } catch {
+      showToast("تعذر تحميل قارئ الملفات. استخدم TXT أو MD أو CSV أو JSON مؤقتا.", "error");
+      return;
+    }
+
+    const validatedItems = newItems.map((file) => {
+      try {
+        return { file, extension: parser.validateDocumentFile(file), status: "reading" };
+      } catch (error) {
+        showToast(error.message, "error");
+        return { file, status: "error", error: error.message };
+      }
+    });
+    selectedFiles = [...selectedFiles, ...validatedItems];
+    renderSearchFiles();
+    event.target.value = "";
+
+    validatedItems.filter((item) => item.status === "reading").forEach(async (item) => {
+      try {
+        item.parsed = await parser.parseDocumentFile(item.file);
+        item.status = "ready";
+      } catch (error) {
+        item.status = "error";
+        item.error = error.message;
+        showToast(`${item.file.name}: ${error.message}`, "error");
+      }
+      renderSearchFiles();
+    });
+  });
+
+  clearButton?.addEventListener("click", () => {
+    selectedFiles = [];
+    renderSearchFiles();
+    if (output) {
+      output.dataset.state = "waiting";
+      output.innerHTML = `
+        <h3>ارفع ملف وابدأ البحث</h3>
+        <p>يدعم البحث داخل TXT وMD وCSV وJSON وPDF وDOCX. ملفات DOC القديمة غير قابلة للقراءة الموثوقة داخل المتصفح.</p>
+      `;
+    }
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const term = new FormData(form).get("searchTerm")?.toString().trim();
+
+    if (!term) {
+      showToast("اكتب كلمة البحث الأول.", "error");
+      return;
+    }
+
+    if (selectedFiles.some((item) => item.status === "reading")) {
+      showToast("انتظر حتى تكتمل قراءة الملفات.", "error");
+      return;
+    }
+
+    if (selectedFiles.every((item) => item.status !== "ready")) {
+      showToast("لا يوجد ملف صالح للبحث.", "error");
+      return;
+    }
+
+    const results = [];
+
+    for (const item of selectedFiles) {
+      if (!item.parsed) continue;
+      const { file, parsed } = item;
+      const content = parsed.text;
+      const matchIndex = content.toLowerCase().indexOf(term.toLowerCase());
+
+      if (matchIndex >= 0) {
+        const start = Math.max(0, matchIndex - 90);
+        const end = Math.min(content.length, matchIndex + term.length + 140);
+        results.push({
+          fileName: file.name,
+          fileType: parsed.extension.toUpperCase(),
+          preview: content.slice(start, end).replace(/\s+/g, " ").trim(),
+          pages: parsed.pages.filter((page) => page.text.toLowerCase().includes(term.toLowerCase())),
+        });
+      }
+    }
+
+    renderFileSearchResults(results, term);
+    showToast(results.length ? "تم العثور على نتائج داخل الملفات." : "لا توجد نتيجة مطابقة.", results.length ? "success" : "error");
   });
 });
 

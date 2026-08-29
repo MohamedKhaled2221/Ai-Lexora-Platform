@@ -43,8 +43,7 @@
         <ul class="check-list">
           <li>فحص تشغيل FastAPI عبر <strong>/health</strong>.</li>
           <li>فحص جاهزية خدمات الذكاء الاصطناعي والفهرسة عبر <strong>/ready</strong>.</li>
-          <li>توليد إجابة قانونية موثقة عبر <strong>/api/v1/ai/answer</strong>.</li>
-          <li>تشغيل البحث القانوني بالمصادر عبر <strong>/api/v1/rag/answer</strong>.</li>
+          <li>توليد إجابة قانونية موثقة عبر <strong>/api/v1/rag/ask</strong>.</li>
         </ul>
       </aside>
     </section>
@@ -86,28 +85,7 @@
     </section>
 
     <section class="api-band api-section">
-      <div class="table-header">
-        <div>
-          <p class="eyebrow">Backend Control</p>
-          <h2>اختبر اتصال الواجهة بالباك اند</h2>
-          <p>القيمة الافتراضية للـ API هي <strong>http://localhost:8000</strong>.</p>
-        </div>
-        <div class="quick-actions">
-          <button class="ghost-btn" type="button" data-check-health>فحص Health</button>
-          <button class="primary-btn" type="button" data-check-ready>فحص Readiness</button>
-        </div>
-      </div>
-      <div class="status-grid">
-        <article class="status-card" data-health-card data-state="idle">
-          <strong><span class="status-dot"></span><span data-status-label>Health</span></strong>
-          <span data-status-detail>لم يتم الفحص بعد.</span>
-        </article>
-        <article class="status-card" data-ready-card data-state="idle">
-          <strong><span class="status-dot"></span><span data-status-label>Readiness</span></strong>
-          <span data-status-detail>لم يتم الفحص بعد.</span>
-        </article>
-      </div>
-      <pre class="api-output" data-api-output>{ "status": "waiting" }</pre>
+      <div data-react-widget="backend-status"></div>
     </section>
 
     <section class="requirements-band">
@@ -125,7 +103,7 @@
   </footer>
 
   <div class="toast" data-toast></div>
-  <script src="script.js"></script>
+  <script type="module" src="script.js"></script>
   <script type="module" src="/frontend/react/main.jsx"></script>
 </body>
 </html>
