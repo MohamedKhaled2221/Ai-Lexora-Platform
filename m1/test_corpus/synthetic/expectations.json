@@ -1,0 +1,148 @@
+{
+  "note": "Declared-correct output for the synthetic corpus. Written from what each document SAYS, not from what the pipeline currently produces -- an expectation copied from actual output can only ever pass, and would test nothing. Entries that the pipeline is known to fail are kept, and their failure is reported.",
+  "how_to_read": {
+    "document_type": "exact match required against DocumentIngestResult.document_type",
+    "jurisdiction": "exact match required against the chunks' jurisdiction metadata",
+    "language": "the result's language must be one of these values; 'mixed' is listed alongside a specific script where either answer is defensible for a parallel bilingual document",
+    "required_clause_ids": "every id listed must appear among the emitted chunks' structure.clause_id. Extra ids are allowed -- a document may legitimately carry structure beyond what is enumerated here",
+    "tables_expected": "count of distinct tables the document contains, counted by hand from the source",
+    "min_chunks": "a floor, not a target: below this the document was clearly under-segmented"
+  },
+  "documents": {
+    "synthetic_contract_ar.docx": {
+      "document_type": "contract",
+      "jurisdiction": "Egypt",
+      "language": ["ar", "mixed"],
+      "required_clause_ids": ["art_1", "art_2", "art_3", "art_4", "art_5",
+                              "art_6", "art_7", "art_8", "art_9"],
+      "tables_expected": 1,
+      "min_chunks": 10,
+      "why": "A nine-article Arabic supply contract in DOCX. DOCX stores logical text, so this is the control against which the PDF renderings of the same material are read."
+    },
+    "synthetic_contract_bilingual.pdf": {
+      "document_type": "contract",
+      "jurisdiction": "Egypt",
+      "language": ["mixed"],
+      "required_clause_ids": ["art_1", "art_2", "art_3", "art_4", "art_5",
+                              "art_6", "art_7"],
+      "tables_expected": 2,
+      "min_chunks": 10,
+      "why": "The same contract as a PDF. Its Arabic headings read 'المادة (1): التعريفات' on the page, so art_1..art_7 is the correct answer. KNOWN TO FAIL: the generator paints Arabic as visually-ordered presentation forms, the article number lands at the wrong end of the heading, and the ids degrade to sec_* built from mangled text. Kept as a failing expectation on purpose -- it is the measurement of that limitation."
+    },
+    "synthetic_lease_bilingual.docx": {
+      "document_type": "contract",
+      "jurisdiction": "Egypt",
+      "language": ["mixed", "en"],
+      "required_clause_ids": ["cl_1", "cl_1.1", "cl_2", "cl_2.1", "cl_3", "cl_3.1"],
+      "tables_expected": 0,
+      "min_chunks": 10,
+      "why": "A lease is a contract; the type must not degrade to 'unknown' merely because the word 'lease' is used instead of 'agreement'."
+    },
+    "synthetic_memo_mixed.txt": {
+      "document_type": "correspondence",
+      "jurisdiction": "Egypt",
+      "language": ["mixed"],
+      "required_clause_ids": ["cl_1", "cl_2", "cl_3"],
+      "tables_expected": 0,
+      "min_chunks": 3,
+      "why": "An internal memo, not a contract. Distinguishing the two matters to M5, which should not be asked to extract obligations from correspondence."
+    },
+    "synthetic_statute_ar.txt": {
+      "document_type": "law",
+      "jurisdiction": "Egypt",
+      "language": ["ar"],
+      "required_clause_ids": ["art_1", "art_2", "art_3", "art_4", "art_5",
+                              "art_6", "art_7", "art_7 مكرر", "art_8", "art_9"],
+      "tables_expected": 0,
+      "min_chunks": 9,
+      "why": "Includes 'المادة 7 مكرر' -- the bis-article convention. A numbering scheme that only understands integers silently merges it into article 7."
+    },
+    "synthetic_visual_order_ar.txt": {
+      "document_type": "law",
+      "jurisdiction": "Egypt",
+      "language": ["ar"],
+      "required_clause_ids": ["art_1", "art_2", "art_3", "art_4", "art_5",
+                              "art_6", "art_7", "art_8", "art_9"],
+      "tables_expected": 0,
+      "min_chunks": 8,
+      "why": "Same statute, stored in visual order. The correct answer is identical to synthetic_statute_ar.txt -- that is the point of the pair. PARTIAL FAILURE EXPECTED: articles whose heading line is reversed are not recovered."
+    },
+    "stress_nested_clauses_ar.pdf": {
+      "document_type": "contract",
+      "jurisdiction": "Egypt",
+      "language": ["mixed"],
+      "required_clause_ids": ["art_5", "art_5.cl_5.1", "art_5.cl_5.2",
+                              "art_5.cl_5.2.1", "art_5.cl_5.2.1.a",
+                              "art_5.cl_5.2.1.b", "art_5.cl_5.2.1.b.i",
+                              "art_5.cl_5.2.1.b.ii", "art_6"],
+      "tables_expected": 0,
+      "min_chunks": 10,
+      "why": "Five levels of numbering. The nesting must be preserved as a hierarchy, not flattened: M5 needs to know that 5.2.1.b.ii sits under 5.2, because the obligation it carries is qualified by 5.2's scope."
+    },
+    "stress_inline_bilingual.pdf": {
+      "document_type": "correspondence",
+      "jurisdiction": "Egypt",
+      "language": ["mixed"],
+      "required_clause_ids": ["cl_1", "cl_2", "cl_3", "cl_4", "cl_5"],
+      "tables_expected": 0,
+      "min_chunks": 5,
+      "why": "Five numbered memo paragraphs. KNOWN TO FAIL: every paragraph opens with an Arabic run, so the visual-order storage puts each number at the end of its line and no marker is found. Kept as a failing expectation -- this is the sharpest measurement of the visual-order limitation in the corpus."
+    },
+    "stress_exhibits_footnotes.pdf": {
+      "document_type": "contract",
+      "jurisdiction": "Egypt",
+      "language": ["en", "mixed"],
+      "required_clause_ids": ["art_1", "art_1.cl_1.1", "art_1.cl_1.2",
+                              "art_2", "art_2.cl_2.1", "sec_A", "sec_B",
+                              "sec_II", "sec_1"],
+      "tables_expected": 0,
+      "min_chunks": 8,
+      "why": "Four parallel numbering systems: Articles, lettered Exhibits, roman Appendices and numbered Schedules. All four must survive; an annex is not a clause of the article that precedes it."
+    },
+    "stress_table_pagebreak.pdf": {
+      "document_type": null,
+      "jurisdiction": "Egypt",
+      "language": ["mixed", "en"],
+      "required_clause_ids": [],
+      "tables_expected": 1,
+      "min_chunks": 1,
+      "why": "One logical 30-row table split by a page break. document_type is left unconstrained: a bare instalment schedule with no operative language is genuinely ambiguous, and forcing a guess would be worse than 'unknown'."
+    },
+    "synthetic_table_page.png": {
+      "document_type": null,
+      "jurisdiction": "Egypt",
+      "language": ["mixed", "ar"],
+      "required_clause_ids": [],
+      "tables_expected": 1,
+      "min_chunks": 1,
+      "why": "Borderless bilingual table as an image. Neither Docling nor PyMuPDF sees an OCR'd page, so this is the fixture that measures table reconstruction from OCR geometry."
+    },
+    "stress_table_ruled_ar.png": {
+      "document_type": null,
+      "jurisdiction": "Egypt",
+      "language": ["mixed", "ar"],
+      "required_clause_ids": [],
+      "tables_expected": 1,
+      "min_chunks": 1,
+      "why": "Fully ruled 5x3 table -- the easy case, and the control for the two harder ones."
+    },
+    "stress_table_wide_en.png": {
+      "document_type": null,
+      "jurisdiction": "Egypt",
+      "language": ["en"],
+      "required_clause_ids": [],
+      "tables_expected": 1,
+      "min_chunks": 1,
+      "why": "Six borderless columns with narrow gutters: tests cell splitting when the column gap approaches the word gap."
+    },
+    "stress_table_sparse_bilingual.png": {
+      "document_type": null,
+      "jurisdiction": "Egypt",
+      "language": ["mixed", "ar", "en"],
+      "required_clause_ids": [],
+      "tables_expected": 1,
+      "min_chunks": 1,
+      "why": "Empty cells in every column: a reconstructor that assumes full rows shifts contents left instead of emitting a gap."
+    }
+  }
+}

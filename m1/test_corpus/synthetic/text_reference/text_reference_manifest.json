@@ -1,0 +1,77 @@
+{
+  "note": "Reference text for the NON-OCR extraction path. Authored or hand-transcribed -- never taken from the PDF's own text layer, which is both circular and, on Arabic, wrong.",
+  "pages_covered": 8,
+  "documents": 5,
+  "why_not_the_text_layer": [
+    "Circular: PyMuPDF reading the text layer is what we are trying to measure.",
+    "Wrong on Arabic: public Arabic PDFs here store presentation forms in visual order and reverse digit runs (wipo_eg088ar_1.pdf page 3 renders 2023 and extracts 3202), so such a reference would penalise the pipeline for repairing the damage correctly."
+  ],
+  "entries": [
+    {
+      "reference": "synthetic_contract_bilingual.reference.txt",
+      "document": "synthetic_contract_bilingual.pdf",
+      "corpus": "synthetic",
+      "scope": "document",
+      "page": null,
+      "pages_covered": 3,
+      "provenance": "authored",
+      "reference_chars": 3941,
+      "note": "Reference is the clause text the generator was given. Scored at document level because the renderer, not the source, decides where the three pages break."
+    },
+    {
+      "reference": "stress_nested_clauses_ar.reference.txt",
+      "document": "stress_nested_clauses_ar.pdf",
+      "corpus": "synthetic",
+      "scope": "page",
+      "page": 1,
+      "pages_covered": 1,
+      "provenance": "authored",
+      "reference_chars": 1347,
+      "note": "Five-level clause numbering. Tests that deep numbering survives extraction and chunking without being flattened or dropped."
+    },
+    {
+      "reference": "stress_inline_bilingual.reference.txt",
+      "document": "stress_inline_bilingual.pdf",
+      "corpus": "synthetic",
+      "scope": "page",
+      "page": 1,
+      "pages_covered": 1,
+      "provenance": "authored",
+      "reference_chars": 1121,
+      "note": "Direction switches several times per line. The hardest RTL repair case in the corpus, and the reference is exact."
+    },
+    {
+      "reference": "stress_exhibits_footnotes.reference.txt",
+      "document": "stress_exhibits_footnotes.pdf",
+      "corpus": "synthetic",
+      "scope": "page",
+      "page": 1,
+      "pages_covered": 1,
+      "provenance": "authored",
+      "reference_chars": 1533,
+      "note": "Four parallel numbering systems plus footnote markers."
+    },
+    {
+      "reference": "eg_official_gazette_excerpt.p2.reference.txt",
+      "document": "eg_official_gazette_excerpt.pdf",
+      "corpus": "public",
+      "scope": "page",
+      "page": 2,
+      "pages_covered": 1,
+      "provenance": "transcribed",
+      "reference_chars": 2115,
+      "note": "Typed from the rendered page. English, single column, clean type."
+    },
+    {
+      "reference": "eg_official_gazette_excerpt.p3.reference.txt",
+      "document": "eg_official_gazette_excerpt.pdf",
+      "corpus": "public",
+      "scope": "page",
+      "page": 3,
+      "pages_covered": 1,
+      "provenance": "transcribed",
+      "reference_chars": 2300,
+      "note": "Typed from the rendered page. Includes italicised Latin ('ab initio') and a signature block."
+    }
+  ]
+}

@@ -1,0 +1,231 @@
+{
+  "note": "ALL DATA FABRICATED. No firm documents were used. Interim stand-in corpus only.",
+  "seed": 20260811,
+  "files": [
+    {
+      "file": "synthetic_contract_bilingual.pdf",
+      "kind": "synthetic",
+      "format": "pdf",
+      "pdf_type": "text-based (digitally native)",
+      "language_mix": "Arabic primary + English counterpart (bilingual)",
+      "structure": "المادة (1)-(9) Arabic articles; Article 1-8 English; tables; signature/stamp box",
+      "quirks": [
+        "Arabic drawn via arabic-reshaper + python-bidi, so the PDF stores PRESENTATION FORMS IN VISUAL ORDER -- realistic reproduction of Arabic DTP output and the main fixture for rtl_fix repair",
+        "5-column bilingual payment table with mixed Arabic/Latin headers",
+        "Arabic-Indic digits (٢٬٤٥٠٬٠٠٠) alongside Western digits in the table",
+        "mixed-direction clause bodies (English defined terms inside Arabic)",
+        "signature/stamp box as a bordered table"
+      ],
+      "exercises": [
+        "type_detection: text",
+        "extract_pymupdf_docling",
+        "rtl_fix",
+        "normalize",
+        "chunking (structural)",
+        "tables"
+      ]
+    },
+    {
+      "file": "synthetic_contract_ar.docx",
+      "kind": "synthetic",
+      "format": "docx",
+      "language_mix": "Arabic primary + English counterpart",
+      "structure": "Word Heading 1/2 styles carrying المادة (n) labels; 5-col Table Grid; explicit page break",
+      "quirks": [
+        "DOCX has no stored pagination -- page numbers come from the single explicit page break only; pipeline warns about this",
+        "logical-order Arabic (unlike the PDF fixture) -- rtl_fix should NOT repair this one, which is the negative test",
+        "Arabic-Indic digits inside table cells"
+      ],
+      "exercises": [
+        "type_detection: docx",
+        "docling/python-docx path",
+        "chunking (structural)",
+        "tables"
+      ]
+    },
+    {
+      "file": "synthetic_lease_bilingual.docx",
+      "kind": "synthetic",
+      "format": "docx",
+      "language_mix": "English primary with Arabic clauses interleaved (true bilingual mix)",
+      "structure": "decimal outline 1.1 / 2.3 style; bilingual headings",
+      "quirks": [
+        "clause numbering is decimal (1.1, 2.3) not المادة -- exercises the English CLAUSE marker pattern and auto-granularity at CLAUSE level",
+        "Arabic and English clauses alternate inside the same section, so chunk-level language should come out 'mixed' for several chunks",
+        "bilingual headings contain both scripts on one line -- an rtl_fix mixed_direction flag is expected here"
+      ],
+      "exercises": [
+        "docx path",
+        "chunking granularity=CLAUSE",
+        "rtl_fix flagging",
+        "language detection"
+      ]
+    },
+    {
+      "file": "synthetic_statute_ar.txt",
+      "kind": "synthetic",
+      "format": "txt",
+      "language_mix": "pure Arabic",
+      "structure": "الباب / الفصل / المادة hierarchy including 'المادة (7) مكرر'; أولاً-ثالثاً enumerators; (أ)(ب)(ج) sub-clauses",
+      "quirks": [
+        "full statute hierarchy: BOOK > CHAPTER > ARTICLE -- auto granularity should settle on ARTICLE, not sub-clause",
+        "'مكرر' (bis) article numbering, an Egyptian legislative convention that naive numeric parsers drop",
+        "no pagination at all (TXT) -- every chunk should report page=1",
+        "cross-references ('المادة (4)', 'المادة (7)') inside body text that must NOT be treated as boundaries"
+      ],
+      "exercises": [
+        "type_detection: txt",
+        "plaintext path",
+        "marker detection",
+        "chunking (structural, ARTICLE level)"
+      ]
+    },
+    {
+      "file": "synthetic_memo_mixed.txt",
+      "kind": "synthetic",
+      "format": "txt",
+      "language_mix": "heavily mixed Arabic/English in the same sentences",
+      "structure": "أولاً/ثانياً/ثالثاً enumerators; numbered list items",
+      "quirks": [
+        "code-switching mid-sentence ('البند (5) delay penalty cap محدد بنسبة ١٠٪')",
+        "Arabic-Indic dates ١٥/٠٣/٢٠٢٦ mixed with Western dates 20/03/2026",
+        "this is the primary fixture for rtl_fix mixed_direction and numeral_direction_ambiguous flags -- flags here are EXPECTED, not a bug"
+      ],
+      "exercises": [
+        "plaintext path",
+        "rtl_fix flagging",
+        "language detection: mixed",
+        "digit normalization"
+      ]
+    },
+    {
+      "file": "synthetic_visual_order_ar.txt",
+      "kind": "synthetic",
+      "format": "txt",
+      "language_mix": "pure Arabic",
+      "structure": "same statute as synthetic_statute_ar.txt",
+      "quirks": [
+        "DELIBERATELY DAMAGED: stored in VISUAL order with presentation forms, reproducing what broken PDF extraction and some OCR output look like",
+        "ground truth for this file is synthetic_statute_ar.txt -- rtl_fix should detect presentation forms and flag/repair reading order",
+        "structural markers will NOT match until presentation forms are folded, so this also tests that normalize runs before structure annotation"
+      ],
+      "exercises": [
+        "rtl_fix repair path",
+        "normalize (presentation forms)",
+        "ordering of pipeline stages"
+      ],
+      "ground_truth": "synthetic_statute_ar.txt"
+    },
+    {
+      "file": "synthetic_stamped_page.png",
+      "kind": "synthetic",
+      "format": "png (image)",
+      "language_mix": "Arabic primary, one English heading line",
+      "structure": "البند (1)-(3) clause markers; signature block; two stamps",
+      "quirks": [
+        "image input -- must route straight to OCR with no text layer",
+        "round company stamp and rectangular incoming-mail stamp OVERLAP the signature area; OCR is expected to emit junk boxes from the stamps",
+        "handwritten-style signature squiggles (non-text ink)",
+        "page degraded: 0.7 deg skew, gaussian noise, slight blur, JPEG q72",
+        "Arabic-Indic digits in dates and percentages"
+      ],
+      "exercises": [
+        "type_detection: image -> OCR",
+        "PaddleOCR + Tesseract fallback",
+        "ocr confidence metadata",
+        "marker detection on OCR output"
+      ]
+    },
+    {
+      "file": "synthetic_table_page.png",
+      "kind": "synthetic",
+      "format": "png (image)",
+      "language_mix": "bilingual Arabic/English column headers and cells",
+      "structure": "5-column BORDERLESS table (only a header rule and a total rule)",
+      "quirks": [
+        "borderless table -- PyMuPDF find_tables has no ruling lines to work with; this is the case Docling's TableFormer is meant to cover, and on the OCR path neither applies, so table structure is expected to degrade to reading-order text. KNOWN GAP, see evaluation report.",
+        "column contents alternate direction (Arabic label, Latin milestone, Western numerals) -- worst case for line-level reading order",
+        "degraded: -0.4 deg skew, noise, JPEG q80"
+      ],
+      "exercises": [
+        "OCR path",
+        "table extraction limits",
+        "rtl_fix reading order on table rows"
+      ]
+    },
+    {
+      "file": "scan_constitute_egypt_2014_ar_200dpi.pdf",
+      "kind": "synthetic (derived from public)",
+      "format": "pdf",
+      "pdf_type": "scanned (image-only, no text layer)",
+      "derived_from": "test_corpus/public/constitute_egypt_2014_ar.pdf, first 6 pages",
+      "ground_truth": "test_corpus/synthetic/scan_constitute_egypt_2014_ar_200dpi.groundtruth.txt",
+      "language_mix": "pure Arabic",
+      "structure": "as in the source statute/constitution (المادة / Article numbering)",
+      "quirks": [
+        "rasterized at 200 dpi, skew 0.6 deg, gaussian noise sigma 6, blur 0.4, JPEG quality 78",
+        "NO text layer -- type_detection must classify this as 'scanned' and route every page to OCR",
+        "character-level ground truth available, so OCR accuracy is measurable per language",
+        "OPTIMISTIC vs real firm scans: clean glyph rendering, no scanner optics, no photocopy generations, no staple shadows or bleed-through",
+        "GROUND TRUTH CAVEAT: the source PDF extracts with spurious intra-word spacing ('دس تور' for 'دستور'), so the reference disagrees with correctly-spaced OCR output on most word boundaries. Space-sensitive CER/WER against this file overstate the error; the space-insensitive CER is the meaningful figure."
+      ],
+      "ground_truth_spacing_defect": true,
+      "source_text_layer_quality": 0.945,
+      "exercises": [
+        "type_detection: scanned",
+        "PaddleOCR primary",
+        "Tesseract fallback",
+        "OCR accuracy measurement"
+      ]
+    },
+    {
+      "file": "scan_wipo_eg088ar_1_150dpi.pdf",
+      "kind": "synthetic (derived from public)",
+      "format": "pdf",
+      "pdf_type": "scanned (image-only, no text layer)",
+      "derived_from": "test_corpus/public/wipo_eg088ar_1.pdf, first 6 pages",
+      "ground_truth": "test_corpus/synthetic/scan_wipo_eg088ar_1_150dpi.groundtruth.txt",
+      "language_mix": "pure Arabic",
+      "structure": "as in the source statute/constitution (المادة / Article numbering)",
+      "quirks": [
+        "rasterized at 150 dpi, skew -1.1 deg, gaussian noise sigma 10, blur 0.9, JPEG quality 62",
+        "NO text layer -- type_detection must classify this as 'scanned' and route every page to OCR",
+        "character-level ground truth available, so OCR accuracy is measurable per language",
+        "OPTIMISTIC vs real firm scans: clean glyph rendering, no scanner optics, no photocopy generations, no staple shadows or bleed-through",
+        "GROUND TRUTH CAVEAT: the source PDF extracts with spurious intra-word spacing ('دس تور' for 'دستور'), so the reference disagrees with correctly-spaced OCR output on most word boundaries. Space-sensitive CER/WER against this file overstate the error; the space-insensitive CER is the meaningful figure."
+      ],
+      "ground_truth_spacing_defect": true,
+      "source_text_layer_quality": 0.976,
+      "exercises": [
+        "type_detection: scanned",
+        "PaddleOCR primary",
+        "Tesseract fallback",
+        "OCR accuracy measurement"
+      ]
+    },
+    {
+      "file": "scan_constitute_egypt_2014_en_200dpi.pdf",
+      "kind": "synthetic (derived from public)",
+      "format": "pdf",
+      "pdf_type": "scanned (image-only, no text layer)",
+      "derived_from": "test_corpus/public/constitute_egypt_2014_en.pdf, first 6 pages",
+      "ground_truth": "test_corpus/synthetic/scan_constitute_egypt_2014_en_200dpi.groundtruth.txt",
+      "language_mix": "pure English",
+      "structure": "as in the source statute/constitution (المادة / Article numbering)",
+      "quirks": [
+        "rasterized at 200 dpi, skew 0.5 deg, gaussian noise sigma 6, blur 0.4, JPEG quality 78",
+        "NO text layer -- type_detection must classify this as 'scanned' and route every page to OCR",
+        "character-level ground truth available, so OCR accuracy is measurable per language",
+        "OPTIMISTIC vs real firm scans: clean glyph rendering, no scanner optics, no photocopy generations, no staple shadows or bleed-through"
+      ],
+      "ground_truth_spacing_defect": false,
+      "source_text_layer_quality": 0.957,
+      "exercises": [
+        "type_detection: scanned",
+        "PaddleOCR primary",
+        "Tesseract fallback",
+        "OCR accuracy measurement"
+      ]
+    }
+  ]
+}

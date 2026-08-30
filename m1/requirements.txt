@@ -1,0 +1,88 @@
+# M1 Document Processing -- pinned dependencies
+#
+# Verified working together on Windows 11 / Python 3.10.11 / CPU-only,
+# 2026-08-11. Versions are pinned exactly because several of these interact
+# badly across releases -- see the notes below before changing any of them.
+#
+# Install:
+#   python -m venv .venv
+#   .venv\Scripts\python -m pip install -U pip setuptools wheel
+#   .venv\Scripts\python -m pip install -r requirements.txt
+#
+# Tesseract is a NATIVE binary and is NOT installed by pip. See README.
+
+# ---------------------------------------------------------------------------
+# Required stack (per team spec -- do not substitute)
+# ---------------------------------------------------------------------------
+
+# Text + geometry from digital PDFs. Source of truth for bounding boxes.
+pymupdf==1.28.2
+
+# Layout semantics and table structure. Pulls torch + transformers (~2.5 GB).
+#
+# NOTE: Docling's layout model is wrapped in torch.compile. On Windows without
+# MSVC on PATH, TorchDynamo dies with InvalidCxxCompiler. src/__init__.py sets
+# TORCHDYNAMO_DISABLE=1 before torch is imported to force eager mode.
+docling==2.119.0
+
+# OCR primary. The three Paddle packages MUST be version-matched -- mismatched
+# paddleocr/paddlex/paddlepaddle raise
+# "PaddlePredictorOption.__init__() takes 1 positional argument but 2 were given".
+#
+# NOTE: paddleocr < 3.0 requires numpy < 2, which conflicts with docling's
+# torch stack. 3.x is the only line compatible with both.
+paddleocr==3.7.0
+paddlepaddle==3.2.2
+paddlex==3.7.2
+
+# OCR fallback (Python bindings only -- the tesseract binary is separate).
+pytesseract==0.3.13
+
+# ---------------------------------------------------------------------------
+# Arabic text quality (M1's addition on top of the required stack, not a
+# replacement for anything in it)
+# ---------------------------------------------------------------------------
+arabic-reshaper==3.0.1
+python-bidi==0.6.11
+pyarabic==0.6.15
+
+# ---------------------------------------------------------------------------
+# Schemas, validation, service
+# ---------------------------------------------------------------------------
+pydantic==2.13.4
+fastapi==0.141.1
+uvicorn[standard]==0.52.1
+python-multipart==0.0.32
+
+# ---------------------------------------------------------------------------
+# Supporting
+# ---------------------------------------------------------------------------
+# numpy 2.x is required by the torch/docling stack; paddleocr 3.x tolerates it.
+numpy==2.2.6
+pillow==12.3.0
+opencv-python-headless==4.11.0.86
+python-docx==1.2.0          # DOCX fallback when Docling is unavailable
+requests==2.34.2            # corpus download script only
+
+# ---------------------------------------------------------------------------
+# Test / corpus generation
+# ---------------------------------------------------------------------------
+pytest==9.1.1
+pytest-cov==7.1.0
+httpx==0.28.1               # FastAPI TestClient
+reportlab==5.0.0            # synthetic PDF fixtures only
+psutil==7.2.2               # RSS sampling in scripts/batch_size_probe.py only
+
+# ---------------------------------------------------------------------------
+# Transitively pinned because they are load-bearing, not incidental
+# ---------------------------------------------------------------------------
+torch==2.13.0               # via docling
+transformers==5.15.0        # via docling
+
+# ---------------------------------------------------------------------------
+# Deliberately absent
+# ---------------------------------------------------------------------------
+# langchain / langchain-*  -- excluded by the team spec
+# qdrant-client            -- M2/M3's concern, not M1's
+# openai / anthropic / boto3 / google-cloud-*  -- no cloud calls at runtime;
+#                             nothing in this service leaves firm infrastructure

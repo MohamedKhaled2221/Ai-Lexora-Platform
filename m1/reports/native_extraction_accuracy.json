@@ -1,0 +1,2144 @@
+{
+  "note": "Accuracy of the native (non-OCR) extraction path. Scoring functions imported from scripts/evaluate.py.",
+  "generated": "2026-08-16 05:34:47",
+  "wall_clock_s": 293.2,
+  "arms": [
+    "pymupdf",
+    "pymupdf+docling",
+    "docling-only"
+  ],
+  "documents": [
+    {
+      "document": "eg_official_gazette_excerpt.pdf",
+      "arm": "pymupdf",
+      "variant": "as-shipped",
+      "pages": 2,
+      "provenance": "transcribed",
+      "error": null,
+      "seconds": 2.65,
+      "ms_per_page": 1325.4,
+      "n_chunks": 134,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": false,
+        "markers_before": 0,
+        "markers_after": 0,
+        "score_before": 0.0,
+        "score_after": 0.0,
+        "reason": "no Arabic content"
+      },
+      "ref_chars": {
+        "all": 4416,
+        "ar": 0,
+        "en": 4329
+      },
+      "pages_missing": [],
+      "scope_used": "page",
+      "metrics": {
+        "all": {
+          "cer": 0.0114,
+          "cer_nospace": 0.0119,
+          "wer": 0.0085,
+          "bag": 0.0085
+        },
+        "ar": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        },
+        "en": {
+          "cer": 0.0106,
+          "cer_nospace": 0.0115,
+          "wer": 0.0058,
+          "bag": 0.0058
+        }
+      }
+    },
+    {
+      "document": "native_authored_award_en.pdf",
+      "arm": "pymupdf",
+      "variant": "as-shipped",
+      "pages": 2,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 0.05,
+      "ms_per_page": 26.4,
+      "n_chunks": 9,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": false,
+        "markers_before": 0,
+        "markers_after": 0,
+        "score_before": 0.0,
+        "score_after": 0.0,
+        "reason": "no Arabic content"
+      },
+      "ref_chars": {
+        "all": 1736,
+        "ar": 0,
+        "en": 1579
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.0371,
+          "cer_nospace": 0.0343,
+          "wer": 0.0522,
+          "bag": 0.0
+        },
+        "ar": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        },
+        "en": {
+          "cer": 0.031,
+          "cer_nospace": 0.0313,
+          "wer": 0.0295,
+          "bag": 0.0
+        }
+      }
+    },
+    {
+      "document": "native_authored_statute_ar.pdf",
+      "arm": "pymupdf",
+      "variant": "as-shipped",
+      "pages": 3,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 0.06,
+      "ms_per_page": 20.8,
+      "n_chunks": 12,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": true,
+        "markers_before": 0,
+        "markers_after": 13,
+        "score_before": 0.6269,
+        "score_after": 0.9588,
+        "reason": "visual order confirmed: structural markers 0 -> 13, order score +0.627 -> +0.959 (gain +0.332 over 177 observations). 'ال' opens 94 token(s), 'لا' closes 4; final-form letters close 64 token(s), open 0"
+      },
+      "ref_chars": {
+        "all": 1605,
+        "ar": 1570,
+        "en": 0
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.0226,
+          "cer_nospace": 0.0211,
+          "wer": 0.0299,
+          "bag": 0.0
+        },
+        "ar": {
+          "cer": 0.0178,
+          "cer_nospace": 0.0183,
+          "wer": 0.0154,
+          "bag": 0.0
+        },
+        "en": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        }
+      }
+    },
+    {
+      "document": "stress_exhibits_footnotes.pdf",
+      "arm": "pymupdf",
+      "variant": "as-shipped",
+      "pages": 1,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 0.06,
+      "ms_per_page": 56.8,
+      "n_chunks": 11,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": false,
+        "markers_before": 11,
+        "markers_after": 13,
+        "score_before": 0.8571,
+        "score_after": 0.8571,
+        "reason": "reordering recovers 13 marker(s) vs 11 but the order score gains only +0.000 (need +0.100); left as-is -- consistent with logical order, or with genuine extraction damage that reordering does not fix"
+      },
+      "ref_chars": {
+        "all": 1463,
+        "ar": 163,
+        "en": 1196
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.1298,
+          "cer_nospace": 0.1277,
+          "wer": 0.1806,
+          "bag": 0.0529
+        },
+        "ar": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        },
+        "en": {
+          "cer": 0.0493,
+          "cer_nospace": 0.047,
+          "wer": 0.0629,
+          "bag": 0.0
+        }
+      }
+    },
+    {
+      "document": "stress_inline_bilingual.pdf",
+      "arm": "pymupdf",
+      "variant": "as-shipped",
+      "pages": 1,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 0.04,
+      "ms_per_page": 42.1,
+      "n_chunks": 6,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": true,
+        "markers_before": 0,
+        "markers_after": 5,
+        "score_before": 0.1905,
+        "score_after": 0.7203,
+        "reason": "visual order confirmed: structural markers 0 -> 5, order score +0.191 -> +0.720 (gain +0.530 over 124 observations). 'ال' opens 43 token(s), 'لا' closes 2; final-form letters close 29 token(s), open 0"
+      },
+      "ref_chars": {
+        "all": 1119,
+        "ar": 766,
+        "en": 276
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.0404,
+          "cer_nospace": 0.0376,
+          "wer": 0.0543,
+          "bag": 0.0
+        },
+        "ar": {
+          "cer": 0.0,
+          "cer_nospace": 0.0,
+          "wer": 0.0,
+          "bag": 0.0
+        },
+        "en": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        }
+      }
+    },
+    {
+      "document": "stress_nested_clauses_ar.pdf",
+      "arm": "pymupdf",
+      "variant": "as-shipped",
+      "pages": 1,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 0.05,
+      "ms_per_page": 52.8,
+      "n_chunks": 13,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": true,
+        "markers_before": 17,
+        "markers_after": 22,
+        "score_before": 0.6829,
+        "score_after": 0.8022,
+        "reason": "visual order confirmed: structural markers 17 -> 22, order score +0.683 -> +0.802 (gain +0.119 over 76 observations). 'ال' opens 30 token(s), 'لا' closes 1; final-form letters close 15 token(s), open 0"
+      },
+      "ref_chars": {
+        "all": 1342,
+        "ar": 490,
+        "en": 737
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.1114,
+          "cer_nospace": 0.1115,
+          "wer": 0.15,
+          "bag": 0.04
+        },
+        "ar": {
+          "cer": 0.0163,
+          "cer_nospace": 0.0048,
+          "wer": 0.1096,
+          "bag": 0.1096
+        },
+        "en": {
+          "cer": 0.1547,
+          "cer_nospace": 0.1559,
+          "wer": 0.1456,
+          "bag": 0.0
+        }
+      }
+    },
+    {
+      "document": "synthetic_contract_bilingual.pdf",
+      "arm": "pymupdf",
+      "variant": "as-shipped",
+      "pages": 3,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 0.24,
+      "ms_per_page": 79.3,
+      "n_chunks": 19,
+      "n_tables": 2,
+      "reading_order": {
+        "repaired": true,
+        "markers_before": 5,
+        "markers_after": 15,
+        "score_before": 0.6964,
+        "score_after": 0.8438,
+        "reason": "visual order confirmed: structural markers 5 -> 15, order score +0.696 -> +0.844 (gain +0.147 over 392 observations). 'ال' opens 150 token(s), 'لا' closes 5; final-form letters close 104 token(s), open 0"
+      },
+      "ref_chars": {
+        "all": 3933,
+        "ar": 2347,
+        "en": 1447
+      },
+      "pages_missing": [],
+      "scope_used": "page",
+      "metrics": {
+        "all": {
+          "cer": 0.6056,
+          "cer_nospace": 0.6149,
+          "wer": 0.7218,
+          "bag": 0.0
+        },
+        "ar": {
+          "cer": 0.6387,
+          "cer_nospace": 0.6615,
+          "wer": 0.7663,
+          "bag": 0.0
+        },
+        "en": {
+          "cer": 0.3345,
+          "cer_nospace": 0.3445,
+          "wer": 0.2795,
+          "bag": 0.0
+        }
+      }
+    },
+    {
+      "document": "eg_official_gazette_excerpt.pdf",
+      "arm": "pymupdf",
+      "variant": "extraction-only",
+      "pages": 2,
+      "provenance": "transcribed",
+      "error": null,
+      "seconds": 2.58,
+      "ms_per_page": 1290.9,
+      "n_chunks": 134,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": false,
+        "markers_before": 0,
+        "markers_after": 0,
+        "score_before": 0.0,
+        "score_after": 0.0,
+        "reason": "no Arabic content"
+      },
+      "ref_chars": {
+        "all": 4416,
+        "ar": 0,
+        "en": 4329
+      },
+      "pages_missing": [],
+      "scope_used": "page",
+      "metrics": {
+        "all": {
+          "cer": 0.0114,
+          "cer_nospace": 0.0119,
+          "wer": 0.0085,
+          "bag": 0.0085
+        },
+        "ar": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        },
+        "en": {
+          "cer": 0.0106,
+          "cer_nospace": 0.0115,
+          "wer": 0.0058,
+          "bag": 0.0058
+        }
+      }
+    },
+    {
+      "document": "native_authored_award_en.pdf",
+      "arm": "pymupdf",
+      "variant": "extraction-only",
+      "pages": 2,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 0.05,
+      "ms_per_page": 26.9,
+      "n_chunks": 9,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": false,
+        "markers_before": 0,
+        "markers_after": 0,
+        "score_before": 0.0,
+        "score_after": 0.0,
+        "reason": "no Arabic content"
+      },
+      "ref_chars": {
+        "all": 1736,
+        "ar": 0,
+        "en": 1579
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.0,
+          "cer_nospace": 0.0,
+          "wer": 0.0,
+          "bag": 0.0
+        },
+        "ar": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        },
+        "en": {
+          "cer": 0.0,
+          "cer_nospace": 0.0,
+          "wer": 0.0,
+          "bag": 0.0
+        }
+      }
+    },
+    {
+      "document": "native_authored_statute_ar.pdf",
+      "arm": "pymupdf",
+      "variant": "extraction-only",
+      "pages": 3,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 0.06,
+      "ms_per_page": 19.4,
+      "n_chunks": 12,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": true,
+        "markers_before": 0,
+        "markers_after": 13,
+        "score_before": 0.6269,
+        "score_after": 0.9588,
+        "reason": "visual order confirmed: structural markers 0 -> 13, order score +0.627 -> +0.959 (gain +0.332 over 177 observations). 'ال' opens 94 token(s), 'لا' closes 4; final-form letters close 64 token(s), open 0"
+      },
+      "ref_chars": {
+        "all": 1605,
+        "ar": 1570,
+        "en": 0
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.0,
+          "cer_nospace": 0.0,
+          "wer": 0.0,
+          "bag": 0.0
+        },
+        "ar": {
+          "cer": 0.0,
+          "cer_nospace": 0.0,
+          "wer": 0.0,
+          "bag": 0.0
+        },
+        "en": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        }
+      }
+    },
+    {
+      "document": "stress_exhibits_footnotes.pdf",
+      "arm": "pymupdf",
+      "variant": "extraction-only",
+      "pages": 1,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 0.05,
+      "ms_per_page": 53.3,
+      "n_chunks": 11,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": false,
+        "markers_before": 11,
+        "markers_after": 13,
+        "score_before": 0.8571,
+        "score_after": 0.8571,
+        "reason": "reordering recovers 13 marker(s) vs 11 but the order score gains only +0.000 (need +0.100); left as-is -- consistent with logical order, or with genuine extraction damage that reordering does not fix"
+      },
+      "ref_chars": {
+        "all": 1463,
+        "ar": 163,
+        "en": 1196
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.0801,
+          "cer_nospace": 0.0794,
+          "wer": 0.1233,
+          "bag": 0.0529
+        },
+        "ar": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        },
+        "en": {
+          "cer": 0.0,
+          "cer_nospace": 0.0,
+          "wer": 0.0,
+          "bag": 0.0
+        }
+      }
+    },
+    {
+      "document": "stress_inline_bilingual.pdf",
+      "arm": "pymupdf",
+      "variant": "extraction-only",
+      "pages": 1,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 0.04,
+      "ms_per_page": 42.5,
+      "n_chunks": 6,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": true,
+        "markers_before": 0,
+        "markers_after": 5,
+        "score_before": 0.1905,
+        "score_after": 0.7203,
+        "reason": "visual order confirmed: structural markers 0 -> 5, order score +0.191 -> +0.720 (gain +0.530 over 124 observations). 'ال' opens 43 token(s), 'لا' closes 2; final-form letters close 29 token(s), open 0"
+      },
+      "ref_chars": {
+        "all": 1119,
+        "ar": 766,
+        "en": 276
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.0,
+          "cer_nospace": 0.0,
+          "wer": 0.0,
+          "bag": 0.0
+        },
+        "ar": {
+          "cer": 0.0,
+          "cer_nospace": 0.0,
+          "wer": 0.0,
+          "bag": 0.0
+        },
+        "en": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        }
+      }
+    },
+    {
+      "document": "stress_nested_clauses_ar.pdf",
+      "arm": "pymupdf",
+      "variant": "extraction-only",
+      "pages": 1,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 0.05,
+      "ms_per_page": 48.5,
+      "n_chunks": 13,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": true,
+        "markers_before": 17,
+        "markers_after": 22,
+        "score_before": 0.6829,
+        "score_after": 0.8022,
+        "reason": "visual order confirmed: structural markers 17 -> 22, order score +0.683 -> +0.802 (gain +0.119 over 76 observations). 'ال' opens 30 token(s), 'لا' closes 1; final-form letters close 15 token(s), open 0"
+      },
+      "ref_chars": {
+        "all": 1342,
+        "ar": 490,
+        "en": 737
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.0497,
+          "cer_nospace": 0.0513,
+          "wer": 0.08,
+          "bag": 0.06
+        },
+        "ar": {
+          "cer": 0.0163,
+          "cer_nospace": 0.0048,
+          "wer": 0.1096,
+          "bag": 0.1096
+        },
+        "en": {
+          "cer": 0.0271,
+          "cer_nospace": 0.0315,
+          "wer": 0.0388,
+          "bag": 0.0388
+        }
+      }
+    },
+    {
+      "document": "synthetic_contract_bilingual.pdf",
+      "arm": "pymupdf",
+      "variant": "extraction-only",
+      "pages": 3,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 0.23,
+      "ms_per_page": 75.2,
+      "n_chunks": 19,
+      "n_tables": 2,
+      "reading_order": {
+        "repaired": true,
+        "markers_before": 5,
+        "markers_after": 15,
+        "score_before": 0.6964,
+        "score_after": 0.8438,
+        "reason": "visual order confirmed: structural markers 5 -> 15, order score +0.696 -> +0.844 (gain +0.147 over 392 observations). 'ال' opens 150 token(s), 'لا' closes 5; final-form letters close 104 token(s), open 0"
+      },
+      "ref_chars": {
+        "all": 3933,
+        "ar": 2347,
+        "en": 1447
+      },
+      "pages_missing": [],
+      "scope_used": "page",
+      "metrics": {
+        "all": {
+          "cer": 0.6008,
+          "cer_nospace": 0.6103,
+          "wer": 0.7158,
+          "bag": 0.0
+        },
+        "ar": {
+          "cer": 0.6357,
+          "cer_nospace": 0.6585,
+          "wer": 0.7638,
+          "bag": 0.0
+        },
+        "en": {
+          "cer": 0.329,
+          "cer_nospace": 0.3388,
+          "wer": 0.2751,
+          "bag": 0.0
+        }
+      }
+    },
+    {
+      "document": "eg_official_gazette_excerpt.pdf",
+      "arm": "pymupdf+docling",
+      "variant": "as-shipped",
+      "pages": 2,
+      "provenance": "transcribed",
+      "error": null,
+      "seconds": 20.53,
+      "ms_per_page": 10265.8,
+      "n_chunks": 134,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": false,
+        "markers_before": 0,
+        "markers_after": 0,
+        "score_before": 0.0,
+        "score_after": 0.0,
+        "reason": "no Arabic content"
+      },
+      "ref_chars": {
+        "all": 4416,
+        "ar": 0,
+        "en": 4329
+      },
+      "pages_missing": [],
+      "scope_used": "page",
+      "metrics": {
+        "all": {
+          "cer": 0.0114,
+          "cer_nospace": 0.0119,
+          "wer": 0.0085,
+          "bag": 0.0085
+        },
+        "ar": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        },
+        "en": {
+          "cer": 0.0106,
+          "cer_nospace": 0.0115,
+          "wer": 0.0058,
+          "bag": 0.0058
+        }
+      }
+    },
+    {
+      "document": "native_authored_award_en.pdf",
+      "arm": "pymupdf+docling",
+      "variant": "as-shipped",
+      "pages": 2,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 1.6,
+      "ms_per_page": 800.3,
+      "n_chunks": 9,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": false,
+        "markers_before": 0,
+        "markers_after": 0,
+        "score_before": 0.0,
+        "score_after": 0.0,
+        "reason": "no Arabic content"
+      },
+      "ref_chars": {
+        "all": 1736,
+        "ar": 0,
+        "en": 1579
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.0371,
+          "cer_nospace": 0.0343,
+          "wer": 0.0522,
+          "bag": 0.0
+        },
+        "ar": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        },
+        "en": {
+          "cer": 0.031,
+          "cer_nospace": 0.0313,
+          "wer": 0.0295,
+          "bag": 0.0
+        }
+      }
+    },
+    {
+      "document": "native_authored_statute_ar.pdf",
+      "arm": "pymupdf+docling",
+      "variant": "as-shipped",
+      "pages": 3,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 2.52,
+      "ms_per_page": 838.7,
+      "n_chunks": 12,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": true,
+        "markers_before": 0,
+        "markers_after": 13,
+        "score_before": 0.6269,
+        "score_after": 0.9588,
+        "reason": "visual order confirmed: structural markers 0 -> 13, order score +0.627 -> +0.959 (gain +0.332 over 177 observations). 'ال' opens 94 token(s), 'لا' closes 4; final-form letters close 64 token(s), open 0"
+      },
+      "ref_chars": {
+        "all": 1605,
+        "ar": 1570,
+        "en": 0
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.0226,
+          "cer_nospace": 0.0211,
+          "wer": 0.0299,
+          "bag": 0.0
+        },
+        "ar": {
+          "cer": 0.0178,
+          "cer_nospace": 0.0183,
+          "wer": 0.0154,
+          "bag": 0.0
+        },
+        "en": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        }
+      }
+    },
+    {
+      "document": "stress_exhibits_footnotes.pdf",
+      "arm": "pymupdf+docling",
+      "variant": "as-shipped",
+      "pages": 1,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 0.89,
+      "ms_per_page": 891.7,
+      "n_chunks": 11,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": false,
+        "markers_before": 11,
+        "markers_after": 13,
+        "score_before": 0.8571,
+        "score_after": 0.8571,
+        "reason": "reordering recovers 13 marker(s) vs 11 but the order score gains only +0.000 (need +0.100); left as-is -- consistent with logical order, or with genuine extraction damage that reordering does not fix"
+      },
+      "ref_chars": {
+        "all": 1463,
+        "ar": 163,
+        "en": 1196
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.1298,
+          "cer_nospace": 0.1277,
+          "wer": 0.1806,
+          "bag": 0.0529
+        },
+        "ar": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        },
+        "en": {
+          "cer": 0.0493,
+          "cer_nospace": 0.047,
+          "wer": 0.0629,
+          "bag": 0.0
+        }
+      }
+    },
+    {
+      "document": "stress_inline_bilingual.pdf",
+      "arm": "pymupdf+docling",
+      "variant": "as-shipped",
+      "pages": 1,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 0.83,
+      "ms_per_page": 828.9,
+      "n_chunks": 6,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": true,
+        "markers_before": 0,
+        "markers_after": 5,
+        "score_before": 0.1905,
+        "score_after": 0.7203,
+        "reason": "visual order confirmed: structural markers 0 -> 5, order score +0.191 -> +0.720 (gain +0.530 over 124 observations). 'ال' opens 43 token(s), 'لا' closes 2; final-form letters close 29 token(s), open 0"
+      },
+      "ref_chars": {
+        "all": 1119,
+        "ar": 766,
+        "en": 276
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.0404,
+          "cer_nospace": 0.0376,
+          "wer": 0.0543,
+          "bag": 0.0
+        },
+        "ar": {
+          "cer": 0.0,
+          "cer_nospace": 0.0,
+          "wer": 0.0,
+          "bag": 0.0
+        },
+        "en": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        }
+      }
+    },
+    {
+      "document": "stress_nested_clauses_ar.pdf",
+      "arm": "pymupdf+docling",
+      "variant": "as-shipped",
+      "pages": 1,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 0.87,
+      "ms_per_page": 865.2,
+      "n_chunks": 13,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": true,
+        "markers_before": 17,
+        "markers_after": 22,
+        "score_before": 0.6829,
+        "score_after": 0.8022,
+        "reason": "visual order confirmed: structural markers 17 -> 22, order score +0.683 -> +0.802 (gain +0.119 over 76 observations). 'ال' opens 30 token(s), 'لا' closes 1; final-form letters close 15 token(s), open 0"
+      },
+      "ref_chars": {
+        "all": 1342,
+        "ar": 490,
+        "en": 737
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.1114,
+          "cer_nospace": 0.1115,
+          "wer": 0.15,
+          "bag": 0.04
+        },
+        "ar": {
+          "cer": 0.0163,
+          "cer_nospace": 0.0048,
+          "wer": 0.1096,
+          "bag": 0.1096
+        },
+        "en": {
+          "cer": 0.1547,
+          "cer_nospace": 0.1559,
+          "wer": 0.1456,
+          "bag": 0.0
+        }
+      }
+    },
+    {
+      "document": "synthetic_contract_bilingual.pdf",
+      "arm": "pymupdf+docling",
+      "variant": "as-shipped",
+      "pages": 3,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 4.23,
+      "ms_per_page": 1409.6,
+      "n_chunks": 19,
+      "n_tables": 2,
+      "reading_order": {
+        "repaired": true,
+        "markers_before": 5,
+        "markers_after": 15,
+        "score_before": 0.6964,
+        "score_after": 0.8438,
+        "reason": "visual order confirmed: structural markers 5 -> 15, order score +0.696 -> +0.844 (gain +0.147 over 392 observations). 'ال' opens 150 token(s), 'لا' closes 5; final-form letters close 104 token(s), open 0"
+      },
+      "ref_chars": {
+        "all": 3933,
+        "ar": 2347,
+        "en": 1447
+      },
+      "pages_missing": [],
+      "scope_used": "page",
+      "metrics": {
+        "all": {
+          "cer": 0.612,
+          "cer_nospace": 0.6219,
+          "wer": 0.7248,
+          "bag": 0.0
+        },
+        "ar": {
+          "cer": 0.6357,
+          "cer_nospace": 0.6585,
+          "wer": 0.7638,
+          "bag": 0.0
+        },
+        "en": {
+          "cer": 0.358,
+          "cer_nospace": 0.3692,
+          "wer": 0.2969,
+          "bag": 0.0
+        }
+      }
+    },
+    {
+      "document": "eg_official_gazette_excerpt.pdf",
+      "arm": "pymupdf+docling",
+      "variant": "extraction-only",
+      "pages": 2,
+      "provenance": "transcribed",
+      "error": null,
+      "seconds": 11.74,
+      "ms_per_page": 5867.7,
+      "n_chunks": 134,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": false,
+        "markers_before": 0,
+        "markers_after": 0,
+        "score_before": 0.0,
+        "score_after": 0.0,
+        "reason": "no Arabic content"
+      },
+      "ref_chars": {
+        "all": 4416,
+        "ar": 0,
+        "en": 4329
+      },
+      "pages_missing": [],
+      "scope_used": "page",
+      "metrics": {
+        "all": {
+          "cer": 0.0114,
+          "cer_nospace": 0.0119,
+          "wer": 0.0085,
+          "bag": 0.0085
+        },
+        "ar": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        },
+        "en": {
+          "cer": 0.0106,
+          "cer_nospace": 0.0115,
+          "wer": 0.0058,
+          "bag": 0.0058
+        }
+      }
+    },
+    {
+      "document": "native_authored_award_en.pdf",
+      "arm": "pymupdf+docling",
+      "variant": "extraction-only",
+      "pages": 2,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 1.58,
+      "ms_per_page": 790.9,
+      "n_chunks": 9,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": false,
+        "markers_before": 0,
+        "markers_after": 0,
+        "score_before": 0.0,
+        "score_after": 0.0,
+        "reason": "no Arabic content"
+      },
+      "ref_chars": {
+        "all": 1736,
+        "ar": 0,
+        "en": 1579
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.0,
+          "cer_nospace": 0.0,
+          "wer": 0.0,
+          "bag": 0.0
+        },
+        "ar": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        },
+        "en": {
+          "cer": 0.0,
+          "cer_nospace": 0.0,
+          "wer": 0.0,
+          "bag": 0.0
+        }
+      }
+    },
+    {
+      "document": "native_authored_statute_ar.pdf",
+      "arm": "pymupdf+docling",
+      "variant": "extraction-only",
+      "pages": 3,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 2.49,
+      "ms_per_page": 830.7,
+      "n_chunks": 12,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": true,
+        "markers_before": 0,
+        "markers_after": 13,
+        "score_before": 0.6269,
+        "score_after": 0.9588,
+        "reason": "visual order confirmed: structural markers 0 -> 13, order score +0.627 -> +0.959 (gain +0.332 over 177 observations). 'ال' opens 94 token(s), 'لا' closes 4; final-form letters close 64 token(s), open 0"
+      },
+      "ref_chars": {
+        "all": 1605,
+        "ar": 1570,
+        "en": 0
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.0,
+          "cer_nospace": 0.0,
+          "wer": 0.0,
+          "bag": 0.0
+        },
+        "ar": {
+          "cer": 0.0,
+          "cer_nospace": 0.0,
+          "wer": 0.0,
+          "bag": 0.0
+        },
+        "en": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        }
+      }
+    },
+    {
+      "document": "stress_exhibits_footnotes.pdf",
+      "arm": "pymupdf+docling",
+      "variant": "extraction-only",
+      "pages": 1,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 0.87,
+      "ms_per_page": 870.9,
+      "n_chunks": 11,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": false,
+        "markers_before": 11,
+        "markers_after": 13,
+        "score_before": 0.8571,
+        "score_after": 0.8571,
+        "reason": "reordering recovers 13 marker(s) vs 11 but the order score gains only +0.000 (need +0.100); left as-is -- consistent with logical order, or with genuine extraction damage that reordering does not fix"
+      },
+      "ref_chars": {
+        "all": 1463,
+        "ar": 163,
+        "en": 1196
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.0801,
+          "cer_nospace": 0.0794,
+          "wer": 0.1233,
+          "bag": 0.0529
+        },
+        "ar": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        },
+        "en": {
+          "cer": 0.0,
+          "cer_nospace": 0.0,
+          "wer": 0.0,
+          "bag": 0.0
+        }
+      }
+    },
+    {
+      "document": "stress_inline_bilingual.pdf",
+      "arm": "pymupdf+docling",
+      "variant": "extraction-only",
+      "pages": 1,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 0.83,
+      "ms_per_page": 828.4,
+      "n_chunks": 6,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": true,
+        "markers_before": 0,
+        "markers_after": 5,
+        "score_before": 0.1905,
+        "score_after": 0.7203,
+        "reason": "visual order confirmed: structural markers 0 -> 5, order score +0.191 -> +0.720 (gain +0.530 over 124 observations). 'ال' opens 43 token(s), 'لا' closes 2; final-form letters close 29 token(s), open 0"
+      },
+      "ref_chars": {
+        "all": 1119,
+        "ar": 766,
+        "en": 276
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.0,
+          "cer_nospace": 0.0,
+          "wer": 0.0,
+          "bag": 0.0
+        },
+        "ar": {
+          "cer": 0.0,
+          "cer_nospace": 0.0,
+          "wer": 0.0,
+          "bag": 0.0
+        },
+        "en": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        }
+      }
+    },
+    {
+      "document": "stress_nested_clauses_ar.pdf",
+      "arm": "pymupdf+docling",
+      "variant": "extraction-only",
+      "pages": 1,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 0.87,
+      "ms_per_page": 870.2,
+      "n_chunks": 13,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": true,
+        "markers_before": 17,
+        "markers_after": 22,
+        "score_before": 0.6829,
+        "score_after": 0.8022,
+        "reason": "visual order confirmed: structural markers 17 -> 22, order score +0.683 -> +0.802 (gain +0.119 over 76 observations). 'ال' opens 30 token(s), 'لا' closes 1; final-form letters close 15 token(s), open 0"
+      },
+      "ref_chars": {
+        "all": 1342,
+        "ar": 490,
+        "en": 737
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.0497,
+          "cer_nospace": 0.0513,
+          "wer": 0.08,
+          "bag": 0.06
+        },
+        "ar": {
+          "cer": 0.0163,
+          "cer_nospace": 0.0048,
+          "wer": 0.1096,
+          "bag": 0.1096
+        },
+        "en": {
+          "cer": 0.0271,
+          "cer_nospace": 0.0315,
+          "wer": 0.0388,
+          "bag": 0.0388
+        }
+      }
+    },
+    {
+      "document": "synthetic_contract_bilingual.pdf",
+      "arm": "pymupdf+docling",
+      "variant": "extraction-only",
+      "pages": 3,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 4.3,
+      "ms_per_page": 1433.8,
+      "n_chunks": 19,
+      "n_tables": 2,
+      "reading_order": {
+        "repaired": true,
+        "markers_before": 5,
+        "markers_after": 15,
+        "score_before": 0.6964,
+        "score_after": 0.8438,
+        "reason": "visual order confirmed: structural markers 5 -> 15, order score +0.696 -> +0.844 (gain +0.147 over 392 observations). 'ال' opens 150 token(s), 'لا' closes 5; final-form letters close 104 token(s), open 0"
+      },
+      "ref_chars": {
+        "all": 3933,
+        "ar": 2347,
+        "en": 1447
+      },
+      "pages_missing": [],
+      "scope_used": "page",
+      "metrics": {
+        "all": {
+          "cer": 0.6008,
+          "cer_nospace": 0.6103,
+          "wer": 0.7158,
+          "bag": 0.0
+        },
+        "ar": {
+          "cer": 0.6357,
+          "cer_nospace": 0.6585,
+          "wer": 0.7638,
+          "bag": 0.0
+        },
+        "en": {
+          "cer": 0.329,
+          "cer_nospace": 0.3388,
+          "wer": 0.2751,
+          "bag": 0.0
+        }
+      }
+    },
+    {
+      "document": "eg_official_gazette_excerpt.pdf",
+      "arm": "docling-only",
+      "variant": "as-shipped",
+      "pages": 2,
+      "provenance": "transcribed",
+      "error": "extractor produced no output for any referenced page (dropped [2, 3])",
+      "seconds": 9.6,
+      "ms_per_page": 4800.3,
+      "n_chunks": 26,
+      "n_tables": 0,
+      "reading_order": {},
+      "ref_chars": {},
+      "pages_missing": [
+        2,
+        3
+      ],
+      "scope_used": "page",
+      "metrics": {}
+    },
+    {
+      "document": "native_authored_award_en.pdf",
+      "arm": "docling-only",
+      "variant": "as-shipped",
+      "pages": 2,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 1.62,
+      "ms_per_page": 810.7,
+      "n_chunks": 3,
+      "n_tables": 0,
+      "reading_order": {},
+      "ref_chars": {
+        "all": 1736,
+        "ar": 0,
+        "en": 1579
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.0789,
+          "cer_nospace": 0.0789,
+          "wer": 0.1007,
+          "bag": 0.0299
+        },
+        "ar": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        },
+        "en": {
+          "cer": 0.0659,
+          "cer_nospace": 0.0685,
+          "wer": 0.0802,
+          "bag": 0.0127
+        }
+      }
+    },
+    {
+      "document": "native_authored_statute_ar.pdf",
+      "arm": "docling-only",
+      "variant": "as-shipped",
+      "pages": 3,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 2.52,
+      "ms_per_page": 838.9,
+      "n_chunks": 7,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": false,
+        "markers_before": 6,
+        "markers_after": 0,
+        "score_before": 0.9574,
+        "score_after": -1.0,
+        "reason": "reordering recovers 0 structural marker(s) against 6 in the extracted text; it does not improve legal structure, so the extracted reading is kept"
+      },
+      "ref_chars": {
+        "all": 1605,
+        "ar": 1570,
+        "en": 0
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.0509,
+          "cer_nospace": 0.043,
+          "wer": 0.097,
+          "bag": 0.0
+        },
+        "ar": {
+          "cer": 0.0242,
+          "cer_nospace": 0.0244,
+          "wer": 0.0232,
+          "bag": 0.0
+        },
+        "en": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        }
+      }
+    },
+    {
+      "document": "stress_exhibits_footnotes.pdf",
+      "arm": "docling-only",
+      "variant": "as-shipped",
+      "pages": 1,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 0.9,
+      "ms_per_page": 896.8,
+      "n_chunks": 1,
+      "n_tables": 0,
+      "reading_order": {},
+      "ref_chars": {
+        "all": 1463,
+        "ar": 163,
+        "en": 1196
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.0373,
+          "cer_nospace": 0.0344,
+          "wer": 0.0617,
+          "bag": 0.0088
+        },
+        "ar": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        },
+        "en": {
+          "cer": 0.0,
+          "cer_nospace": 0.0,
+          "wer": 0.0,
+          "bag": 0.0
+        }
+      }
+    },
+    {
+      "document": "stress_inline_bilingual.pdf",
+      "arm": "docling-only",
+      "variant": "as-shipped",
+      "pages": 1,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 0.83,
+      "ms_per_page": 829.4,
+      "n_chunks": 1,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": false,
+        "markers_before": 0,
+        "markers_after": 0,
+        "score_before": 0.617,
+        "score_after": -0.3824,
+        "reason": "reordering recovers 0 marker(s) vs 0 but the order score gains only -0.999 (need +0.100); left as-is -- consistent with logical order, or with genuine extraction damage that reordering does not fix"
+      },
+      "ref_chars": {
+        "all": 1119,
+        "ar": 766,
+        "en": 276
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.5894,
+          "cer_nospace": 0.6226,
+          "wer": 0.7609,
+          "bag": 0.1196
+        },
+        "ar": {
+          "cer": 0.4099,
+          "cer_nospace": 0.4362,
+          "wer": 0.5379,
+          "bag": 0.0076
+        },
+        "en": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        }
+      }
+    },
+    {
+      "document": "stress_nested_clauses_ar.pdf",
+      "arm": "docling-only",
+      "variant": "as-shipped",
+      "pages": 1,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 0.81,
+      "ms_per_page": 813.3,
+      "n_chunks": 1,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": false,
+        "markers_before": 0,
+        "markers_after": 0,
+        "score_before": 0.9726,
+        "score_after": -0.2537,
+        "reason": "reordering recovers 0 marker(s) vs 0 but the order score gains only -1.226 (need +0.100); left as-is -- consistent with logical order, or with genuine extraction damage that reordering does not fix"
+      },
+      "ref_chars": {
+        "all": 1342,
+        "ar": 490,
+        "en": 737
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.1008,
+          "cer_nospace": 0.1,
+          "wer": 0.17,
+          "bag": 0.04
+        },
+        "ar": {
+          "cer": 0.1041,
+          "cer_nospace": 0.0933,
+          "wer": 0.2055,
+          "bag": 0.1096
+        },
+        "en": {
+          "cer": 0.0,
+          "cer_nospace": 0.0,
+          "wer": 0.0,
+          "bag": 0.0
+        }
+      }
+    },
+    {
+      "document": "synthetic_contract_bilingual.pdf",
+      "arm": "docling-only",
+      "variant": "as-shipped",
+      "pages": 3,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 4.15,
+      "ms_per_page": 1383.5,
+      "n_chunks": 11,
+      "n_tables": 2,
+      "reading_order": {
+        "repaired": false,
+        "markers_before": 1,
+        "markers_after": 0,
+        "score_before": 0.8082,
+        "score_after": -0.7333,
+        "reason": "reordering recovers 0 structural marker(s) against 1 in the extracted text; it does not improve legal structure, so the extracted reading is kept"
+      },
+      "ref_chars": {
+        "all": 3933,
+        "ar": 2347,
+        "en": 1447
+      },
+      "pages_missing": [],
+      "scope_used": "page",
+      "metrics": {
+        "all": {
+          "cer": 0.5332,
+          "cer_nospace": 0.5384,
+          "wer": 0.6992,
+          "bag": 0.0271
+        },
+        "ar": {
+          "cer": 0.5893,
+          "cer_nospace": 0.6154,
+          "wer": 0.7412,
+          "bag": 0.0025
+        },
+        "en": {
+          "cer": 0.2426,
+          "cer_nospace": 0.2486,
+          "wer": 0.2096,
+          "bag": 0.0
+        }
+      }
+    },
+    {
+      "document": "eg_official_gazette_excerpt.pdf",
+      "arm": "docling-only",
+      "variant": "extraction-only",
+      "pages": 2,
+      "provenance": "transcribed",
+      "error": "extractor produced no output for any referenced page (dropped [2, 3])",
+      "seconds": 10.29,
+      "ms_per_page": 5147.3,
+      "n_chunks": 23,
+      "n_tables": 0,
+      "reading_order": {},
+      "ref_chars": {},
+      "pages_missing": [
+        2,
+        3
+      ],
+      "scope_used": "page",
+      "metrics": {}
+    },
+    {
+      "document": "native_authored_award_en.pdf",
+      "arm": "docling-only",
+      "variant": "extraction-only",
+      "pages": 2,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 1.81,
+      "ms_per_page": 905.9,
+      "n_chunks": 3,
+      "n_tables": 0,
+      "reading_order": {},
+      "ref_chars": {
+        "all": 1736,
+        "ar": 0,
+        "en": 1579
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.0789,
+          "cer_nospace": 0.0789,
+          "wer": 0.1007,
+          "bag": 0.0299
+        },
+        "ar": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        },
+        "en": {
+          "cer": 0.0659,
+          "cer_nospace": 0.0685,
+          "wer": 0.0802,
+          "bag": 0.0127
+        }
+      }
+    },
+    {
+      "document": "native_authored_statute_ar.pdf",
+      "arm": "docling-only",
+      "variant": "extraction-only",
+      "pages": 3,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 2.55,
+      "ms_per_page": 851.4,
+      "n_chunks": 7,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": false,
+        "markers_before": 6,
+        "markers_after": 0,
+        "score_before": 0.9574,
+        "score_after": -1.0,
+        "reason": "reordering recovers 0 structural marker(s) against 6 in the extracted text; it does not improve legal structure, so the extracted reading is kept"
+      },
+      "ref_chars": {
+        "all": 1605,
+        "ar": 1570,
+        "en": 0
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.0283,
+          "cer_nospace": 0.0219,
+          "wer": 0.0672,
+          "bag": 0.0
+        },
+        "ar": {
+          "cer": 0.0064,
+          "cer_nospace": 0.0061,
+          "wer": 0.0077,
+          "bag": 0.0
+        },
+        "en": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        }
+      }
+    },
+    {
+      "document": "stress_exhibits_footnotes.pdf",
+      "arm": "docling-only",
+      "variant": "extraction-only",
+      "pages": 1,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 0.86,
+      "ms_per_page": 855.3,
+      "n_chunks": 1,
+      "n_tables": 0,
+      "reading_order": {},
+      "ref_chars": {
+        "all": 1463,
+        "ar": 163,
+        "en": 1196
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.0373,
+          "cer_nospace": 0.0344,
+          "wer": 0.0617,
+          "bag": 0.0088
+        },
+        "ar": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        },
+        "en": {
+          "cer": 0.0,
+          "cer_nospace": 0.0,
+          "wer": 0.0,
+          "bag": 0.0
+        }
+      }
+    },
+    {
+      "document": "stress_inline_bilingual.pdf",
+      "arm": "docling-only",
+      "variant": "extraction-only",
+      "pages": 1,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 0.85,
+      "ms_per_page": 848.7,
+      "n_chunks": 1,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": false,
+        "markers_before": 0,
+        "markers_after": 0,
+        "score_before": 0.617,
+        "score_after": -0.3824,
+        "reason": "reordering recovers 0 marker(s) vs 0 but the order score gains only -0.999 (need +0.100); left as-is -- consistent with logical order, or with genuine extraction damage that reordering does not fix"
+      },
+      "ref_chars": {
+        "all": 1119,
+        "ar": 766,
+        "en": 276
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.5894,
+          "cer_nospace": 0.6226,
+          "wer": 0.7609,
+          "bag": 0.1196
+        },
+        "ar": {
+          "cer": 0.4099,
+          "cer_nospace": 0.4362,
+          "wer": 0.5379,
+          "bag": 0.0076
+        },
+        "en": {
+          "cer": null,
+          "cer_nospace": null,
+          "wer": null,
+          "bag": null
+        }
+      }
+    },
+    {
+      "document": "stress_nested_clauses_ar.pdf",
+      "arm": "docling-only",
+      "variant": "extraction-only",
+      "pages": 1,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 0.82,
+      "ms_per_page": 824.4,
+      "n_chunks": 1,
+      "n_tables": 0,
+      "reading_order": {
+        "repaired": false,
+        "markers_before": 0,
+        "markers_after": 0,
+        "score_before": 0.9726,
+        "score_after": -0.2537,
+        "reason": "reordering recovers 0 marker(s) vs 0 but the order score gains only -1.226 (need +0.100); left as-is -- consistent with logical order, or with genuine extraction damage that reordering does not fix"
+      },
+      "ref_chars": {
+        "all": 1342,
+        "ar": 490,
+        "en": 737
+      },
+      "pages_missing": [],
+      "scope_used": "document (references cover every page)",
+      "metrics": {
+        "all": {
+          "cer": 0.1008,
+          "cer_nospace": 0.1,
+          "wer": 0.17,
+          "bag": 0.04
+        },
+        "ar": {
+          "cer": 0.1041,
+          "cer_nospace": 0.0933,
+          "wer": 0.2055,
+          "bag": 0.1096
+        },
+        "en": {
+          "cer": 0.0,
+          "cer_nospace": 0.0,
+          "wer": 0.0,
+          "bag": 0.0
+        }
+      }
+    },
+    {
+      "document": "synthetic_contract_bilingual.pdf",
+      "arm": "docling-only",
+      "variant": "extraction-only",
+      "pages": 3,
+      "provenance": "authored",
+      "error": null,
+      "seconds": 4.19,
+      "ms_per_page": 1396.7,
+      "n_chunks": 11,
+      "n_tables": 2,
+      "reading_order": {
+        "repaired": false,
+        "markers_before": 1,
+        "markers_after": 0,
+        "score_before": 0.8082,
+        "score_after": -0.7333,
+        "reason": "reordering recovers 0 structural marker(s) against 1 in the extracted text; it does not improve legal structure, so the extracted reading is kept"
+      },
+      "ref_chars": {
+        "all": 3933,
+        "ar": 2347,
+        "en": 1447
+      },
+      "pages_missing": [],
+      "scope_used": "page",
+      "metrics": {
+        "all": {
+          "cer": 0.5306,
+          "cer_nospace": 0.5359,
+          "wer": 0.6962,
+          "bag": 0.0271
+        },
+        "ar": {
+          "cer": 0.5893,
+          "cer_nospace": 0.6154,
+          "wer": 0.7412,
+          "bag": 0.0025
+        },
+        "en": {
+          "cer": 0.237,
+          "cer_nospace": 0.2428,
+          "wer": 0.2052,
+          "bag": 0.0
+        }
+      }
+    }
+  ],
+  "aggregate": {
+    "docling-only | as-shipped": {
+      "all": {
+        "cer": 0.2318,
+        "cer_n": 6,
+        "cer_nospace": 0.2362,
+        "cer_nospace_n": 6,
+        "wer": 0.3149,
+        "wer_n": 6,
+        "bag": 0.0376,
+        "bag_n": 6
+      },
+      "ar": {
+        "cer": 0.2819,
+        "cer_n": 4,
+        "cer_nospace": 0.2923,
+        "cer_nospace_n": 4,
+        "wer": 0.377,
+        "wer_n": 4,
+        "bag": 0.0299,
+        "bag_n": 4
+      },
+      "en": {
+        "cer": 0.0771,
+        "cer_n": 4,
+        "cer_nospace": 0.0793,
+        "cer_nospace_n": 4,
+        "wer": 0.0725,
+        "wer_n": 4,
+        "bag": 0.0032,
+        "bag_n": 4
+      },
+      "arm": "docling-only",
+      "variant": "as-shipped",
+      "documents": 6,
+      "failed": 1,
+      "documents_with_dropped_pages": {
+        "eg_official_gazette_excerpt.pdf": [
+          2,
+          3
+        ]
+      },
+      "ms_per_page_median": 834.2
+    },
+    "docling-only | extraction-only": {
+      "all": {
+        "cer": 0.2276,
+        "cer_n": 6,
+        "cer_nospace": 0.2323,
+        "cer_nospace_n": 6,
+        "wer": 0.3095,
+        "wer_n": 6,
+        "bag": 0.0376,
+        "bag_n": 6
+      },
+      "ar": {
+        "cer": 0.2774,
+        "cer_n": 4,
+        "cer_nospace": 0.2878,
+        "cer_nospace_n": 4,
+        "wer": 0.3731,
+        "wer_n": 4,
+        "bag": 0.0299,
+        "bag_n": 4
+      },
+      "en": {
+        "cer": 0.0757,
+        "cer_n": 4,
+        "cer_nospace": 0.0778,
+        "cer_nospace_n": 4,
+        "wer": 0.0713,
+        "wer_n": 4,
+        "bag": 0.0032,
+        "bag_n": 4
+      },
+      "arm": "docling-only",
+      "variant": "extraction-only",
+      "documents": 6,
+      "failed": 1,
+      "documents_with_dropped_pages": {
+        "eg_official_gazette_excerpt.pdf": [
+          2,
+          3
+        ]
+      },
+      "ms_per_page_median": 853.3
+    },
+    "pymupdf | as-shipped": {
+      "all": {
+        "cer": 0.1369,
+        "cer_n": 7,
+        "cer_nospace": 0.137,
+        "cer_nospace_n": 7,
+        "wer": 0.171,
+        "wer_n": 7,
+        "bag": 0.0145,
+        "bag_n": 7
+      },
+      "ar": {
+        "cer": 0.1682,
+        "cer_n": 4,
+        "cer_nospace": 0.1711,
+        "cer_nospace_n": 4,
+        "wer": 0.2228,
+        "wer_n": 4,
+        "bag": 0.0274,
+        "bag_n": 4
+      },
+      "en": {
+        "cer": 0.116,
+        "cer_n": 5,
+        "cer_nospace": 0.118,
+        "cer_nospace_n": 5,
+        "wer": 0.1047,
+        "wer_n": 5,
+        "bag": 0.0012,
+        "bag_n": 5
+      },
+      "arm": "pymupdf",
+      "variant": "as-shipped",
+      "documents": 7,
+      "failed": 0,
+      "documents_with_dropped_pages": {},
+      "ms_per_page_median": 52.8
+    },
+    "pymupdf | extraction-only": {
+      "all": {
+        "cer": 0.106,
+        "cer_n": 7,
+        "cer_nospace": 0.1076,
+        "cer_nospace_n": 7,
+        "wer": 0.1325,
+        "wer_n": 7,
+        "bag": 0.0173,
+        "bag_n": 7
+      },
+      "ar": {
+        "cer": 0.163,
+        "cer_n": 4,
+        "cer_nospace": 0.1658,
+        "cer_nospace_n": 4,
+        "wer": 0.2184,
+        "wer_n": 4,
+        "bag": 0.0274,
+        "bag_n": 4
+      },
+      "en": {
+        "cer": 0.0733,
+        "cer_n": 5,
+        "cer_nospace": 0.0764,
+        "cer_nospace_n": 5,
+        "wer": 0.0639,
+        "wer_n": 5,
+        "bag": 0.0089,
+        "bag_n": 5
+      },
+      "arm": "pymupdf",
+      "variant": "extraction-only",
+      "documents": 7,
+      "failed": 0,
+      "documents_with_dropped_pages": {},
+      "ms_per_page_median": 48.5
+    },
+    "pymupdf+docling | as-shipped": {
+      "all": {
+        "cer": 0.1378,
+        "cer_n": 7,
+        "cer_nospace": 0.138,
+        "cer_nospace_n": 7,
+        "wer": 0.1715,
+        "wer_n": 7,
+        "bag": 0.0145,
+        "bag_n": 7
+      },
+      "ar": {
+        "cer": 0.1675,
+        "cer_n": 4,
+        "cer_nospace": 0.1704,
+        "cer_nospace_n": 4,
+        "wer": 0.2222,
+        "wer_n": 4,
+        "bag": 0.0274,
+        "bag_n": 4
+      },
+      "en": {
+        "cer": 0.1207,
+        "cer_n": 5,
+        "cer_nospace": 0.123,
+        "cer_nospace_n": 5,
+        "wer": 0.1081,
+        "wer_n": 5,
+        "bag": 0.0012,
+        "bag_n": 5
+      },
+      "arm": "pymupdf+docling",
+      "variant": "as-shipped",
+      "documents": 7,
+      "failed": 0,
+      "documents_with_dropped_pages": {},
+      "ms_per_page_median": 865.2
+    },
+    "pymupdf+docling | extraction-only": {
+      "all": {
+        "cer": 0.106,
+        "cer_n": 7,
+        "cer_nospace": 0.1076,
+        "cer_nospace_n": 7,
+        "wer": 0.1325,
+        "wer_n": 7,
+        "bag": 0.0173,
+        "bag_n": 7
+      },
+      "ar": {
+        "cer": 0.163,
+        "cer_n": 4,
+        "cer_nospace": 0.1658,
+        "cer_nospace_n": 4,
+        "wer": 0.2184,
+        "wer_n": 4,
+        "bag": 0.0274,
+        "bag_n": 4
+      },
+      "en": {
+        "cer": 0.0733,
+        "cer_n": 5,
+        "cer_nospace": 0.0764,
+        "cer_nospace_n": 5,
+        "wer": 0.0639,
+        "wer_n": 5,
+        "bag": 0.0089,
+        "bag_n": 5
+      },
+      "arm": "pymupdf+docling",
+      "variant": "extraction-only",
+      "documents": 7,
+      "failed": 0,
+      "documents_with_dropped_pages": {},
+      "ms_per_page_median": 870.2
+    }
+  }
+}

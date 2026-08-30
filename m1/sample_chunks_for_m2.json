@@ -1,0 +1,1203 @@
+{
+  "generated_by": "src.pipeline.ingest() -- M1 document-processing pipeline",
+  "purpose": "Real sample DocumentChunk output for M2 integration against contracts/m2_expected_schema.py",
+  "serialization": "[c.model_dump(mode='json') for c in chunks]",
+  "samples": [
+    {
+      "sample_group": "arabic",
+      "fixture": "test_corpus/synthetic/native_authored_statute_ar.pdf",
+      "total_chunks_in_document": 12,
+      "selected_chunk_indexes": [
+        0,
+        2,
+        5
+      ],
+      "note": "Arabic-only statute; visual-order Arabic DTP output, so every chunk carries rtl_flags. No clause anchoring (statute uses section headings).",
+      "chunks": [
+        {
+          "document_id": "doc_95fceef5860e",
+          "chunk_id": "chunk_001",
+          "text": "قانون رقم 44 لسنة 2026\nباصدار قانون تنظيم عقود الاستشارات الهندسية\n\nباسم الشعب\nرئيس الجمهورية\nقرر مجلس النواب القانون الاتي نصه، وقد اصدرناه:",
+          "page": 1,
+          "section": null,
+          "clause": null,
+          "language": "ar",
+          "document_type": "law",
+          "metadata": {
+            "jurisdiction": "Egypt",
+            "source_file": "test_corpus\\synthetic\\native_authored_statute_ar.pdf",
+            "source_engine": "pymupdf+docling",
+            "pdf_kind": "text",
+            "ingested_at": "2026-08-22T10:39:36.656916Z",
+            "structure": {
+              "book": null,
+              "chapter": null,
+              "section": null,
+              "article": null,
+              "clause": null,
+              "clause_id": null,
+              "title": null,
+              "heading_path": [],
+              "heading_level": null,
+              "marker_language": null,
+              "marker_fuzzy": false,
+              "marker_confidence": 1.0,
+              "marker_evidence": null
+            },
+            "block_type": "paragraph",
+            "bboxes": [
+              {
+                "x0": 375.527099609375,
+                "y0": 63.46670150756836,
+                "x1": 539.2796630859375,
+                "y1": 90.4666976928711,
+                "page": 1,
+                "scale": null
+              },
+              {
+                "x0": 356.9054870605469,
+                "y0": 111.46670532226562,
+                "x1": 539.2740478515625,
+                "y1": 154.46670532226562,
+                "page": 1,
+                "scale": null
+              }
+            ],
+            "bbox": {
+              "x0": 356.9054870605469,
+              "y0": 63.46670150756836,
+              "x1": 539.2796630859375,
+              "y1": 154.46670532226562,
+              "page": 1,
+              "scale": null
+            },
+            "page_span": [
+              1
+            ],
+            "char_span": [
+              0,
+              141
+            ],
+            "is_table": false,
+            "table_markdown": null,
+            "table_shape": null,
+            "ocr_confidence": null,
+            "rtl_flags": [
+              {
+                "kind": "visual_order_repaired",
+                "page": 1,
+                "detail": "this block's text layer was stored in VISUAL order and was reordered to logical order from glyph geometry. visual order confirmed: structural markers 0 -> 13, order score +0.627 -> +0.959 (gain +0.332 over 177 observations). 'ال' opens 94 token(s), 'لا' closes 4; final-form letters close 64 token(s), open 0 Digit *order* was not touched -- see digit_order_suspect.",
+                "severity": "warn",
+                "sample": "قانون رقم 44 لسنة 2026 بإصدار قانون تنظيم عقود الاستشارات الهندسية"
+              },
+              {
+                "kind": "visual_order_repaired",
+                "page": 1,
+                "detail": "this block's text layer was stored in VISUAL order and was reordered to logical order from glyph geometry. visual order confirmed: structural markers 0 -> 13, order score +0.627 -> +0.959 (gain +0.332 over 177 observations). 'ال' opens 94 token(s), 'لا' closes 4; final-form letters close 64 token(s), open 0 Digit *order* was not touched -- see digit_order_suspect.",
+                "severity": "warn",
+                "sample": "باسم الشعب رئيس الجمهورية قرر مجلس النواب القانون الآتي نصه، وقد أصدرناه:"
+              }
+            ],
+            "reading_order_repaired": true,
+            "normalization_applied": [
+              "normalize_alef"
+            ],
+            "raw_text": "2026  ﻟﺴﻨﺔ44 ﻗﺎﻧﻮﻥ ﺭﻗﻢ\nﺑﺈﺻﺪﺍﺭ ﻗﺎﻧﻮﻥ ﺗﻨﻈﻴﻢ ﻋﻘﻮﺩ ﺍﻻﺳﺘﺸﺎﺭﺍﺕ ﺍﻟﻬﻨﺪﺳﻴﺔ\n\nﺑﺎﺳﻢ ﺍﻟﺸﻌﺐ\nﺭﺋﻴﺲ ﺍﻟﺠﻤﻬﻮﺭﻳﺔ\n:ﻗﺮﺭ ﻣﺠﻠﺲ ﺍﻟﻨﻮﺍﺏ ﺍﻟﻘﺎﻧﻮﻥ ﺍﻵﺗﻲ ﻧﺼﻪ، ﻭﻗﺪ ﺃﺻﺪﺭﻧﺎﻩ",
+            "display_text": null,
+            "chunk_index": 1,
+            "chunk_strategy": "structural",
+            "split_from_unit": false,
+            "n_chars": 141,
+            "n_words": 23
+          }
+        },
+        {
+          "document_id": "doc_95fceef5860e",
+          "chunk_id": "chunk_003",
+          "text": "المادة 2\nالمادة الثانية\nيصدر رئيس مجلس الوزراء اللائحة التنفيذية لهذا القانون خلال ستة اشهر من\n\nتاريخ العمل به، والي ان تصدر يستمر العمل باللوائح القائمة فيما لا يتعارض\n\nمع احكامه.",
+          "page": 1,
+          "section": "ة",
+          "clause": null,
+          "language": "ar",
+          "document_type": "law",
+          "metadata": {
+            "jurisdiction": "Egypt",
+            "source_file": "test_corpus\\synthetic\\native_authored_statute_ar.pdf",
+            "source_engine": "pymupdf+docling",
+            "pdf_kind": "text",
+            "ingested_at": "2026-08-22T10:39:36.656916Z",
+            "structure": {
+              "book": null,
+              "chapter": null,
+              "section": "المادة 2",
+              "article": "المادة 2",
+              "clause": null,
+              "clause_id": "art_2",
+              "title": "ة",
+              "heading_path": [
+                "المادة 2: ة"
+              ],
+              "heading_level": 4,
+              "marker_language": "ar",
+              "marker_fuzzy": false,
+              "marker_confidence": 1.0,
+              "marker_evidence": null
+            },
+            "block_type": "paragraph",
+            "bboxes": [
+              {
+                "x0": 272.2301940917969,
+                "y0": 223.46670532226562,
+                "x1": 539.2885131835938,
+                "y1": 250.46670532226562,
+                "page": 1,
+                "scale": null
+              },
+              {
+                "x0": 275.2594909667969,
+                "y0": 255.46670532226562,
+                "x1": 539.2488403320312,
+                "y1": 266.4667053222656,
+                "page": 1,
+                "scale": null
+              },
+              {
+                "x0": 500.45330810546875,
+                "y0": 271.4667053222656,
+                "x1": 539.2722778320312,
+                "y1": 282.4667053222656,
+                "page": 1,
+                "scale": null
+              }
+            ],
+            "bbox": {
+              "x0": 272.2301940917969,
+              "y0": 223.46670532226562,
+              "x1": 539.2885131835938,
+              "y1": 282.4667053222656,
+              "page": 1,
+              "scale": null
+            },
+            "page_span": [
+              1
+            ],
+            "char_span": [
+              234,
+              414
+            ],
+            "is_table": false,
+            "table_markdown": null,
+            "table_shape": null,
+            "ocr_confidence": null,
+            "rtl_flags": [
+              {
+                "kind": "visual_order_repaired",
+                "page": 1,
+                "detail": "this block's text layer was stored in VISUAL order and was reordered to logical order from glyph geometry. visual order confirmed: structural markers 0 -> 13, order score +0.627 -> +0.959 (gain +0.332 over 177 observations). 'ال' opens 94 token(s), 'لا' closes 4; final-form letters close 64 token(s), open 0 Digit *order* was not touched -- see digit_order_suspect.",
+                "severity": "warn",
+                "sample": "المادة الثانية يصدر رئيس مجلس الوزراء اللائحة التنفيذية لهذا القانون خلال ستة أشهر من"
+              },
+              {
+                "kind": "visual_order_repaired",
+                "page": 1,
+                "detail": "this block's text layer was stored in VISUAL order and was reordered to logical order from glyph geometry. visual order confirmed: structural markers 0 -> 13, order score +0.627 -> +0.959 (gain +0.332 over 177 observations). 'ال' opens 94 token(s), 'لا' closes 4; final-form letters close 64 token(s), open 0 Digit *order* was not touched -- see digit_order_suspect.",
+                "severity": "warn",
+                "sample": "تاريخ العمل به، وإلى أن تصدر يستمر العمل باللوائح القائمة فيما لا يتعارض"
+              },
+              {
+                "kind": "visual_order_repaired",
+                "page": 1,
+                "detail": "this block's text layer was stored in VISUAL order and was reordered to logical order from glyph geometry. visual order confirmed: structural markers 0 -> 13, order score +0.627 -> +0.959 (gain +0.332 over 177 observations). 'ال' opens 94 token(s), 'لا' closes 4; final-form letters close 64 token(s), open 0 Digit *order* was not touched -- see digit_order_suspect.",
+                "severity": "warn",
+                "sample": "مع أحكامه."
+              }
+            ],
+            "reading_order_repaired": true,
+            "normalization_applied": [
+              "normalize_alef",
+              "normalize_alef_maksura"
+            ],
+            "raw_text": "ﺍﻟﻤﺎﺩﺓ ﺍﻟﺜﺎﻧﻴﺔ\nﻳﺼﺪﺭ ﺭﺋﻴﺲ ﻣﺠﻠﺲ ﺍﻟﻮﺯﺭﺍﺀ ﺍﻟﻼﺋﺤﺔ ﺍﻟﺘﻨﻔﻴﺬﻳﺔ ﻟﻬﺬﺍ ﺍﻟﻘﺎﻧﻮﻥ ﺧﻼﻝ ﺳﺘﺔ ﺃﺷﻬﺮ ﻣﻦ\n\nﺗﺎﺭﻳﺦ ﺍﻟﻌﻤﻞ ﺑﻪ، ﻭﺇﻟﻰ ﺃﻥ ﺗﺼﺪﺭ ﻳﺴﺘﻤﺮ ﺍﻟﻌﻤﻞ ﺑﺎﻟﻠﻮﺍﺋﺢ ﺍﻟﻘﺎﺋﻤﺔ ﻓﻴﻤﺎ ﻻ ﻳﺘﻌﺎﺭﺽ\n\n.ﻣﻊ ﺃﺣﻜﺎﻣﻪ",
+            "display_text": null,
+            "chunk_index": 3,
+            "chunk_strategy": "structural",
+            "split_from_unit": false,
+            "n_chars": 180,
+            "n_words": 31
+          }
+        },
+        {
+          "document_id": "doc_95fceef5860e",
+          "chunk_id": "chunk_006",
+          "text": "الفصل الاول\nتعريفات واحكام عامة\n\nالمادة 1\nفي تطبيق احكام هذا القانون يقصد بالالفاظ والعبارات التالية المعني المبين\n\nقرين كل منها:\n\nالجهة الادارية: الوزارة او المصلحة او الهيئة العامة التي تبرم العقد.\nالمستشار: الشخص الطبيعي او الاعتباري المرخص له بمزاولة اعمال الاستشارات.\n\nالعقد: الاتفاق المكتوب المبرم بين الجهة الادارية والمستشار.",
+          "page": 2,
+          "section": "المادة 1",
+          "clause": null,
+          "language": "ar",
+          "document_type": "law",
+          "metadata": {
+            "jurisdiction": "Egypt",
+            "source_file": "test_corpus\\synthetic\\native_authored_statute_ar.pdf",
+            "source_engine": "pymupdf+docling",
+            "pdf_kind": "text",
+            "ingested_at": "2026-08-22T10:39:36.656916Z",
+            "structure": {
+              "book": null,
+              "chapter": "الفصل 1",
+              "section": "المادة 1",
+              "article": "المادة 1",
+              "clause": null,
+              "clause_id": "art_1",
+              "title": null,
+              "heading_path": [
+                "الفصل 1",
+                "المادة 1"
+              ],
+              "heading_level": 4,
+              "marker_language": "ar",
+              "marker_fuzzy": false,
+              "marker_confidence": 1.0,
+              "marker_evidence": null
+            },
+            "block_type": "paragraph",
+            "bboxes": [
+              {
+                "x0": 464.6174011230469,
+                "y0": 63.46670150756836,
+                "x1": 539.2691040039062,
+                "y1": 90.4666976928711,
+                "page": 2,
+                "scale": null
+              },
+              {
+                "x0": 286.1252136230469,
+                "y0": 111.46670532226562,
+                "x1": 539.26220703125,
+                "y1": 138.46670532226562,
+                "page": 2,
+                "scale": null
+              },
+              {
+                "x0": 489.5339050292969,
+                "y0": 143.46670532226562,
+                "x1": 539.2760009765625,
+                "y1": 154.46670532226562,
+                "page": 2,
+                "scale": null
+              },
+              {
+                "x0": 252.16380310058594,
+                "y0": 175.46670532226562,
+                "x1": 539.2750854492188,
+                "y1": 202.46670532226562,
+                "page": 2,
+                "scale": null
+              },
+              {
+                "x0": 332.0050964355469,
+                "y0": 207.46670532226562,
+                "x1": 539.2781982421875,
+                "y1": 218.46670532226562,
+                "page": 2,
+                "scale": null
+              }
+            ],
+            "bbox": {
+              "x0": 252.16380310058594,
+              "y0": 63.46670150756836,
+              "x1": 539.2781982421875,
+              "y1": 218.46670532226562,
+              "page": 2,
+              "scale": null
+            },
+            "page_span": [
+              2
+            ],
+            "char_span": [
+              582,
+              915
+            ],
+            "is_table": false,
+            "table_markdown": null,
+            "table_shape": null,
+            "ocr_confidence": null,
+            "rtl_flags": [
+              {
+                "kind": "visual_order_repaired",
+                "page": 2,
+                "detail": "this block's text layer was stored in VISUAL order and was reordered to logical order from glyph geometry. visual order confirmed: structural markers 0 -> 13, order score +0.627 -> +0.959 (gain +0.332 over 177 observations). 'ال' opens 94 token(s), 'لا' closes 4; final-form letters close 64 token(s), open 0 Digit *order* was not touched -- see digit_order_suspect.",
+                "severity": "warn",
+                "sample": "الفصل الأول تعريفات وأحكام عامة"
+              },
+              {
+                "kind": "visual_order_repaired",
+                "page": 2,
+                "detail": "this block's text layer was stored in VISUAL order and was reordered to logical order from glyph geometry. visual order confirmed: structural markers 0 -> 13, order score +0.627 -> +0.959 (gain +0.332 over 177 observations). 'ال' opens 94 token(s), 'لا' closes 4; final-form letters close 64 token(s), open 0 Digit *order* was not touched -- see digit_order_suspect.",
+                "severity": "warn",
+                "sample": "المادة 1 في تطبيق أحكام هذا القانون يقصد بالألفاظ والعبارات التالية المعنى المبين"
+              },
+              {
+                "kind": "visual_order_repaired",
+                "page": 2,
+                "detail": "this block's text layer was stored in VISUAL order and was reordered to logical order from glyph geometry. visual order confirmed: structural markers 0 -> 13, order score +0.627 -> +0.959 (gain +0.332 over 177 observations). 'ال' opens 94 token(s), 'لا' closes 4; final-form letters close 64 token(s), open 0 Digit *order* was not touched -- see digit_order_suspect.",
+                "severity": "warn",
+                "sample": "قرين كل منها:"
+              },
+              {
+                "kind": "visual_order_repaired",
+                "page": 2,
+                "detail": "this block's text layer was stored in VISUAL order and was reordered to logical order from glyph geometry. visual order confirmed: structural markers 0 -> 13, order score +0.627 -> +0.959 (gain +0.332 over 177 observations). 'ال' opens 94 token(s), 'لا' closes 4; final-form letters close 64 token(s), open 0 Digit *order* was not touched -- see digit_order_suspect.",
+                "severity": "warn",
+                "sample": "الجهة الإدارية: الوزارة أو المصلحة أو الهيئة العامة التي تبرم العقد. المستشار: الشخص الطبيعي أو الاعتباري المرخص له بمزا"
+              },
+              {
+                "kind": "visual_order_repaired",
+                "page": 2,
+                "detail": "this block's text layer was stored in VISUAL order and was reordered to logical order from glyph geometry. visual order confirmed: structural markers 0 -> 13, order score +0.627 -> +0.959 (gain +0.332 over 177 observations). 'ال' opens 94 token(s), 'لا' closes 4; final-form letters close 64 token(s), open 0 Digit *order* was not touched -- see digit_order_suspect.",
+                "severity": "warn",
+                "sample": "العقد: الاتفاق المكتوب المبرم بين الجهة الإدارية والمستشار."
+              }
+            ],
+            "reading_order_repaired": true,
+            "normalization_applied": [
+              "normalize_alef",
+              "normalize_alef_maksura"
+            ],
+            "raw_text": "ﺍﻟﻔﺼﻞ ﺍﻷﻭﻝ\nﺗﻌﺮﻳﻔﺎﺕ ﻭﺃﺣﻜﺎﻡ ﻋﺎﻣﺔ\n\n1 ﺍﻟﻤﺎﺩﺓ\nﻓﻲ ﺗﻄﺒﻴﻖ ﺃﺣﻜﺎﻡ ﻫﺬﺍ ﺍﻟﻘﺎﻧﻮﻥ ﻳﻘﺼﺪ ﺑﺎﻷﻟﻔﺎﻅ ﻭﺍﻟﻌﺒﺎﺭﺍﺕ ﺍﻟﺘﺎﻟﻴﺔ ﺍﻟﻤﻌﻨﻰ ﺍﻟﻤﺒﻴﻦ\n\n:ﻗﺮﻳﻦ ﻛﻞ ﻣﻨﻬﺎ\n\n.ﺍﻟﺠﻬﺔ ﺍﻹﺩﺍﺭﻳﺔ: ﺍﻟﻮﺯﺍﺭﺓ ﺃﻭ ﺍﻟﻤﺼﻠﺤﺔ ﺃﻭ ﺍﻟﻬﻴﺌﺔ ﺍﻟﻌﺎﻣﺔ ﺍﻟﺘﻲ ﺗﺒﺮﻡ ﺍﻟﻌﻘﺪ\n.ﺍﻟﻤﺴﺘﺸﺎﺭ: ﺍﻟﺸﺨﺺ ﺍﻟﻄﺒﻴﻌﻲ ﺃﻭ ﺍﻻﻋﺘﺒﺎﺭﻱ ﺍﻟﻤﺮﺧﺺ ﻟﻪ ﺑﻤﺰﺍﻭﻟﺔ ﺃﻋﻤﺎﻝ ﺍﻻﺳﺘﺸﺎﺭﺍﺕ\n\n.ﺍﻟﻌﻘﺪ: ﺍﻻﺗﻔﺎﻕ ﺍﻟﻤﻜﺘﻮﺏ ﺍﻟﻤﺒﺮﻡ ﺑﻴﻦ ﺍﻟﺠﻬﺔ ﺍﻹﺩﺍﺭﻳﺔ ﻭﺍﻟﻤﺴﺘﺸﺎﺭ",
+            "display_text": null,
+            "chunk_index": 6,
+            "chunk_strategy": "structural",
+            "split_from_unit": false,
+            "n_chars": 333,
+            "n_words": 50
+          }
+        }
+      ]
+    },
+    {
+      "sample_group": "english",
+      "fixture": "test_corpus/synthetic/native_authored_award_en.pdf",
+      "total_chunks_in_document": 9,
+      "selected_chunk_indexes": [
+        2,
+        3,
+        4
+      ],
+      "note": "English-only arbitral award; clause-anchored chunks (clause populated), no RTL repair needed.",
+      "chunks": [
+        {
+          "document_id": "doc_b23c833e9192",
+          "chunk_id": "chunk_003",
+          "text": "Clause 1\n1. The Claimant filed its Request for Arbitration on 14 January 2026.\n2. The Respondent filed its Answer on 27 February 2026, raising an objection\nto jurisdiction on the ground that the arbitration agreement had expired.\n3. The Tribunal was constituted on 11 March 2026 and held a case management\nconference on 2 April 2026.\n\nII. THE PARTIES' POSITIONS",
+          "page": 1,
+          "section": "The Claimant filed its Request for Arbitration on 14 January 2026.",
+          "clause": "Clause 1",
+          "language": "en",
+          "document_type": "contract",
+          "metadata": {
+            "jurisdiction": "Egypt",
+            "source_file": "test_corpus\\synthetic\\native_authored_award_en.pdf",
+            "source_engine": "pymupdf+docling",
+            "pdf_kind": "text",
+            "ingested_at": "2026-08-22T10:39:39.265565Z",
+            "structure": {
+              "book": null,
+              "chapter": null,
+              "section": "I. PROCEDURAL HISTORY",
+              "article": null,
+              "clause": "Clause 1",
+              "clause_id": "cl_1",
+              "title": "The Claimant filed its Request for Arbitration on 14 January 2026.",
+              "heading_path": [
+                "I. PROCEDURAL HISTORY",
+                "Clause 1: The Claimant filed its Request for Arbitration on 14 January 2026."
+              ],
+              "heading_level": 5,
+              "marker_language": "en",
+              "marker_fuzzy": false,
+              "marker_confidence": 1.0,
+              "marker_evidence": null
+            },
+            "block_type": "list",
+            "bboxes": [
+              {
+                "x0": 56.0,
+                "y0": 239.46670532226562,
+                "x1": 448.53497314453125,
+                "y1": 314.4667053222656,
+                "page": 1,
+                "scale": null
+              },
+              {
+                "x0": 56.0,
+                "y0": 335.4666748046875,
+                "x1": 205.4239959716797,
+                "y1": 346.4666748046875,
+                "page": 1,
+                "scale": null
+              }
+            ],
+            "bbox": {
+              "x0": 56.0,
+              "y0": 239.46670532226562,
+              "x1": 448.53497314453125,
+              "y1": 346.4666748046875,
+              "page": 1,
+              "scale": null
+            },
+            "page_span": [
+              1
+            ],
+            "char_span": [
+              238,
+              599
+            ],
+            "is_table": false,
+            "table_markdown": null,
+            "table_shape": null,
+            "ocr_confidence": null,
+            "rtl_flags": [],
+            "reading_order_repaired": false,
+            "normalization_applied": [],
+            "raw_text": "1. The Claimant filed its Request for Arbitration on 14 January 2026.\n2. The Respondent filed its Answer on 27 February 2026, raising an objection\nto jurisdiction on the ground that the arbitration agreement had expired.\n3. The Tribunal was constituted on 11 March 2026 and held a case management\nconference on 2 April 2026.\n\nII. THE PARTIES' POSITIONS",
+            "display_text": null,
+            "chunk_index": 3,
+            "chunk_strategy": "structural",
+            "split_from_unit": false,
+            "n_chars": 361,
+            "n_words": 61
+          }
+        },
+        {
+          "document_id": "doc_b23c833e9192",
+          "chunk_id": "chunk_004",
+          "text": "Clause 4\n4. The Claimant seeks payment of EGP 2,450,000 said to be outstanding under\nthe Supply Agreement dated 15 January 2025, together with interest.\n5. The Respondent denies liability and counterclaims for EGP 610,000 in\nrespect of defective goods delivered in November 2025.\n\nIII. JURISDICTION",
+          "page": 1,
+          "section": "The Claimant seeks payment of EGP 2,450,000 said to be outstanding under",
+          "clause": "Clause 4",
+          "language": "en",
+          "document_type": "contract",
+          "metadata": {
+            "jurisdiction": "Egypt",
+            "source_file": "test_corpus\\synthetic\\native_authored_award_en.pdf",
+            "source_engine": "pymupdf+docling",
+            "pdf_kind": "text",
+            "ingested_at": "2026-08-22T10:39:39.265565Z",
+            "structure": {
+              "book": null,
+              "chapter": null,
+              "section": "I. PROCEDURAL HISTORY",
+              "article": null,
+              "clause": "Clause 4",
+              "clause_id": "cl_4",
+              "title": "The Claimant seeks payment of EGP 2,450,000 said to be outstanding under",
+              "heading_path": [
+                "I. PROCEDURAL HISTORY",
+                "Clause 4: The Claimant seeks payment of EGP 2,450,000 said to be outstanding under"
+              ],
+              "heading_level": 5,
+              "marker_language": "en",
+              "marker_fuzzy": false,
+              "marker_confidence": 1.0,
+              "marker_evidence": null
+            },
+            "block_type": "paragraph",
+            "bboxes": [
+              {
+                "x0": 56.0,
+                "y0": 367.4666748046875,
+                "x1": 443.0460205078125,
+                "y1": 426.4666748046875,
+                "page": 1,
+                "scale": null
+              },
+              {
+                "x0": 56.0,
+                "y0": 63.46670150756836,
+                "x1": 148.2899932861328,
+                "y1": 74.4666976928711,
+                "page": 2,
+                "scale": null
+              }
+            ],
+            "bbox": {
+              "x0": 56.0,
+              "y0": 63.46670150756836,
+              "x1": 443.0460205078125,
+              "y1": 426.4666748046875,
+              "page": 1,
+              "scale": null
+            },
+            "page_span": [
+              1,
+              2
+            ],
+            "char_span": [
+              601,
+              899
+            ],
+            "is_table": false,
+            "table_markdown": null,
+            "table_shape": null,
+            "ocr_confidence": null,
+            "rtl_flags": [],
+            "reading_order_repaired": false,
+            "normalization_applied": [],
+            "raw_text": "4. The Claimant seeks payment of EGP 2,450,000 said to be outstanding under\nthe Supply Agreement dated 15 January 2025, together with interest.\n5. The Respondent denies liability and counterclaims for EGP 610,000 in\nrespect of defective goods delivered in November 2025.\n\nIII. JURISDICTION",
+            "display_text": null,
+            "chunk_index": 4,
+            "chunk_strategy": "structural",
+            "split_from_unit": false,
+            "n_chars": 298,
+            "n_words": 46
+          }
+        },
+        {
+          "document_id": "doc_b23c833e9192",
+          "chunk_id": "chunk_005",
+          "text": "Clause 6\n6. The Tribunal has considered the Respondent's objection and finds that the\narbitration clause at Article 19 of the Supply Agreement survives termination\nof the substantive obligations, applying the principle of separability.",
+          "page": 2,
+          "section": "The Tribunal has considered the Respondent's objection and finds that the",
+          "clause": "Clause 6",
+          "language": "en",
+          "document_type": "contract",
+          "metadata": {
+            "jurisdiction": "Egypt",
+            "source_file": "test_corpus\\synthetic\\native_authored_award_en.pdf",
+            "source_engine": "pymupdf",
+            "pdf_kind": "text",
+            "ingested_at": "2026-08-22T10:39:39.265565Z",
+            "structure": {
+              "book": null,
+              "chapter": null,
+              "section": "I. PROCEDURAL HISTORY",
+              "article": null,
+              "clause": "Clause 6",
+              "clause_id": "cl_6",
+              "title": "The Tribunal has considered the Respondent's objection and finds that the",
+              "heading_path": [
+                "I. PROCEDURAL HISTORY",
+                "Clause 6: The Tribunal has considered the Respondent's objection and finds that the"
+              ],
+              "heading_level": 5,
+              "marker_language": "en",
+              "marker_fuzzy": false,
+              "marker_confidence": 1.0,
+              "marker_evidence": null
+            },
+            "block_type": "paragraph",
+            "bboxes": [
+              {
+                "x0": 56.0,
+                "y0": 95.46670532226562,
+                "x1": 430.4730224609375,
+                "y1": 138.46670532226562,
+                "page": 2,
+                "scale": null
+              }
+            ],
+            "bbox": {
+              "x0": 56.0,
+              "y0": 95.46670532226562,
+              "x1": 430.4730224609375,
+              "y1": 138.46670532226562,
+              "page": 2,
+              "scale": null
+            },
+            "page_span": [
+              2
+            ],
+            "char_span": [
+              901,
+              1136
+            ],
+            "is_table": false,
+            "table_markdown": null,
+            "table_shape": null,
+            "ocr_confidence": null,
+            "rtl_flags": [],
+            "reading_order_repaired": false,
+            "normalization_applied": [],
+            "raw_text": "6. The Tribunal has considered the Respondent's objection and finds that the\narbitration clause at Article 19 of the Supply Agreement survives termination\nof the substantive obligations, applying the principle of separability.",
+            "display_text": null,
+            "chunk_index": 5,
+            "chunk_strategy": "structural",
+            "split_from_unit": false,
+            "n_chars": 235,
+            "n_words": 34
+          }
+        }
+      ]
+    },
+    {
+      "sample_group": "bilingual",
+      "fixture": "test_corpus/synthetic/synthetic_contract_bilingual.pdf",
+      "total_chunks_in_document": 19,
+      "selected_chunk_indexes": [
+        1,
+        5,
+        16
+      ],
+      "note": "Bilingual (ar-en) contract; chunks where Arabic and English mix in one chunk, language='ar-en', heavy rtl_flags.",
+      "chunks": [
+        {
+          "document_id": "doc_a214a19820a9",
+          "chunk_id": "chunk_002",
+          "text": "SUPPLY AND INSTALLATION AGREEMENT\n\n[SYNTHETIC TEST DOCUMENT - FABRICATED DATA]\n\n12 شارع النيل، الدقي، الجيزة (طرف اول). ثانيا: شركة دلتا طنطا للمقاولات العامة، ومقرها 44 شارع الجيش، طنطا، الغربية (طرف ثان).\n\nانه في يوم الاحد الموافق 15 يناير 2026 تحرر هذا العقد بين كل من: اولا: شركة النيل الازرق للتوريدات الهندسية ش.م.م، ومقرها\n\nMade on 15 January 2026 between Blue Nile Engineering Supplies S.A.E. (the \"First Party\") and Delta\nTanta General Contracting Co. (the \"Second Party\").",
+          "page": 1,
+          "section": "SUPPLY AND INSTALLATION AGREEMENT",
+          "clause": null,
+          "language": "ar-en",
+          "document_type": "contract",
+          "metadata": {
+            "jurisdiction": "Egypt",
+            "source_file": "test_corpus\\synthetic\\synthetic_contract_bilingual.pdf",
+            "source_engine": "pymupdf+docling",
+            "pdf_kind": "text",
+            "ingested_at": "2026-08-22T10:39:45.001670Z",
+            "structure": {
+              "book": null,
+              "chapter": null,
+              "section": "SUPPLY AND INSTALLATION AGREEMENT",
+              "article": null,
+              "clause": null,
+              "clause_id": "sec_SUPPLY_AND_INSTALLATION_AGREEMENT",
+              "title": "SUPPLY AND INSTALLATION AGREEMENT",
+              "heading_path": [
+                "SUPPLY AND INSTALLATION AGREEMENT"
+              ],
+              "heading_level": 3,
+              "marker_language": "en",
+              "marker_fuzzy": false,
+              "marker_confidence": 1.0,
+              "marker_evidence": null
+            },
+            "block_type": "paragraph",
+            "bboxes": [
+              {
+                "x0": 111.13079071044922,
+                "y0": 93.43286895751953,
+                "x1": 484.144775390625,
+                "y1": 118.2188720703125,
+                "page": 1,
+                "scale": null
+              },
+              {
+                "x0": 196.517822265625,
+                "y0": 122.13287353515625,
+                "x1": 398.7577819824219,
+                "y1": 132.96487426757812,
+                "page": 1,
+                "scale": null
+              },
+              {
+                "x0": 67.02969360351562,
+                "y0": 157.22073364257812,
+                "x1": 532.5997924804688,
+                "y1": 167.72073364257812,
+                "page": 1,
+                "scale": null
+              },
+              {
+                "x0": 96.45840454101562,
+                "y0": 175.22073364257812,
+                "x1": 532.607666015625,
+                "y1": 185.72073364257812,
+                "page": 1,
+                "scale": null
+              },
+              {
+                "x0": 62.692909240722656,
+                "y0": 196.11614990234375,
+                "x1": 515.0028076171875,
+                "y1": 224.8561553955078,
+                "page": 1,
+                "scale": null
+              }
+            ],
+            "bbox": {
+              "x0": 62.692909240722656,
+              "y0": 93.43286895751953,
+              "x1": 532.607666015625,
+              "y1": 224.8561553955078,
+              "page": 1,
+              "scale": null
+            },
+            "page_span": [
+              1
+            ],
+            "char_span": [
+              18,
+              500
+            ],
+            "is_table": false,
+            "table_markdown": null,
+            "table_shape": null,
+            "ocr_confidence": null,
+            "rtl_flags": [
+              {
+                "kind": "visual_order_repaired",
+                "page": 1,
+                "detail": "this block's text layer was stored in VISUAL order and was reordered to logical order from glyph geometry. visual order confirmed: structural markers 5 -> 15, order score +0.696 -> +0.844 (gain +0.147 over 392 observations). 'ال' opens 150 token(s), 'لا' closes 5; final-form letters close 104 token(s), open 0 Digit *order* was not touched -- see digit_order_suspect.",
+                "severity": "warn",
+                "sample": "١٢ شارع النيل، الدقي، الجيزة (طرف أول). ثانيا: شركة دلتا طنطا للمقاولات العامة، ومقرها ٤٤ شارع الجيش، طنطا، الغربية (طرف"
+              },
+              {
+                "kind": "visual_order_repaired",
+                "page": 1,
+                "detail": "this block's text layer was stored in VISUAL order and was reordered to logical order from glyph geometry. visual order confirmed: structural markers 5 -> 15, order score +0.696 -> +0.844 (gain +0.147 over 392 observations). 'ال' opens 150 token(s), 'لا' closes 5; final-form letters close 104 token(s), open 0 Digit *order* was not touched -- see digit_order_suspect.",
+                "severity": "warn",
+                "sample": "إنه في يوم الأحد الموافق ١٥ يناير ٢٠٢٦ تحرر هذا العقد بين كل من: أولا: شركة النيل الأزرق للتوريدات الهندسية ش.م.م، ومقره"
+              }
+            ],
+            "reading_order_repaired": true,
+            "normalization_applied": [
+              "normalize_alef",
+              "normalize_digits:to_western"
+            ],
+            "raw_text": "SUPPLY AND INSTALLATION AGREEMENT\n\n[SYNTHETIC TEST DOCUMENT - FABRICATED DATA]\n\n.(٢١ ﺷﺎﺭﻉ ﺍﻟﻨﻴﻞ، ﺍﻟﺪﻗﻲ، ﺍﻟﺠﻴﺰﺓ )ﻃﺮﻑ ﺃﻭﻝ(. ﺛﺎﻧﻴﺎ: ﺷﺮﻛﺔ ﺩﻟﺘﺎ ﻃﻨﻄﺎ ﻟﻠﻤﻘﺎﻭﻻﺕ ﺍﻟﻌﺎﻣﺔ، ﻭﻣﻘﺮﻫﺎ ٤٤ ﺷﺎﺭﻉ ﺍﻟﺠﻴﺶ، ﻃﻨﻄﺎ، ﺍﻟﻐﺮﺑﻴﺔ )ﻃﺮﻑ ﺛﺎﻥ\n\nﺇﻧﻪ ﻓﻲ ﻳﻮﻡ ﺍﻷﺣﺪ ﺍﻟﻤﻮﺍﻓﻖ ٥١ ﻳﻨﺎﻳﺮ ٦٢٠٢ ﺗﺤﺮﺭ ﻫﺬﺍ ﺍﻟﻌﻘﺪ ﺑﻴﻦ ﻛﻞ ﻣﻦ: ﺃﻭﻻ: ﺷﺮﻛﺔ ﺍﻟﻨﻴﻞ ﺍﻷﺯﺭﻕ ﻟﻠﺘﻮﺭﻳﺪﺍﺕ ﺍﻟﻬﻨﺪﺳﻴﺔ ﺵ.ﻡ.ﻡ، ﻭﻣﻘﺮﻫﺎ\n\nMade on 15 January 2026 between Blue Nile Engineering Supplies S.A.E. (the \"First Party\") and Delta\nTanta General Contracting Co. (the \"Second Party\").",
+            "display_text": null,
+            "chunk_index": 2,
+            "chunk_strategy": "structural",
+            "split_from_unit": false,
+            "n_chars": 482,
+            "n_words": 76
+          }
+        },
+        {
+          "document_id": "doc_a214a19820a9",
+          "chunk_id": "chunk_006",
+          "text": "المادة (3) : قيمة العقد وطريقة السداد\n\nوخمسون الف جنيه مصري لا غير) شاملة ضريبة القيمة المضافة. ويتم السداد علي الدفعات المبينة بالجدول المرفق بالمادة (3) مكرر.\n\nحدد الطرفان قيمة هذا العقد بمبلغ اجمالي وقدره 2٬450٬000 جنيه مصري (فقط مليونان واربعمائة\n\nجدول الدفعات - Payment Schedule\n\nMilestoneالدفعة\nالقيمة (جنيه)النسبة %\nتاريخ الاستحقاق\n\nAdvance on signatureالاولي\n25\n612،500\n2026-01-15\n\nDelivery of phase 1الثانية\n30\n735،000\n2026-05-30\n\nDelivery of phase 2الثالثة\n30\n735،000\n2026-11-30\n\nFinal acceptanceالرابعة\n15\n367،500\n2027-06-30",
+          "page": 1,
+          "section": "قيمة العقد وطريقة السداد",
+          "clause": null,
+          "language": "ar-en",
+          "document_type": "contract",
+          "metadata": {
+            "jurisdiction": "Egypt",
+            "source_file": "test_corpus\\synthetic\\synthetic_contract_bilingual.pdf",
+            "source_engine": "pymupdf+docling",
+            "pdf_kind": "text",
+            "ingested_at": "2026-08-22T10:39:45.008677Z",
+            "structure": {
+              "book": null,
+              "chapter": null,
+              "section": "تمهيد",
+              "article": "المادة 3",
+              "clause": null,
+              "clause_id": "art_3",
+              "title": "قيمة العقد وطريقة السداد",
+              "heading_path": [
+                "تمهيد",
+                "المادة 3: قيمة العقد وطريقة السداد"
+              ],
+              "heading_level": 4,
+              "marker_language": "ar",
+              "marker_fuzzy": false,
+              "marker_confidence": 1.0,
+              "marker_evidence": null
+            },
+            "block_type": "paragraph",
+            "bboxes": [
+              {
+                "x0": 373.0343017578125,
+                "y0": 503.1199645996094,
+                "x1": 532.5704956054688,
+                "y1": 516.1199951171875,
+                "page": 1,
+                "scale": null
+              },
+              {
+                "x0": 90.00357055664062,
+                "y0": 528.559326171875,
+                "x1": 532.568115234375,
+                "y1": 539.059326171875,
+                "page": 1,
+                "scale": null
+              },
+              {
+                "x0": 203.7193603515625,
+                "y0": 546.559326171875,
+                "x1": 532.5899658203125,
+                "y1": 557.059326171875,
+                "page": 1,
+                "scale": null
+              },
+              {
+                "x0": 348.3736877441406,
+                "y0": 583.6239013671875,
+                "x1": 532.57080078125,
+                "y1": 596.6239013671875,
+                "page": 1,
+                "scale": null
+              },
+              {
+                "x0": 82.53543090820312,
+                "y0": 611.7268676757812,
+                "x1": 481.92047119140625,
+                "y1": 620.7268676757812,
+                "page": 1,
+                "scale": null
+              },
+              {
+                "x0": 82.53543090820312,
+                "y0": 629.7268676757812,
+                "x1": 496.3932189941406,
+                "y1": 638.7268676757812,
+                "page": 1,
+                "scale": null
+              },
+              {
+                "x0": 82.53543090820312,
+                "y0": 647.7268676757812,
+                "x1": 496.3932189941406,
+                "y1": 656.7268676757812,
+                "page": 1,
+                "scale": null
+              },
+              {
+                "x0": 82.53543090820312,
+                "y0": 665.7268676757812,
+                "x1": 496.3932189941406,
+                "y1": 674.7268676757812,
+                "page": 1,
+                "scale": null
+              },
+              {
+                "x0": 82.53543090820312,
+                "y0": 683.7268676757812,
+                "x1": 496.3932189941406,
+                "y1": 692.7268676757812,
+                "page": 1,
+                "scale": null
+              }
+            ],
+            "bbox": {
+              "x0": 82.53543090820312,
+              "y0": 503.1199645996094,
+              "x1": 532.5899658203125,
+              "y1": 692.7268676757812,
+              "page": 1,
+              "scale": null
+            },
+            "page_span": [
+              1
+            ],
+            "char_span": [
+              1313,
+              1848
+            ],
+            "is_table": false,
+            "table_markdown": null,
+            "table_shape": null,
+            "ocr_confidence": null,
+            "rtl_flags": [
+              {
+                "kind": "visual_order_repaired",
+                "page": 1,
+                "detail": "this block's text layer was stored in VISUAL order and was reordered to logical order from glyph geometry. visual order confirmed: structural markers 5 -> 15, order score +0.696 -> +0.844 (gain +0.147 over 392 observations). 'ال' opens 150 token(s), 'لا' closes 5; final-form letters close 104 token(s), open 0 Digit *order* was not touched -- see digit_order_suspect.",
+                "severity": "warn",
+                "sample": "المادة (3) : قيمة العقد وطريقة السداد"
+              },
+              {
+                "kind": "visual_order_repaired",
+                "page": 1,
+                "detail": "this block's text layer was stored in VISUAL order and was reordered to logical order from glyph geometry. visual order confirmed: structural markers 5 -> 15, order score +0.696 -> +0.844 (gain +0.147 over 392 observations). 'ال' opens 150 token(s), 'لا' closes 5; final-form letters close 104 token(s), open 0 Digit *order* was not touched -- see digit_order_suspect.",
+                "severity": "warn",
+                "sample": "وخمسون ألف جنيه مصري لا غير) شاملة ضريبة القيمة المضافة. ويتم السداد على الدفعات المبينة بالجدول المرفق بالمادة (3) مكرر"
+              },
+              {
+                "kind": "visual_order_repaired",
+                "page": 1,
+                "detail": "this block's text layer was stored in VISUAL order and was reordered to logical order from glyph geometry. visual order confirmed: structural markers 5 -> 15, order score +0.696 -> +0.844 (gain +0.147 over 392 observations). 'ال' opens 150 token(s), 'لا' closes 5; final-form letters close 104 token(s), open 0 Digit *order* was not touched -- see digit_order_suspect.",
+                "severity": "warn",
+                "sample": "حدد الطرفان قيمة هذا العقد بمبلغ إجمالي وقدره ٢٬٤٥٠٬٠٠٠ جنيه مصري (فقط مليونان وأربعمائة"
+              },
+              {
+                "kind": "visual_order_repaired",
+                "page": 1,
+                "detail": "this block's text layer was stored in VISUAL order and was reordered to logical order from glyph geometry. visual order confirmed: structural markers 5 -> 15, order score +0.696 -> +0.844 (gain +0.147 over 392 observations). 'ال' opens 150 token(s), 'لا' closes 5; final-form letters close 104 token(s), open 0 Digit *order* was not touched -- see digit_order_suspect.",
+                "severity": "warn",
+                "sample": "جدول الدفعات - Payment Schedule"
+              },
+              {
+                "kind": "mixed_direction",
+                "page": 1,
+                "detail": "2 Arabic and 2 Latin words share this block (11 vs 15 chars). Reading order of the embedded run is not recoverable from plain text -- not auto-corrected, review against the source.",
+                "severity": "warn",
+                "sample": "جدول الدفعات - Payment Schedule"
+              },
+              {
+                "kind": "visual_order_repaired",
+                "page": 1,
+                "detail": "this block's text layer was stored in VISUAL order and was reordered to logical order from glyph geometry. visual order confirmed: structural markers 5 -> 15, order score +0.696 -> +0.844 (gain +0.147 over 392 observations). 'ال' opens 150 token(s), 'لا' closes 5; final-form letters close 104 token(s), open 0 Digit *order* was not touched -- see digit_order_suspect.",
+                "severity": "warn",
+                "sample": "Milestoneالدفعة القيمة (جنيه)النسبة % تاريخ الاستحقاق"
+              },
+              {
+                "kind": "mixed_direction",
+                "page": 1,
+                "detail": "6 Arabic and 1 Latin words share this block (36 vs 9 chars). Reading order of the embedded run is not recoverable from plain text -- not auto-corrected, review against the source.",
+                "severity": "warn",
+                "sample": "Milestoneالدفعة القيمة (جنيه)النسبة % تاريخ الاستحقاق"
+              },
+              {
+                "kind": "visual_order_repaired",
+                "page": 1,
+                "detail": "this block's text layer was stored in VISUAL order and was reordered to logical order from glyph geometry. visual order confirmed: structural markers 5 -> 15, order score +0.696 -> +0.844 (gain +0.147 over 392 observations). 'ال' opens 150 token(s), 'لا' closes 5; final-form letters close 104 token(s), open 0 Digit *order* was not touched -- see digit_order_suspect.",
+                "severity": "warn",
+                "sample": "Advance on signatureالأولى 25 612,500 2026-01-15"
+              },
+              {
+                "kind": "mixed_direction",
+                "page": 1,
+                "detail": "1 Arabic and 3 Latin words share this block (6 vs 18 chars). Reading order of the embedded run is not recoverable from plain text -- not auto-corrected, review against the source.",
+                "severity": "warn",
+                "sample": "Advance on signatureالأولى 25 612,500 2026-01-15"
+              },
+              {
+                "kind": "visual_order_repaired",
+                "page": 1,
+                "detail": "this block's text layer was stored in VISUAL order and was reordered to logical order from glyph geometry. visual order confirmed: structural markers 5 -> 15, order score +0.696 -> +0.844 (gain +0.147 over 392 observations). 'ال' opens 150 token(s), 'لا' closes 5; final-form letters close 104 token(s), open 0 Digit *order* was not touched -- see digit_order_suspect.",
+                "severity": "warn",
+                "sample": "Delivery of phase 1الثانية 30 735,000 2026-05-30"
+              },
+              {
+                "kind": "mixed_direction",
+                "page": 1,
+                "detail": "1 Arabic and 3 Latin words share this block (7 vs 15 chars). Reading order of the embedded run is not recoverable from plain text -- not auto-corrected, review against the source.",
+                "severity": "warn",
+                "sample": "Delivery of phase 1الثانية 30 735,000 2026-05-30"
+              },
+              {
+                "kind": "numeral_direction_ambiguous",
+                "page": 1,
+                "detail": "numeral '1' sits between Arabic and Latin text; its side of attachment is ambiguous (affects article/clause numbering)",
+                "severity": "warn",
+                "sample": "Delivery of phase 1الثانية 30 735,000 2026-05-30"
+              },
+              {
+                "kind": "visual_order_repaired",
+                "page": 1,
+                "detail": "this block's text layer was stored in VISUAL order and was reordered to logical order from glyph geometry. visual order confirmed: structural markers 5 -> 15, order score +0.696 -> +0.844 (gain +0.147 over 392 observations). 'ال' opens 150 token(s), 'لا' closes 5; final-form letters close 104 token(s), open 0 Digit *order* was not touched -- see digit_order_suspect.",
+                "severity": "warn",
+                "sample": "Delivery of phase 2الثالثة 30 735,000 2026-11-30"
+              },
+              {
+                "kind": "mixed_direction",
+                "page": 1,
+                "detail": "1 Arabic and 3 Latin words share this block (7 vs 15 chars). Reading order of the embedded run is not recoverable from plain text -- not auto-corrected, review against the source.",
+                "severity": "warn",
+                "sample": "Delivery of phase 2الثالثة 30 735,000 2026-11-30"
+              },
+              {
+                "kind": "numeral_direction_ambiguous",
+                "page": 1,
+                "detail": "numeral '2' sits between Arabic and Latin text; its side of attachment is ambiguous (affects article/clause numbering)",
+                "severity": "warn",
+                "sample": "Delivery of phase 2الثالثة 30 735,000 2026-11-30"
+              },
+              {
+                "kind": "visual_order_repaired",
+                "page": 1,
+                "detail": "this block's text layer was stored in VISUAL order and was reordered to logical order from glyph geometry. visual order confirmed: structural markers 5 -> 15, order score +0.696 -> +0.844 (gain +0.147 over 392 observations). 'ال' opens 150 token(s), 'لا' closes 5; final-form letters close 104 token(s), open 0 Digit *order* was not touched -- see digit_order_suspect.",
+                "severity": "warn",
+                "sample": "Final acceptanceالرابعة 15 367,500 2027-06-30"
+              },
+              {
+                "kind": "mixed_direction",
+                "page": 1,
+                "detail": "1 Arabic and 2 Latin words share this block (7 vs 15 chars). Reading order of the embedded run is not recoverable from plain text -- not auto-corrected, review against the source.",
+                "severity": "warn",
+                "sample": "Final acceptanceالرابعة 15 367,500 2027-06-30"
+              }
+            ],
+            "reading_order_repaired": true,
+            "normalization_applied": [
+              "normalize_alef",
+              "normalize_alef_maksura",
+              "normalize_digits:to_western",
+              "normalize_punctuation"
+            ],
+            "raw_text": "( : ﻗﻴﻤﺔ ﺍﻟﻌﻘﺪ ﻭﻃﺮﻳﻘﺔ ﺍﻟﺴﺪﺍﺩ3) ﺍﻟﻤﺎﺩﺓ\n\n.( ﻣﻜﺮﺭ3) ﻭﺧﻤﺴﻮﻥ ﺃﻟﻒ ﺟﻨﻴﻪ ﻣﺼﺮﻱ ﻻ ﻏﻴﺮ( ﺷﺎﻣﻠﺔ ﺿﺮﻳﺒﺔ ﺍﻟﻘﻴﻤﺔ ﺍﻟﻤﻀﺎﻓﺔ. ﻭﻳﺘﻢ ﺍﻟﺴﺪﺍﺩ ﻋﻠﻰ ﺍﻟﺪﻓﻌﺎﺕ ﺍﻟﻤﺒﻴﻨﺔ ﺑﺎﻟﺠﺪﻭﻝ ﺍﻟﻤﺮﻓﻖ ﺑﺎﻟﻤﺎﺩﺓ\n\nﺣﺪﺩ ﺍﻟﻄﺮﻓﺎﻥ ﻗﻴﻤﺔ ﻫﺬﺍ ﺍﻟﻌﻘﺪ ﺑﻤﺒﻠﻎ ﺇﺟﻤﺎﻟﻲ ﻭﻗﺪﺭﻩ ٠٠٠٬٠٥٤٬٢ ﺟﻨﻴﻪ ﻣﺼﺮﻱ )ﻓﻘﻂ ﻣﻠﻴﻮﻧﺎﻥ ﻭﺃﺭﺑﻌﻤﺎﺋﺔ\n\nPayment Schedule - ﺟﺪﻭﻝ ﺍﻟﺪﻓﻌﺎﺕ\n\nﺍﻟﺪﻓﻌﺔMilestone\n% ﺍﻟﻨﺴﺒﺔ(ﺍﻟﻘﻴﻤﺔ )ﺟﻨﻴﻪ\nﺗﺎﺭﻳﺦ ﺍﻻﺳﺘﺤﻘﺎﻕ\n\nﺍﻷﻭﻟﻰAdvance on signature\n25\n612,500\n2026-01-15\n\nﺍﻟﺜﺎﻧﻴﺔDelivery of phase 1\n30\n735,000\n2026-05-30\n\nﺍﻟﺜﺎﻟﺜﺔDelivery of phase 2\n30\n735,000\n2026-11-30\n\nﺍﻟﺮﺍﺑﻌﺔFinal acceptance\n15\n367,500\n2027-06-30",
+            "display_text": null,
+            "chunk_index": 6,
+            "chunk_strategy": "structural",
+            "split_from_unit": false,
+            "n_chars": 535,
+            "n_words": 77
+          }
+        },
+        {
+          "document_id": "doc_a214a19820a9",
+          "chunk_id": "chunk_017",
+          "text": "Article 8. Governing Law and Dispute Resolution\n\nThis Agreement shall be governed by and construed in accordance with the laws of the Arab Republic of\nEgypt. Any dispute shall first be settled amicably within thirty (30) days, failing which the North Cairo Court\nof First Instance shall have exclusive jurisdiction.\n\nالتوقيعات - Signatures\n\nالطرف الثاني / Second Partyالطرف الاول / First Party\n\nشركة النيل الازرق للتوريدات الهندسية ش.م.م\nشركة دلتا طنطا للمقاولات العامة\n\n____\n____\n\nخاتم الشركة\nخاتم الشركة",
+          "page": 3,
+          "section": "Governing Law and Dispute Resolution",
+          "clause": null,
+          "language": "ar-en",
+          "document_type": "contract",
+          "metadata": {
+            "jurisdiction": "Egypt",
+            "source_file": "test_corpus\\synthetic\\synthetic_contract_bilingual.pdf",
+            "source_engine": "pymupdf+docling",
+            "pdf_kind": "text",
+            "ingested_at": "2026-08-22T10:39:45.011993Z",
+            "structure": {
+              "book": null,
+              "chapter": null,
+              "section": "تمهيد",
+              "article": "Article 8",
+              "clause": null,
+              "clause_id": "art_8",
+              "title": "Governing Law and Dispute Resolution",
+              "heading_path": [
+                "تمهيد",
+                "Article 8: Governing Law and Dispute Resolution"
+              ],
+              "heading_level": 4,
+              "marker_language": "en",
+              "marker_fuzzy": false,
+              "marker_confidence": 1.0,
+              "marker_evidence": null
+            },
+            "block_type": "paragraph",
+            "bboxes": [
+              {
+                "x0": 62.692909240722656,
+                "y0": 424.8528747558594,
+                "x1": 340.7568664550781,
+                "y1": 441.3768615722656,
+                "page": 3,
+                "scale": null
+              },
+              {
+                "x0": 62.692909240722656,
+                "y0": 448.94287109375,
+                "x1": 531.7528076171875,
+                "y1": 492.682861328125,
+                "page": 3,
+                "scale": null
+              },
+              {
+                "x0": 414.9225158691406,
+                "y0": 524.6160278320312,
+                "x1": 532.5595703125,
+                "y1": 537.6160278320312,
+                "page": 3,
+                "scale": null
+              },
+              {
+                "x0": 141.34698486328125,
+                "y0": 556.5870971679688,
+                "x1": 460.952392578125,
+                "y1": 566.0870971679688,
+                "page": 3,
+                "scale": null
+              },
+              {
+                "x0": 117.87995147705078,
+                "y0": 582.098876953125,
+                "x1": 457.3463134765625,
+                "y1": 591.598876953125,
+                "page": 3,
+                "scale": null
+              },
+              {
+                "x0": 128.96868896484375,
+                "y0": 610.4453125,
+                "x1": 466.27532958984375,
+                "y1": 619.9453125,
+                "page": 3,
+                "scale": null
+              },
+              {
+                "x0": 168.93316650390625,
+                "y0": 648.7130126953125,
+                "x1": 426.3445129394531,
+                "y1": 658.2130126953125,
+                "page": 3,
+                "scale": null
+              }
+            ],
+            "bbox": {
+              "x0": 62.692909240722656,
+              "y0": 424.8528747558594,
+              "x1": 532.5595703125,
+              "y1": 658.2130126953125,
+              "page": 3,
+              "scale": null
+            },
+            "page_span": [
+              3
+            ],
+            "char_span": [
+              4417,
+              4922
+            ],
+            "is_table": false,
+            "table_markdown": null,
+            "table_shape": null,
+            "ocr_confidence": null,
+            "rtl_flags": [
+              {
+                "kind": "visual_order_repaired",
+                "page": 3,
+                "detail": "this block's text layer was stored in VISUAL order and was reordered to logical order from glyph geometry. visual order confirmed: structural markers 5 -> 15, order score +0.696 -> +0.844 (gain +0.147 over 392 observations). 'ال' opens 150 token(s), 'لا' closes 5; final-form letters close 104 token(s), open 0 Digit *order* was not touched -- see digit_order_suspect.",
+                "severity": "warn",
+                "sample": "التوقيعات - Signatures"
+              },
+              {
+                "kind": "mixed_direction",
+                "page": 3,
+                "detail": "1 Arabic and 1 Latin words share this block (9 vs 10 chars). Reading order of the embedded run is not recoverable from plain text -- not auto-corrected, review against the source.",
+                "severity": "warn",
+                "sample": "التوقيعات - Signatures"
+              },
+              {
+                "kind": "visual_order_repaired",
+                "page": 3,
+                "detail": "this block's text layer was stored in VISUAL order and was reordered to logical order from glyph geometry. visual order confirmed: structural markers 5 -> 15, order score +0.696 -> +0.844 (gain +0.147 over 392 observations). 'ال' opens 150 token(s), 'لا' closes 5; final-form letters close 104 token(s), open 0 Digit *order* was not touched -- see digit_order_suspect.",
+                "severity": "warn",
+                "sample": "الطرف الثاني / Second Partyالطرف الأول / First Party"
+              },
+              {
+                "kind": "mixed_direction",
+                "page": 3,
+                "detail": "4 Arabic and 4 Latin words share this block (21 vs 21 chars). Reading order of the embedded run is not recoverable from plain text -- not auto-corrected, review against the source.",
+                "severity": "warn",
+                "sample": "الطرف الثاني / Second Partyالطرف الأول / First Party"
+              },
+              {
+                "kind": "visual_order_repaired",
+                "page": 3,
+                "detail": "this block's text layer was stored in VISUAL order and was reordered to logical order from glyph geometry. visual order confirmed: structural markers 5 -> 15, order score +0.696 -> +0.844 (gain +0.147 over 392 observations). 'ال' opens 150 token(s), 'لا' closes 5; final-form letters close 104 token(s), open 0 Digit *order* was not touched -- see digit_order_suspect.",
+                "severity": "warn",
+                "sample": "شركة النيل الأزرق للتوريدات الهندسية ش.م.م شركة دلتا طنطا للمقاولات العامة"
+              },
+              {
+                "kind": "visual_order_repaired",
+                "page": 3,
+                "detail": "this block's text layer was stored in VISUAL order and was reordered to logical order from glyph geometry. visual order confirmed: structural markers 5 -> 15, order score +0.696 -> +0.844 (gain +0.147 over 392 observations). 'ال' opens 150 token(s), 'لا' closes 5; final-form letters close 104 token(s), open 0 Digit *order* was not touched -- see digit_order_suspect.",
+                "severity": "warn",
+                "sample": "خاتم الشركة خاتم الشركة"
+              }
+            ],
+            "reading_order_repaired": true,
+            "normalization_applied": [
+              "normalize_alef",
+              "normalize_punctuation"
+            ],
+            "raw_text": "Article 8. Governing Law and Dispute Resolution\n\nThis Agreement shall be governed by and construed in accordance with the laws of the Arab Republic of\nEgypt. Any dispute shall first be settled amicably within thirty (30) days, failing which the North Cairo Court\nof First Instance shall have exclusive jurisdiction.\n\nSignatures - ﺍﻟﺘﻮﻗﻴﻌﺎﺕ\n\nFirst Party / ﺍﻟﻄﺮﻑ ﺍﻷﻭﻝSecond Party / ﺍﻟﻄﺮﻑ ﺍﻟﺜﺎﻧﻲ\n\nﺷﺮﻛﺔ ﺍﻟﻨﻴﻞ ﺍﻷﺯﺭﻕ ﻟﻠﺘﻮﺭﻳﺪﺍﺕ ﺍﻟﻬﻨﺪﺳﻴﺔ ﺵ.ﻡ.ﻡ\nﺷﺮﻛﺔ ﺩﻟﺘﺎ ﻃﻨﻄﺎ ﻟﻠﻤﻘﺎﻭﻻﺕ ﺍﻟﻌﺎﻣﺔ\n\n______________________\n______________________\n\nﺧﺎﺗﻢ ﺍﻟﺸﺮﻛﺔ\nﺧﺎﺗﻢ ﺍﻟﺸﺮﻛﺔ",
+            "display_text": null,
+            "chunk_index": 17,
+            "chunk_strategy": "structural",
+            "split_from_unit": false,
+            "n_chars": 505,
+            "n_words": 79
+          }
+        }
+      ]
+    }
+  ]
+}
