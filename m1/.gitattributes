@@ -1,0 +1,30 @@
+# Line endings: LF in the repository, regardless of who commits from where.
+# The team is mixed Windows/Linux; without this, every file round-trips through
+# CRLF on a Windows clone and diffs become unreadable.
+#
+# Safe for the evaluation: every CER/WER path routes references and hypotheses
+# through _norm_for_compare() in scripts/evaluate.py, which collapses all
+# whitespace runs (\s+, which includes \r) to a single space. Ground-truth
+# line endings therefore cannot move a published measurement.
+* text=auto eol=lf
+
+# Binary fixtures -- never normalize, never attempt a textual diff.
+# Most are gitignored, but a force-add must not corrupt them.
+*.pdf          binary
+*.docx         binary
+*.png          binary
+*.jpg          binary
+*.jpeg         binary
+*.tif          binary
+*.tiff         binary
+*.bmp          binary
+*.webp         binary
+*.traineddata  binary
+
+# Windows-only script: keep CRLF so it runs when checked out natively.
+*.ps1 text eol=crlf
+
+# Collapse generated evidence in PR diffs. Still versioned and reviewable,
+# just not counted as authored code by GitHub's language stats.
+reports/*.json  linguist-generated=true
+test_corpus/**  linguist-generated=true

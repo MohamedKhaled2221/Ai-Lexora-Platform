@@ -1,0 +1,245 @@
+{
+  "warning": "Synthetic authored fixtures. No firm document processed.",
+  "generated": "2026-08-15 22:30:20",
+  "native_raster": "2480x3508 (300 dpi A4)",
+  "degradation": {
+    "skew_deg": 0.4,
+    "noise_sigma": 4,
+    "blur": 0.35,
+    "jpeg_quality": 88
+  },
+  "results": {
+    "7": [
+      {
+        "dpi": 100,
+        "cer": 0.5702,
+        "bag": 0.7286,
+        "seconds_per_page": 1.54,
+        "errors": 0
+      },
+      {
+        "dpi": 125,
+        "cer": 0.1034,
+        "bag": 0.2379,
+        "seconds_per_page": 1.7,
+        "errors": 0
+      },
+      {
+        "dpi": 150,
+        "cer": 0.0421,
+        "bag": 0.1078,
+        "seconds_per_page": 2.3,
+        "errors": 0
+      },
+      {
+        "dpi": 175,
+        "cer": 0.0236,
+        "bag": 0.0669,
+        "seconds_per_page": 3.05,
+        "errors": 0
+      },
+      {
+        "dpi": 200,
+        "cer": 0.0391,
+        "bag": 0.0706,
+        "seconds_per_page": 3.04,
+        "errors": 0
+      },
+      {
+        "dpi": 250,
+        "cer": 0.014,
+        "bag": 0.052,
+        "seconds_per_page": 3.19,
+        "errors": 0
+      },
+      {
+        "dpi": 300,
+        "cer": 0.0133,
+        "bag": 0.052,
+        "seconds_per_page": 3.62,
+        "errors": 0
+      },
+      {
+        "dpi": 400,
+        "cer": 0.0236,
+        "bag": 0.0595,
+        "seconds_per_page": 4.54,
+        "errors": 0
+      }
+    ],
+    "9": [
+      {
+        "dpi": 100,
+        "cer": 0.0569,
+        "bag": 0.1413,
+        "seconds_per_page": 1.82,
+        "errors": 0
+      },
+      {
+        "dpi": 125,
+        "cer": 0.0421,
+        "bag": 0.0967,
+        "seconds_per_page": 2.18,
+        "errors": 0
+      },
+      {
+        "dpi": 150,
+        "cer": 0.034,
+        "bag": 0.0669,
+        "seconds_per_page": 2.41,
+        "errors": 0
+      },
+      {
+        "dpi": 175,
+        "cer": 0.0303,
+        "bag": 0.0595,
+        "seconds_per_page": 2.44,
+        "errors": 0
+      },
+      {
+        "dpi": 200,
+        "cer": 0.0266,
+        "bag": 0.0558,
+        "seconds_per_page": 2.67,
+        "errors": 0
+      },
+      {
+        "dpi": 250,
+        "cer": 0.0155,
+        "bag": 0.0483,
+        "seconds_per_page": 3.09,
+        "errors": 0
+      },
+      {
+        "dpi": 300,
+        "cer": 0.0229,
+        "bag": 0.0483,
+        "seconds_per_page": 3.63,
+        "errors": 0
+      },
+      {
+        "dpi": 400,
+        "cer": 0.0207,
+        "bag": 0.0595,
+        "seconds_per_page": 4.32,
+        "errors": 0
+      }
+    ],
+    "11": [
+      {
+        "dpi": 100,
+        "cer": 0.0502,
+        "bag": 0.1115,
+        "seconds_per_page": 2.05,
+        "errors": 0
+      },
+      {
+        "dpi": 125,
+        "cer": 0.0502,
+        "bag": 0.0818,
+        "seconds_per_page": 2.19,
+        "errors": 0
+      },
+      {
+        "dpi": 150,
+        "cer": 0.014,
+        "bag": 0.0446,
+        "seconds_per_page": 2.27,
+        "errors": 0
+      },
+      {
+        "dpi": 175,
+        "cer": 0.0236,
+        "bag": 0.0558,
+        "seconds_per_page": 2.52,
+        "errors": 0
+      },
+      {
+        "dpi": 200,
+        "cer": 0.0089,
+        "bag": 0.0446,
+        "seconds_per_page": 2.72,
+        "errors": 0
+      },
+      {
+        "dpi": 250,
+        "cer": 0.0428,
+        "bag": 0.0669,
+        "seconds_per_page": 3.13,
+        "errors": 0
+      },
+      {
+        "dpi": 300,
+        "cer": 0.0303,
+        "bag": 0.0632,
+        "seconds_per_page": 3.68,
+        "errors": 0
+      },
+      {
+        "dpi": 400,
+        "cer": 0.0391,
+        "bag": 0.0706,
+        "seconds_per_page": 5.24,
+        "errors": 0
+      }
+    ],
+    "14": [
+      {
+        "dpi": 100,
+        "cer": 0.048,
+        "bag": 0.0855,
+        "seconds_per_page": 2.25,
+        "errors": 0
+      },
+      {
+        "dpi": 125,
+        "cer": 0.0273,
+        "bag": 0.0595,
+        "seconds_per_page": 2.2,
+        "errors": 0
+      },
+      {
+        "dpi": 150,
+        "cer": 0.0369,
+        "bag": 0.0595,
+        "seconds_per_page": 2.4,
+        "errors": 0
+      },
+      {
+        "dpi": 175,
+        "cer": 0.0103,
+        "bag": 0.052,
+        "seconds_per_page": 2.68,
+        "errors": 0
+      },
+      {
+        "dpi": 200,
+        "cer": 0.0185,
+        "bag": 0.0483,
+        "seconds_per_page": 3.01,
+        "errors": 0
+      },
+      {
+        "dpi": 250,
+        "cer": 0.0362,
+        "bag": 0.0781,
+        "seconds_per_page": 3.47,
+        "errors": 0
+      },
+      {
+        "dpi": 300,
+        "cer": 0.0347,
+        "bag": 0.0669,
+        "seconds_per_page": 3.84,
+        "errors": 0
+      },
+      {
+        "dpi": 400,
+        "cer": 0.0613,
+        "bag": 0.0929,
+        "seconds_per_page": 5.68,
+        "errors": 0
+      }
+    ]
+  }
+}

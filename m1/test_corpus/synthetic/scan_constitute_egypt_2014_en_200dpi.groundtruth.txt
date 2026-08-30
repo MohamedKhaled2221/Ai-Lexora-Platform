@@ -1,0 +1,363 @@
+PDF generated: 11 Nov 2023, 09:45
+constituteproject.org
+Egypt's Constitution of 2014
+This complete constitution has been generated from excerpts of texts from the repository of the Comparative
+Constitutions Project, and distributed on constituteproject.org.
+
+constituteproject.org
+PDF generated: 11 Nov 2023, 09:45
+Egypt 2014
+Page 2
+Table of contents
+4
+6
+6
+6
+6
+6
+6
+6
+7
+7
+10
+13
+14
+14
+14
+14
+14
+15
+15
+15
+15
+15
+16
+16
+16
+16
+16
+16
+16
+16
+17
+17
+17
+17
+17
+18
+18
+18
+18
+18
+19
+19
+19
+19
+20
+Preamble . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Chapter One. The State . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 1. Nature of the Republic . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 2. Islam, Principles of Islamic Sharia . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 3. Christian and Jewish religious affairs . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 4. Sovereignty . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 5. Political system . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 6. Citizenship . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Chapter Two. Basic Components of Society . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Section One. Social Components . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Section Two. Economic Components . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Section Three. Cultural Components . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Chapter Three. Public Rights, Freedoms and Duties . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 51. Human dignity . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 52. Torture . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 53. Equality in public rights and duties . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 54. Personal freedom . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 55. Due process . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 56. Supervision of prisons . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 57. Private life . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 58. Inviolability of homes . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 59. Right to safety . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 60. Inviolability of the human body . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 61. Tissue and organ donation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 62. Freedom of movement . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 63. Forced migration . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 64. Freedom of belief . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 65. Freedom of thought . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 66. Freedom of research . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 67. Artistic and literary creation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 68. Access to information and official documents . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 69. Intellectual property rights . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 70. Freedom of the press . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 71. Freedom of publication . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 72. Independence of press institutions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 73. Freedom of House . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 74. Freedom to form political parties . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 75. Right to establish associations . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 76. Right to form syndicates . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 77. Trade unions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 78. Housing . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 79. Food . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 80. Rights of the child . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 81. Rights of the disabled . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 82. Youth . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+constituteproject.org
+PDF generated: 11 Nov 2023, 09:45
+Egypt 2014
+Page 3
+20
+20
+20
+20
+20
+20
+21
+21
+21
+21
+21
+21
+21
+21
+22
+22
+22
+22
+22
+22
+22
+29
+36
+38
+38
+39
+39
+39
+41
+42
+43
+44
+44
+45
+Article 83. The elderly . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 84. Sports . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 85. Right to address public authorities . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 86. Duty to safeguard national security . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 87. Citizen participation in public life . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 88. Egyptians living abroad . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 89. Slavery, oppression, trafficking . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 90. Charitable Endowment . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 91. Asylum . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 92. Limitations clause . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 93. International agreements and conventions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Chapter Four. Rule of Law . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 94. Rule of law . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 95. Punishment . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 96. Due process . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 97. Right to litigate . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 98. Right to defense . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 99. Violation of personal freedom . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Article 100. Implementation of court decisions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Chapter Five. The Ruling System . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Section One. Legislative Authority (House of Representatives) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Section Two. Executive Authority . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Section Three. The Judicial Authority . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Section Four. The Supreme Constitutional Court . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Section Five. Judicial Bodies . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Section Six. The Legal Profession . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Section Seven. Aides to the Judiciary . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Section Eight. The Armed Forces and the Police Force . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Section Nine. The National Elections Commission . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Section Ten. The National Media Council . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Section Eleven. National Councils, Independent Bodies and Regulatory Agencies . . . . . . . . . . . . . . . . . . . . . . . . .
+Chapter Six. General and Transitional Provisions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Section One. General Provisions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+Section Two. Transitional Provisions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+constituteproject.org
+PDF generated: 11 Nov 2023, 09:45
+Egypt 2014
+Page 4
+Translated by International IDEA
+Preamble
+In the Name of God, Most Gracious, Most Merciful
+This is Our Constitution
+Egypt is the gift of the Nile and the gift of Egyptians to humanity.
+Blessed with a unique location and history, the Arab nation of Egypt is the heart of the
+whole world. It is the meeting point of its civilizations and cultures and the crossroads of
+its maritime transportation and communications. It is the tip of Africa on the
+Mediterranean and the estuary of its greatest river: the Nile.
+This is Egypt, an immortal homeland to Egyptians, and a message of peace and love to
+all peoples.
+In the beginning of history, the dawn of human conscience rose and shone forth in the
+hearts of our great ancestors, uniting their good intention to build the first central state
+that regulated and organized the life of Egyptians on the banks of the Nile. It is where
+they created the most amazing wonders of civilization, and where their hearts looked up
+to the heavens before earth knew the three revealed religions.
+Egypt is the cradle of religions and the banner of glory of the revealed religions.
+On its land, Moses grew up, the light of God appeared, and the message descended on
+Mount Sinai.
+On its land, Egyptians welcomed Virgin Mary and her baby and offered up thousands of
+martyrs in defense of the Church of Jesus.
+When the Seal of the Messengers Mohamed (Peace and Blessings Be Upon Him) was
+sent to all mankind to perfect the sublime morals, our hearts and minds were opened to
+the light of Islam. We were the best soldiers on Earth to fight for the cause of God, and
+we disseminated the message of truth and religious sciences across the world.
+This is Egypt; a homeland that we live in as much as it lives in us.
+In the modern age, minds were enlightened, humanity became mature, and nations and
+peoples progressed on the path of science, raising the banners of freedom and equality.
+Mohamed Ali founded the modern Egyptian state with a national army as its pillar.
+Refaa, the son of Al-Azhar, prayed that the homeland become "a place of common
+happiness for its people." We, Egyptians, strived to keep up with the pace of
+development, and offered up martyrs and made sacrifices in several uprisings and
+revolutions until our patriotic army delivered victory to the sweeping popular will in the
+“Jan 25 – June 30” Revolution that called for bread, freedom and human dignity within a
+framework of social justice, and brought back the homeland’s free will.
+This revolution is but an extension to a process of national struggle whose brightest
+symbols were Ahmed Oraby, Mostafa Kamel, and Mohamed Farid. It was the capstone
+of two great revolutions in our modern history:
+The 1919 revolution that had rid Egypt and the Egyptians of the British guardianship,
+and had established the principle of citizenship and equality between the people of the
+same country. Its leader, Saad Zaghloul, and his successor, Mosfata El-Nahhas, walked
+the path of democracy, asserting that “Truth is above power and the nation is above the
+government”. During this revolution, Talaat Harb laid down the cornerstone of the
+national economy.
+The July 23, 1952 revolution that was led by the leader Gamal Abdel Nasser and was
+embraced by the popular will achieved the dream of generations for evacuation and
+Preamble
+God or other deities
+Reference to country's history
+God or other deities
+God or other deities
+Human dignity
+Political theorists/figures
+Reference to science
+Reference to country's history
+Reference to country's history
+Political theorists/figures
+Political theorists/figures
+Reference to country's history
+Regional group(s)
+Reference to country's history
+Political theorists/figures
+
+constituteproject.org
+PDF generated: 11 Nov 2023, 09:45
+Egypt 2014
+Page 5
+independence. As a result, Egypt affirmed its Arab allegiance, opened up to its African
+continent and Muslim world, supported liberation movements across continents, and
+took firm steps on the path of development and social justice.
+This revolution represents an extension of the revolutionary march of Egyptian
+patriotism, and supports the strong bond between the Egyptian people and their
+patriotic army that bore the trust and responsibility of protecting the homeland. Thanks
+to it, we achieved victory in our greatest battles including driving off the 1956 Tripartite
+Aggression and the glorious victory of October that granted President Sadat a special
+place in our recent history.
+Compared to major revolutions in the history of mankind, the Jan 25 – June 30
+Revolution is a unique revolution, because of the heavy popular participation involved --
+which was estimated to be in the tens of millions -- and the significant role of youth who
+aspire to a brighter future, the masses who transcended class and ideology to reach out
+to more expansive patriotic and human horizons, the manner in which the people’s army
+protected the popular will and the blessings granted to it by Al-Azhar and the patriotic
+church. It is also unique because of its peacefulness and ambition to achieve freedom
+and social justice together.
+This revolution is a sign and a good omen. It is a sign of a past that is still present and a
+good omen of a future to which all humanity aspires.
+The world has almost forgotten about an age that was torn by conflicts of interest
+between the east and the west, and the north and the south; an age where disputes and
+wars erupted between classes and peoples, where risks grew, threatening the existence
+of mankind and life on Earth, which God created for us. Humanity hopes to move from
+the age of maturity to the age of wisdom to build a new world where truth and justice
+prevail, and where freedoms and human rights are protected. We, Egyptians, believe
+that our revolution is an opportunity to return to help write a new history for mankind.
+We believe that we are capable of using the past as an inspiration, stirring up the
+present, and making our way to the future. We are capable of developing this homeland
+that develops us.
+We believe that every citizen is entitled to live in this homeland in safety and security,
+and that every citizen is entitled to a today and a tomorrow.
+We believe in democracy as a path, a future, and a way of life; in political multiplicity;
+and in the peaceful transfer of power. We affirm the right of the people to make their
+future. They, alone, are the source of authority. Freedom, human dignity, and social
+justice are a right of every citizen. Sovereignty in a sovereign homeland belongs to us
+and future generations.
+We are now drafting a Constitution that embodies the dream of generations of a
+prosperous united society and of a fair state that achieves the aspirations of today and
+tomorrow for individuals and society.
+We are now drafting a Constitution that completes building a modern democratic state
+with a civil government.
+We are drafting a Constitution that closes the door for any corruption or tyranny, heals
+the wounds of the past from the time of the old Eloquent Peasant to the victims of
+negligence and the martyrs of the revolution in our time, and relieves our people of the
+injustice they have suffered from for long.
+We are drafting a Constitution that affirms that the principles of Islamic Sharia are the
+principle source of legislation, and that the reference for interpretation thereof is the
+relevant texts in the collected rulings of the Supreme Constitutional Court.
+We are drafting a Constitution that paves the way to the future for us, and which is in
+line with the Universal Declaration of Human Rights, which we took part in the drafting
+of and approved.
+We are drafting a Constitution that maintains our freedom and protects the nation
+against every threat against it or against our national unity.
+Reference to country's history
+Political theorists/figures
+Reference to country's history
+Reference to country's history
+God or other deities
+Reference to country's history
+Human dignity
+Motives for writing constitution
+Motives for writing constitution
+Reference to country's history
+Motives for writing constitution
+Motives for writing constitution
+Status of religious law
+International human rights treaties
+Motives for writing constitution
+Motives for writing constitution
+
+constituteproject.org
+PDF generated: 11 Nov 2023, 09:45
+Egypt 2014
+Page 6
+We are drafting a Constitution that achieves equality between us in rights and duties
+with no discrimination.
+We are the citizens. We are the Egyptian people, sovereigns in a sovereign homeland.
+This is our will and this is the Constitution of our revolution.
+This is our Constitution.
+Chapter One. The State
+Article 1. Nature of the Republic
+The Arab Republic of Egypt is a sovereign state, united and indivisible, where nothing is
+dispensable, and its system is democratic republic based on citizenship and the rule of
+law.
+Egypt is part of the Arab nation and enhances its integration and unity. It is part of the
+Muslim world, belongs to the African continent, is proud of its Asian dimension, and
+contributes to building human civilization.
+Article 2. Islam, Principles of Islamic Sharia
+Islam is the religion of the state and Arabic is its official language. The principles of
+Islamic Sharia are the principle source of legislation.
+Article 3. Christian and Jewish religious affairs
+The principles of the laws of Egyptian Christians and Jews are the main source of laws
+regulating their personal status, religious affairs, and selection of spiritual leaders.
+Article 4. Sovereignty
+Sovereignty belongs to the people alone, which exercises it and protects it. They are the
+source of power. They safeguard their national unity, which is based on the principle of
+equality, justice and equal opportunity between citizens, as provided in this Constitution.
+Article 5. Political system
+The political system is based on political and partisan multiplicity, the peaceful transfer
+of power, the separation and balance of powers, authority going with responsibility, and
+respect for human rights and freedoms, as set out in the Constitution.
+Article 6. Citizenship
+Citizenship is a right to anyone born to an Egyptian father or an Egyptian mother. Being
+legally recognized and obtaining official papers proving his personal data is a right
+guaranteed and organized by law.
+Requirements for acquiring citizenship are specified by law.
+Motives for writing constitution
+General guarantee of equality
+Source of constitutional authority
+Type of government envisioned
+Regional group(s)
+Official or national languages
+Status of religious law
+Official religion
+Status of religious law
+Requirements for birthright citizenship
+Requirements for naturalization

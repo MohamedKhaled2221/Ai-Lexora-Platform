@@ -1,0 +1,66 @@
+{
+  "note": "Authored native (non-OCR) PDFs. The reference is the text the generator was given, so it is correct by construction and carries none of the publisher defects that make text-layer references untrustworthy.",
+  "shared_source_with": "scan_authored_statute_ar_*, scan_authored_award_en_* (same authored pages, rasterised instead of drawn)",
+  "entries": [
+    {
+      "reference": "native_authored_statute_ar.p1.reference.txt",
+      "document": "native_authored_statute_ar.pdf",
+      "corpus": "synthetic",
+      "scope": "page",
+      "page": 1,
+      "pages_covered": 1,
+      "provenance": "authored",
+      "role": "representative",
+      "reference_chars": 542,
+      "note": "Arabic statute drawn as presentation forms in visual order, the way Arabic DTP producers emit PDFs. Same authored text as scan_authored_statute_ar_*, so the native and OCR numbers are directly comparable."
+    },
+    {
+      "reference": "native_authored_statute_ar.p2.reference.txt",
+      "document": "native_authored_statute_ar.pdf",
+      "corpus": "synthetic",
+      "scope": "page",
+      "page": 2,
+      "pages_covered": 1,
+      "provenance": "authored",
+      "role": "representative",
+      "reference_chars": 591,
+      "note": "Arabic statute drawn as presentation forms in visual order, the way Arabic DTP producers emit PDFs. Same authored text as scan_authored_statute_ar_*, so the native and OCR numbers are directly comparable."
+    },
+    {
+      "reference": "native_authored_statute_ar.p3.reference.txt",
+      "document": "native_authored_statute_ar.pdf",
+      "corpus": "synthetic",
+      "scope": "page",
+      "page": 3,
+      "pages_covered": 1,
+      "provenance": "authored",
+      "role": "representative",
+      "reference_chars": 473,
+      "note": "Arabic statute drawn as presentation forms in visual order, the way Arabic DTP producers emit PDFs. Same authored text as scan_authored_statute_ar_*, so the native and OCR numbers are directly comparable."
+    },
+    {
+      "reference": "native_authored_award_en.p1.reference.txt",
+      "document": "native_authored_award_en.pdf",
+      "corpus": "synthetic",
+      "scope": "page",
+      "page": 1,
+      "pages_covered": 1,
+      "provenance": "authored",
+      "role": "representative",
+      "reference_chars": 862,
+      "note": "English arbitral award, no bidi involved. Same authored text as scan_authored_award_en_*."
+    },
+    {
+      "reference": "native_authored_award_en.p2.reference.txt",
+      "document": "native_authored_award_en.pdf",
+      "corpus": "synthetic",
+      "scope": "page",
+      "page": 2,
+      "pages_covered": 1,
+      "provenance": "authored",
+      "role": "representative",
+      "reference_chars": 873,
+      "note": "English arbitral award, no bidi involved. Same authored text as scan_authored_award_en_*."
+    }
+  ]
+}

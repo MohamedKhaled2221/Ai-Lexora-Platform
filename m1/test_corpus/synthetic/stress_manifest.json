@@ -1,0 +1,297 @@
+{
+  "note": "Second-wave stress fixtures. Fabricated content plus renderings of PUBLIC legal PDFs. No firm data.",
+  "files": [
+    {
+      "file": "stress_table_ruled_ar.png",
+      "kind": "synthetic",
+      "format": "png (image)",
+      "language_mix": "bilingual",
+      "structure": "3-column FULLY RULED bilingual table",
+      "tables_expected": 1,
+      "expected_shape": [
+        5,
+        3
+      ],
+      "quirks": [
+        "every cell is boxed -- the easy case, and the control against which the borderless fixtures are read",
+        "Arabic label column, English label column, Western numerals",
+        "degraded: -0.3 deg skew, noise 4, JPEG q82"
+      ],
+      "exercises": [
+        "OCR path",
+        "table reconstruction from OCR geometry"
+      ]
+    },
+    {
+      "file": "stress_table_wide_en.png",
+      "kind": "synthetic",
+      "format": "png (image)",
+      "language_mix": "English",
+      "structure": "6-column BORDERLESS English table",
+      "tables_expected": 1,
+      "expected_shape": [
+        6,
+        6
+      ],
+      "quirks": [
+        "six columns with narrow gutters -- tests whether cell splitting survives when the inter-column gap approaches the inter-word gap",
+        "no ruling lines except one header rule",
+        "degraded: 0.4 deg skew, noise 6, JPEG q78"
+      ],
+      "exercises": [
+        "OCR path",
+        "table reconstruction from OCR geometry"
+      ]
+    },
+    {
+      "file": "stress_table_sparse_bilingual.png",
+      "kind": "synthetic",
+      "format": "png (image)",
+      "language_mix": "bilingual",
+      "structure": "4-column table with EMPTY CELLS in every column",
+      "tables_expected": 1,
+      "expected_shape": [
+        5,
+        4
+      ],
+      "quirks": [
+        "blank cells on purpose: a reconstructor that assumes full rows will shift contents into the wrong column rather than emit a gap",
+        "Arabic-Indic numerals in the case column against Western numerals in the date column",
+        "most degraded of the three (JPEG q72) -- tests the table geometry under recognition noise",
+        "degraded: -0.6 deg skew, noise 8, JPEG q72"
+      ],
+      "exercises": [
+        "OCR path",
+        "table reconstruction from OCR geometry"
+      ]
+    },
+    {
+      "file": "stress_nested_clauses_ar.pdf",
+      "kind": "synthetic",
+      "format": "pdf",
+      "pdf_type": "text-based",
+      "language_mix": "bilingual, parallel Arabic/English lines",
+      "structure": "clause numbering five levels deep: 5, 5.2, 5.2.1, 5.2.1.b, 5.2.1.b.ii",
+      "expected_document_type": "contract",
+      "quirks": [
+        "deepest numbering in the corpus -- tests whether the structure detector builds a heading path rather than flattening every level to the same rank",
+        "letter and roman sub-levels mixed with numeric ones (.a, .b.i)",
+        "every clause appears twice, once per language, so a chunker that cuts on markers must not treat the English restatement as a new clause"
+      ],
+      "exercises": [
+        "structure_preservation clause hierarchy",
+        "chunking boundaries"
+      ]
+    },
+    {
+      "file": "stress_inline_bilingual.pdf",
+      "kind": "synthetic",
+      "format": "pdf",
+      "pdf_type": "text-based",
+      "language_mix": "Arabic and English alternating WITHIN single sentences",
+      "structure": "numbered memorandum paragraphs, no article markers",
+      "expected_document_type": "correspondence",
+      "quirks": [
+        "the hard bidi case: direction switches mid-sentence, several times per line, around parenthesised English glosses",
+        "Latin terms embedded in Arabic clauses ('عقود الـ finance lease') -- language detection must return mixed, not pick a winner",
+        "quoted English inside Arabic inside brackets: nested direction runs"
+      ],
+      "exercises": [
+        "rtl_fix mixed-direction flagging",
+        "detect_language on mixed text"
+      ]
+    },
+    {
+      "file": "stress_exhibits_footnotes.pdf",
+      "kind": "synthetic",
+      "format": "pdf",
+      "pdf_type": "text-based",
+      "language_mix": "English body with Arabic headings",
+      "structure": "articles plus lettered exhibits, roman appendices, numbered schedules, and bracketed footnote references",
+      "expected_document_type": "contract",
+      "quirks": [
+        "four parallel numbering systems in one document (Article 1.1, Exhibit A.1, Appendix II.1, Schedule S1.1) -- a detector keyed on one of them will mis-rank the others",
+        "footnote markers [1][2][3] inline in clause text, with the footnote bodies collected at the end behind a rule",
+        "annex headings appear after the operative text, so document order and clause-id order diverge"
+      ],
+      "exercises": [
+        "structure_preservation on annexes",
+        "chunking of exhibit blocks"
+      ]
+    },
+    {
+      "file": "stress_table_pagebreak.pdf",
+      "kind": "synthetic",
+      "format": "pdf",
+      "pdf_type": "text-based",
+      "language_mix": "bilingual table cells",
+      "structure": "a single 30-row table that spans a page boundary, with a repeated header row on the continuation page",
+      "tables_expected": 1,
+      "quirks": [
+        "the table is ONE logical table but TWO page objects. Extractors that work per page report two tables; the header row appears twice; a chunker with keep_tables_whole must decide which of those is true",
+        "the continuation page's first row is a repeat of the header, not data",
+        "counted as 1 expected table on purpose -- reporting 2 is the failure mode this fixture exists to surface"
+      ],
+      "exercises": [
+        "table extraction across pages",
+        "chunking keep_tables_whole"
+      ]
+    },
+    {
+      "file": "scan_authored_statute_ar_300dpi.pdf",
+      "kind": "synthetic",
+      "format": "pdf",
+      "pdf_type": "scanned (image-only, no text layer)",
+      "ground_truth": "test_corpus/synthetic/scan_authored_statute_ar_300dpi.groundtruth.txt",
+      "ground_truth_provenance": "AUTHORED -- the text was written first and then painted onto the page, so the reference is correct by construction",
+      "language_mix": "pure Arabic",
+      "structure": "statute articles (المادة)",
+      "quirks": [
+        "clean 300 dpi equivalent, minimal degradation",
+        "NO text layer -- must be classified scanned and routed to OCR",
+        "the reference has no visual-order, fragmentation or out-of-flow defect, unlike every reference derived from a source text layer. **These are the fixtures whose absolute OCR accuracy is quotable.**",
+        "still optimistic against real scans: rendered glyphs, no scanner optics, no photocopy generations, no bleed-through"
+      ],
+      "exercises": [
+        "type_detection: scanned",
+        "OCR accuracy on a clean reference"
+      ]
+    },
+    {
+      "file": "scan_authored_statute_ar_150dpi.pdf",
+      "kind": "synthetic",
+      "format": "pdf",
+      "pdf_type": "scanned (image-only, no text layer)",
+      "ground_truth": "test_corpus/synthetic/scan_authored_statute_ar_150dpi.groundtruth.txt",
+      "ground_truth_provenance": "AUTHORED -- the text was written first and then painted onto the page, so the reference is correct by construction",
+      "language_mix": "pure Arabic",
+      "structure": "statute articles (المادة)",
+      "quirks": [
+        "150 dpi equivalent, heavy noise and JPEG artifacts",
+        "NO text layer -- must be classified scanned and routed to OCR",
+        "the reference has no visual-order, fragmentation or out-of-flow defect, unlike every reference derived from a source text layer. **These are the fixtures whose absolute OCR accuracy is quotable.**",
+        "still optimistic against real scans: rendered glyphs, no scanner optics, no photocopy generations, no bleed-through"
+      ],
+      "exercises": [
+        "type_detection: scanned",
+        "OCR accuracy on a clean reference"
+      ]
+    },
+    {
+      "file": "scan_authored_award_en_300dpi.pdf",
+      "kind": "synthetic",
+      "format": "pdf",
+      "pdf_type": "scanned (image-only, no text layer)",
+      "ground_truth": "test_corpus/synthetic/scan_authored_award_en_300dpi.groundtruth.txt",
+      "ground_truth_provenance": "AUTHORED -- the text was written first and then painted onto the page, so the reference is correct by construction",
+      "language_mix": "pure English",
+      "structure": "arbitral award with roman-numeral sections",
+      "quirks": [
+        "clean 300 dpi equivalent",
+        "NO text layer -- must be classified scanned and routed to OCR",
+        "the reference has no visual-order, fragmentation or out-of-flow defect, unlike every reference derived from a source text layer. **These are the fixtures whose absolute OCR accuracy is quotable.**",
+        "still optimistic against real scans: rendered glyphs, no scanner optics, no photocopy generations, no bleed-through"
+      ],
+      "exercises": [
+        "type_detection: scanned",
+        "OCR accuracy on a clean reference"
+      ]
+    },
+    {
+      "file": "scan_authored_award_en_150dpi.pdf",
+      "kind": "synthetic",
+      "format": "pdf",
+      "pdf_type": "scanned (image-only, no text layer)",
+      "ground_truth": "test_corpus/synthetic/scan_authored_award_en_150dpi.groundtruth.txt",
+      "ground_truth_provenance": "AUTHORED -- the text was written first and then painted onto the page, so the reference is correct by construction",
+      "language_mix": "pure English",
+      "structure": "arbitral award with roman-numeral sections",
+      "quirks": [
+        "150 dpi equivalent, heavy noise and JPEG artifacts",
+        "NO text layer -- must be classified scanned and routed to OCR",
+        "the reference has no visual-order, fragmentation or out-of-flow defect, unlike every reference derived from a source text layer. **These are the fixtures whose absolute OCR accuracy is quotable.**",
+        "still optimistic against real scans: rendered glyphs, no scanner optics, no photocopy generations, no bleed-through"
+      ],
+      "exercises": [
+        "type_detection: scanned",
+        "OCR accuracy on a clean reference"
+      ]
+    },
+    {
+      "file": "scan_wipo_eg081ar_1_300dpi.pdf",
+      "kind": "synthetic (derived from public)",
+      "format": "pdf",
+      "pdf_type": "scanned (image-only, no text layer)",
+      "derived_from": "test_corpus/public/wipo_eg081ar_1.pdf, first 6 pages",
+      "ground_truth": "test_corpus/synthetic/scan_wipo_eg081ar_1_300dpi.groundtruth.txt",
+      "ground_truth_provenance": "source PDF text layer -- see test_corpus/synthetic/reference_audit.json for whether it is trustworthy",
+      "language_mix": "pure Arabic",
+      "source_text_layer_quality": 0.97,
+      "quirks": [
+        "rasterized at 300 dpi, skew 0.4 deg, noise 4, JPEG q85",
+        "page-separated ground truth (form feed), unlike the first-wave scan_* fixtures"
+      ],
+      "exercises": [
+        "type_detection: scanned",
+        "OCR accuracy measurement"
+      ]
+    },
+    {
+      "file": "scan_constitute_egypt_2019_ar_150dpi.pdf",
+      "kind": "synthetic (derived from public)",
+      "format": "pdf",
+      "pdf_type": "scanned (image-only, no text layer)",
+      "derived_from": "test_corpus/public/constitute_egypt_2019_ar.pdf, first 6 pages",
+      "ground_truth": "test_corpus/synthetic/scan_constitute_egypt_2019_ar_150dpi.groundtruth.txt",
+      "ground_truth_provenance": "source PDF text layer -- see test_corpus/synthetic/reference_audit.json for whether it is trustworthy",
+      "language_mix": "pure Arabic",
+      "source_text_layer_quality": 0.952,
+      "quirks": [
+        "rasterized at 150 dpi, skew -1.2 deg, noise 11, JPEG q60",
+        "page-separated ground truth (form feed), unlike the first-wave scan_* fixtures"
+      ],
+      "exercises": [
+        "type_detection: scanned",
+        "OCR accuracy measurement"
+      ]
+    },
+    {
+      "file": "scan_eg_official_gazette_excerpt_300dpi.pdf",
+      "kind": "synthetic (derived from public)",
+      "format": "pdf",
+      "pdf_type": "scanned (image-only, no text layer)",
+      "derived_from": "test_corpus/public/eg_official_gazette_excerpt.pdf, first 6 pages",
+      "ground_truth": "test_corpus/synthetic/scan_eg_official_gazette_excerpt_300dpi.groundtruth.txt",
+      "ground_truth_provenance": "source PDF text layer -- see test_corpus/synthetic/reference_audit.json for whether it is trustworthy",
+      "language_mix": "pure English",
+      "source_text_layer_quality": 0.981,
+      "quirks": [
+        "rasterized at 300 dpi, skew 0.3 deg, noise 4, JPEG q85",
+        "page-separated ground truth (form feed), unlike the first-wave scan_* fixtures"
+      ],
+      "exercises": [
+        "type_detection: scanned",
+        "OCR accuracy measurement"
+      ]
+    },
+    {
+      "file": "scan_eg_constitution_2014_en_150dpi.pdf",
+      "kind": "synthetic (derived from public)",
+      "format": "pdf",
+      "pdf_type": "scanned (image-only, no text layer)",
+      "derived_from": "test_corpus/public/eg_constitution_2014_en.pdf, first 6 pages",
+      "ground_truth": "test_corpus/synthetic/scan_eg_constitution_2014_en_150dpi.groundtruth.txt",
+      "ground_truth_provenance": "source PDF text layer -- see test_corpus/synthetic/reference_audit.json for whether it is trustworthy",
+      "language_mix": "pure English",
+      "source_text_layer_quality": 0.978,
+      "quirks": [
+        "rasterized at 150 dpi, skew -0.9 deg, noise 9, JPEG q64",
+        "page-separated ground truth (form feed), unlike the first-wave scan_* fixtures"
+      ],
+      "exercises": [
+        "type_detection: scanned",
+        "OCR accuracy measurement"
+      ]
+    }
+  ]
+}
