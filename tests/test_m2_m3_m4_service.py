@@ -365,3 +365,44 @@ def test_unexpected_m2_error_is_sanitized():
         service.answer_with_metrics(
             question="test",
         )
+def test_raw_composition_preserves_document_scope():
+    m2 = FakeM2QueryPipeline()
+    rag = FakeRAGService()
+
+    service = M2M3M4RAGService(
+        query_pipeline=m2,
+        rag_service=rag,
+        expected_embedding_dimension=1024,
+    )
+
+    filters = QueryFilters(
+        document_ids=[
+            "backend-doc-27",
+            "backend-doc-31",
+        ],
+    )
+
+    service.answer_with_metrics(
+        question=(
+            "What are the termination terms?"
+        ),
+        filters=filters,
+    )
+
+    assert (
+        rag.last_query
+        .filters
+        .document_ids
+        == [
+            "backend-doc-27",
+            "backend-doc-31",
+        ]
+    )
+
+    assert (
+        m2.last_result
+        .processed_query
+        .filters
+        .document_ids
+        == []
+    )

@@ -40,11 +40,22 @@ class HybridSearcher:
             )
 
         # 1. Build Metadata Filter
-        qdrant_filter = self.vector_store.build_qdrant_filter(
-            document_type=query.filters.document_type,
-            jurisdiction=query.filters.jurisdiction,
-            language=query.filters.language,
-            extra_filters=query.filters.extra_filters
+        qdrant_filter = (
+            self.vector_store.build_qdrant_filter(
+                document_ids=(
+                    query.filters.document_ids
+                ),
+                document_type=(
+                    query.filters.document_type
+                ),
+                jurisdiction=(
+                    query.filters.jurisdiction
+                ),
+                language=query.filters.language,
+                extra_filters=(
+                    query.filters.extra_filters
+                ),
+            )
         )
 
         # 2. Dense Vector Search (embedding provided by M2)
@@ -103,38 +114,116 @@ class HybridSearcher:
 
     def _reciprocal_rank_fusion(
         self,
-        dense_results: List[Dict[str, Any]],
-        bm25_results: List[Dict[str, Any]],
+        dense_results: List[
+            Dict[str, Any]
+        ],
+        bm25_results: List[
+            Dict[str, Any]
+        ],
         top_k: int = 20,
         dense_weight: float = 0.9,
-        bm25_weight: float = 0.1
+        bm25_weight: float = 0.1,
     ) -> List[Dict[str, Any]]:
         """
-        Combine Dense & BM25 rankings using Weighted Reciprocal Rank Fusion (RRF).
-        RRF_Score = sum(weight * (1 / (k + rank)))
+        Combine Dense and BM25 rankings using
+        weighted Reciprocal Rank Fusion.
+
+        Candidate identity is the pair:
+
+            (document_id, chunk_id)
+
+        because chunk IDs are only guaranteed to be
+        unique within one document.
         """
-        rrf_scores: Dict[str, float] = {}
-        chunk_map: Dict[str, Dict[str, Any]] = {}
 
-        # Process Dense Ranks
-        for rank, item in enumerate(dense_results, start=1):
-            chunk_id = item["chunk_id"]
-            chunk_map[chunk_id] = item
-            rrf_scores[chunk_id] = rrf_scores.get(chunk_id, 0.0) + dense_weight * (1.0 / (self.rrf_k + rank))
+        CandidateKey = tuple[str, str]
 
-        # Process BM25 Ranks
-        for rank, item in enumerate(bm25_results, start=1):
-            chunk_id = item["chunk_id"]
-            chunk_map[chunk_id] = item
-            rrf_scores[chunk_id] = rrf_scores.get(chunk_id, 0.0) + bm25_weight * (1.0 / (self.rrf_k + rank))
+        rrf_scores: Dict[
+            CandidateKey,
+            float,
+        ] = {}
 
-        # Sort combined results by RRF score descending
-        sorted_chunk_ids = sorted(rrf_scores.keys(), key=lambda cid: rrf_scores[cid], reverse=True)
+        chunk_map: Dict[
+            CandidateKey,
+            Dict[str, Any],
+        ] = {}
+
+        def candidate_key(
+            item: Dict[str, Any],
+        ) -> CandidateKey:
+            return (
+                str(
+                    item.get(
+                        "document_id",
+                        "",
+                    )
+                ),
+                str(item["chunk_id"]),
+            )
+
+        for rank, item in enumerate(
+            dense_results,
+            start=1,
+        ):
+            key = candidate_key(item)
+
+            chunk_map[key] = item
+
+            rrf_scores[key] = (
+                rrf_scores.get(
+                    key,
+                    0.0,
+                )
+                + dense_weight
+                * (
+                    1.0
+                    / (
+                        self.rrf_k
+                        + rank
+                    )
+                )
+            )
+
+        for rank, item in enumerate(
+            bm25_results,
+            start=1,
+        ):
+            key = candidate_key(item)
+
+            chunk_map[key] = item
+
+            rrf_scores[key] = (
+                rrf_scores.get(
+                    key,
+                    0.0,
+                )
+                + bm25_weight
+                * (
+                    1.0
+                    / (
+                        self.rrf_k
+                        + rank
+                    )
+                )
+            )
+
+        sorted_keys = sorted(
+            rrf_scores,
+            key=rrf_scores.get,
+            reverse=True,
+        )
 
         fused_results = []
-        for cid in sorted_chunk_ids[:top_k]:
-            item = dict(chunk_map[cid])
-            item["rrf_score"] = rrf_scores[cid]
+
+        for key in sorted_keys[:top_k]:
+            item = dict(
+                chunk_map[key]
+            )
+
+            item["rrf_score"] = (
+                rrf_scores[key]
+            )
+
             fused_results.append(item)
 
         return fused_results

@@ -1,5 +1,10 @@
 from typing import List, Dict, Any, Optional
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+)
 
 from .m1_contract import DocumentType, Language
 
@@ -24,6 +29,45 @@ class QueryFilters(BaseModel):
         default_factory=dict,
         description="Custom additional filter criteria"
     )
+    document_ids: List[str] = Field(
+        default_factory=list,
+        description=(
+            "Document IDs that define the allowed "
+            "retrieval scope for this query"
+        ),
+    )
+    @field_validator("document_ids")
+    @classmethod
+    def validate_document_ids(
+        cls,
+        values: List[str],
+    ) -> List[str]:
+        normalized: List[str] = []
+        seen: set[str] = set()
+
+        for value in values:
+            cleaned = value.strip()
+
+            if not cleaned:
+                raise ValueError(
+                    "document_ids must not contain "
+                    "empty values"
+                )
+
+            if any(
+                character.isspace()
+                for character in cleaned
+            ):
+                raise ValueError(
+                    "document_ids must not contain "
+                    "whitespace"
+                )
+
+            if cleaned not in seen:
+                normalized.append(cleaned)
+                seen.add(cleaned)
+
+        return normalized
 
 class IdentifierSet(BaseModel):
     article_numbers: List[str] = Field(default_factory=list)
