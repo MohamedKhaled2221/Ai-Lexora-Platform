@@ -1,0 +1,25 @@
+# .NET
+bin/
+obj/
+.vs/
+.vscode/
+.idea/
+
+*.user
+*.suo
+
+# Uploaded files
+App_Data/uploads/
+
+# Environment / secrets
+.env
+.env.*
+*.env.local
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
