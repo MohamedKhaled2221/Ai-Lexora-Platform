@@ -8,23 +8,63 @@ public class DocumentService : IDocumentService
     private readonly IDocumentRepository _documents;
     private readonly IConfiguration _configuration;
     private readonly IWebHostEnvironment _environment;
+    private readonly ILexoraDocumentIndexingService _documentIndexer;
 
-    public DocumentService(IDocumentRepository documents, IConfiguration configuration, IWebHostEnvironment environment)
-    {
-        _documents = documents;
-        _configuration = configuration;
-        _environment = environment;
-    }
+    public DocumentService(
+      IDocumentRepository documents,
+      IConfiguration configuration,
+      IWebHostEnvironment environment,
+      ILexoraDocumentIndexingService documentIndexer)
+  {
+      _documents = documents;
+      _configuration = configuration;
+      _environment = environment;
+      _documentIndexer = documentIndexer;
+  }
 
     public Task<PagedResult<Document>> GetPagedAsync(string userId, int page, int pageSize, string? search, string? type) =>
         _documents.GetPagedOwnedAsync(userId, page, pageSize, search, type);
 
     public Task<Document?> GetOwnedAsync(int id, string userId) => _documents.GetOwnedAsync(id, userId);
 
-    public async Task<StoredDocument> UploadAsync(IFormFile file, string? type, string userId)
+    public async Task<StoredDocument> UploadAsync(
+        IFormFile file,
+        string? type,
+        string userId)
     {
         ValidateUpload(file, type);
-        return await StoreAsync(file, type, userId);
+
+        var stored =
+            await StoreAsync(
+                file,
+                type,
+                userId);
+
+        var fullPath =
+            GetFilePath(stored.Document);
+
+        try
+        {
+            await _documentIndexer.IndexAsync(
+                stored.Document.Id,
+                stored.Document.FileName,
+                fullPath,
+                file.ContentType);
+        }
+        catch
+        {
+            // A successful backend upload must also be RAG-ready.
+            // Roll back the SQL row and stored file if AI indexing
+            // fails, so the user never sees an unusable document.
+            _documents.Remove(stored.Document);
+            await _documents.SaveChangesAsync();
+
+            DeleteStoredFile(stored.Document);
+
+            throw;
+        }
+
+        return stored;
     }
 
     public async Task<IReadOnlyCollection<StoredDocument>> UploadBatchAsync(IFormFileCollection files, string? type, string userId)

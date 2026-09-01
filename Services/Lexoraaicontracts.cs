@@ -61,3 +61,35 @@ public sealed class LexoraCitation
     [JsonPropertyName("section")]
     public string? Section { get; set; }
 }
+public sealed class LexoraDocumentIngestionResponse
+{
+    [JsonPropertyName("document_id")]
+    public string DocumentId { get; set; } = string.Empty;
+
+    [JsonPropertyName("source_file")]
+    public string SourceFile { get; set; } = string.Empty;
+
+    [JsonPropertyName("file_type")]
+    public string FileType { get; set; } = string.Empty;
+
+    [JsonPropertyName("document_type")]
+    public string DocumentType { get; set; } = string.Empty;
+
+    [JsonPropertyName("language")]
+    public string Language { get; set; } = string.Empty;
+
+    [JsonPropertyName("pages")]
+    public int Pages { get; set; }
+
+    [JsonPropertyName("chunks_indexed")]
+    public int ChunksIndexed { get; set; }
+
+    [JsonPropertyName("embedding_model")]
+    public string EmbeddingModel { get; set; } = string.Empty;
+
+    [JsonPropertyName("embedding_dimension")]
+    public int EmbeddingDimension { get; set; }
+
+    [JsonPropertyName("status")]
+    public string Status { get; set; } = string.Empty;
+}

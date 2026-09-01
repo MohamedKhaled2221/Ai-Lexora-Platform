@@ -1,7 +1,7 @@
 using System.Text.Json;
 using FluentValidation;
 using LegalAssistant.Api.Common;
-
+using LegalAssistant.Api.Services;
 namespace LegalAssistant.Api.Middleware;
 
 public class ExceptionHandlingMiddleware
@@ -36,6 +36,20 @@ public class ExceptionHandlingMiddleware
         {
             await WriteErrorAsync(context, StatusCodes.Status404NotFound, "Resource not found", exception.Message);
         }
+        catch (AiDocumentIndexingException exception)
+        {
+           _logger.LogWarning(
+               "Document AI indexing failed with response status "
+               + "{StatusCode}. TraceId: {TraceId}",
+                exception.ResponseStatusCode,
+                context.TraceIdentifier);
+
+           await WriteErrorAsync(
+               context,
+               exception.ResponseStatusCode,
+               "Document indexing failed",
+               "The document could not be prepared for AI search.");
+       }
         catch (Exception exception)
         {
             _logger.LogError(exception, "Unhandled exception for {Method} {Path}. TraceId: {TraceId}",

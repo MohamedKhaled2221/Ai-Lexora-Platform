@@ -104,6 +104,33 @@ builder.Services.AddScoped<IGeneratedDocumentRepository, GeneratedDocumentReposi
 // uses its own placeholder for now). Swapping back to the placeholder for
 // local dev without the AI service running is a one-line change below.
 builder.Services.AddScoped<IChatRepository, ChatRepository>();
+// Package 1 document ingestion:
+// Backend document -> main AI API -> M1 -> M2 -> Qdrant.
+builder.Services.AddHttpClient<LexoraDocumentIndexingService>(
+    (sp, client) =>
+    {
+        var config =
+            sp.GetRequiredService<IConfiguration>();
+
+        var baseUrl =
+            config["AiService:BaseUrl"]
+            ?? "http://localhost:8000";
+
+        var timeoutSeconds =
+            config.GetValue<int?>(
+                "AiService:IngestionTimeoutSeconds")
+            ?? 360;
+
+        client.BaseAddress =
+            new Uri(baseUrl);
+
+        client.Timeout =
+            TimeSpan.FromSeconds(timeoutSeconds);
+    });
+
+builder.Services.AddScoped<ILexoraDocumentIndexingService>(
+    sp => sp.GetRequiredService<
+        LexoraDocumentIndexingService>());
 builder.Services.AddHttpClient<LexoraRagChatbotService>((sp, client) =>
 {
     var config = sp.GetRequiredService<IConfiguration>();
