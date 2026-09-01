@@ -1,0 +1,12 @@
+{
+  "document_id": "doc_001",
+  "clauses": [
+    {
+      "clause_id": "clause_001",
+      "text": "يلتزم الطرف الثاني بسداد قيمة الخدمات خلال ثلاثين يوماً.",
+      "page": 5,
+      "section": "Payment",
+      "language": "ar"
+    }
+  ]
+}
