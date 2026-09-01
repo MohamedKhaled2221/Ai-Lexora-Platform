@@ -13,10 +13,19 @@ from .service import (
     DocumentIndexingService,
 )
 
+from .ingestion_service import (
+    DocumentIndexingRuntimeError,
+    DocumentIngestionResult,
+    DocumentIngestionService,
+)
+
 __all__ = [
     "DocumentIndexingError",
     "DocumentIndexingResult",
     "DocumentIndexingService",
+    "DocumentIndexingRuntimeError",
+    "DocumentIngestionResult",
+    "DocumentIngestionService",
     "M1Client",
     "M1ClientSettings",
     "M1ContractError",

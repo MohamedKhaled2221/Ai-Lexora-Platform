@@ -39,7 +39,19 @@ class M1ServiceUnavailableError(M1ServiceError):
 
 
 class M1DocumentProcessingError(M1ServiceError):
-    """M1 received the file but could not process it."""
+    """
+    M1 received the upload but rejected or could not
+    process the document.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        status_code: int = 422,
+    ) -> None:
+        super().__init__(message)
+        self.status_code = status_code
 
 
 class M1ContractError(M1ServiceError):
@@ -182,19 +194,28 @@ class M1Client:
         if response.status_code == 413:
             raise M1DocumentProcessingError(
                 "The uploaded document exceeds "
-                "the M1 file-size limit."
+                "the M1 file-size limit.",
+                status_code=413,
             )
 
         if response.status_code == 415:
             raise M1DocumentProcessingError(
                 "The uploaded document type is "
-                "not supported by M1."
+                "not supported by M1.",
+                status_code=415,
+            )
+
+        if response.status_code == 400:
+            raise M1DocumentProcessingError(
+                "M1 rejected the uploaded document.",
+                status_code=400,
             )
 
         if response.status_code == 422:
             raise M1DocumentProcessingError(
                 "M1 could not extract usable legal "
-                "content from the document."
+                "content from the document.",
+                status_code=422,
             )
 
         if response.status_code >= 500:
@@ -205,7 +226,8 @@ class M1Client:
 
         if not response.is_success:
             raise M1DocumentProcessingError(
-                "M1 rejected the uploaded document."
+                "M1 rejected the uploaded document.",
+                status_code=422,
             )
 
         try:
