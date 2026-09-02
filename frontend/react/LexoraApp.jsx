@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import {
   API_BASE,
-  buildRawRagRequest,
+  askDocuments,
   requestApi,
   uploadDocument,
 } from "./apiClient.js";
@@ -77,17 +77,44 @@ function ErrorState({ error, onRetry }) {
 
 function CitationList({ citations }) {
   if (!citations.length) {
-    return <p className="empty-result">لم تُرجع الخدمة مراجع قابلة للعرض لهذا السؤال.</p>;
+    return (
+      <p className="empty-result">
+        لم تُرجع الخدمة مراجع قابلة للعرض لهذا السؤال.
+      </p>
+    );
   }
 
   return (
     <div className="citation-list">
       {citations.map((citation) => (
-        <article className="citation-card" key={`${citation.evidence_id}-${citation.document_id}-${citation.chunk_id}`}>
-          <strong>{citation.evidence_id} - {citation.document_id}</strong>
-          <span>المقطع: {citation.chunk_id}</span>
-          {citation.page !== null && citation.page !== undefined ? <span>الصفحة: {citation.page}</span> : null}
-          {citation.section ? <span>القسم: {citation.section}</span> : null}
+        <article
+          className="citation-card"
+          key={`${citation.evidenceId}-${citation.documentId}-${citation.chunkId}`}
+        >
+          <strong>
+            {citation.evidenceId} - {citation.fileName}
+          </strong>
+
+          <span>
+            المستند: #{citation.documentId}
+          </span>
+
+          <span>
+            المقطع: {citation.chunkId}
+          </span>
+
+          {citation.page !== null &&
+          citation.page !== undefined ? (
+            <span>
+              الصفحة: {citation.page}
+            </span>
+          ) : null}
+
+          {citation.section ? (
+            <span>
+              القسم: {citation.section}
+            </span>
+          ) : null}
         </article>
       ))}
     </div>
@@ -323,32 +350,74 @@ export function LegalAssistantWidget({ mode = "ai" }) {
 
   async function submitQuestion(trimmedQuestion) {
     if (!trimmedQuestion) {
-      setResult({ status: "error", error: new Error("اكتب السؤال القانوني الاول.") });
+      setResult({
+        status: "error",
+        error: new Error("اكتب السؤال القانوني الاول."),
+      });
+      return;
+    }
+
+    if (
+      attachments.some(
+        (item) => item.status === "uploading",
+      )
+    ) {
+      setResult({
+        status: "error",
+        error: new Error(
+          "انتظر حتى تكتمل فهرسة المستندات.",
+        ),
+      });
+      return;
+    }
+
+    const documentIds = attachments
+      .filter(
+        (item) =>
+          item.status === "ready" &&
+          Number.isInteger(item.backendDocumentId),
+      )
+      .map((item) => item.backendDocumentId);
+
+    if (!documentIds.length) {
+      setResult({
+        status: "error",
+        error: new Error(
+          "ارفع مستندا واحدا على الأقل قبل إرسال السؤال.",
+        ),
+      });
       return;
     }
 
     setLastQuestion(trimmedQuestion);
+
     const attachmentSummary = getAttachmentSummary();
-    const endpoint = "/api/v1/rag/ask";
-    const payload = buildRawRagRequest(trimmedQuestion, filters);
+    const endpoint = "/api/search/ask";
 
     setLoading(true);
+
     setResult({
       status: "sending",
       endpoint,
-      payload,
-      attachments_ready_for_future_ai_agent: attachmentSummary,
     });
 
     try {
-      const response = await requestApi(endpoint, {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
+      const response = await askDocuments(
+        trimmedQuestion,
+        documentIds,
+      );
 
-      setResult({ status: "success", ...response, attachments: attachmentSummary });
+      setResult({
+        status: "success",
+        ...response,
+        attachments: attachmentSummary,
+      });
     } catch (error) {
-      setResult({ status: "error", error, endpoint });
+      setResult({
+        status: "error",
+        error,
+        endpoint,
+      });
     } finally {
       setLoading(false);
     }
@@ -371,7 +440,9 @@ export function LegalAssistantWidget({ mode = "ai" }) {
           <p className="eyebrow">AI Agent Workspace</p>
           <h2>{isFullSearch ? "البحث القانوني بالمصادر" : "اسأل المساعد القانوني"}</h2>
           <p>
-            اكتب سؤالا بالعربية أو الإنجليزية للحصول على إجابة من مسار البحث والاسترجاع الكامل. المرفقات تُحفظ في الواجهة فقط حتى يتوفر upload endpoint.
+           ارفع مستندا ثم اكتب سؤالك بالعربية أو الإنجليزية.
+           يتم رفع المستند وفهرسته أولا، ثم تُولّد الإجابة من
+           المستندات المختارة مع عرض المراجع المرتبطة بها.
           </p>
         </div>
       </div>
