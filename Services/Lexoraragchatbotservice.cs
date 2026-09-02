@@ -58,9 +58,12 @@ public sealed class LexoraRagChatbotService : IChatbotService
 
         if (!response.IsSuccessStatusCode)
         {
-            var body = await response.Content.ReadAsStringAsync(cancellationToken);
-            _logger.LogError("AI-Lexora RAG service returned {StatusCode}: {Body}", (int)response.StatusCode, body);
-            throw new AiServiceUnavailableException($"The AI service returned status {(int)response.StatusCode}.");
+            _logger.LogWarning(
+                "AI-Lexora RAG service returned status {StatusCode}",
+                (int)response.StatusCode);
+
+            throw new AiServiceUnavailableException(
+                $"The AI service returned status {(int)response.StatusCode}.");
         }
 
         var result = await response.Content.ReadFromJsonAsync<LexoraAiResponse>(JsonOptions, cancellationToken);
