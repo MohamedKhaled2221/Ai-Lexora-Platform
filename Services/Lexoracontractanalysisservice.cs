@@ -109,9 +109,12 @@ public sealed class LexoraContractAnalysisService : IContractAnalysisService
 
         if (!response.IsSuccessStatusCode)
         {
-            var body = await response.Content.ReadAsStringAsync(cancellationToken);
-            _logger.LogError("M1 returned {StatusCode}: {Body}", (int)response.StatusCode, body);
-            throw new AiServiceUnavailableException($"The document-processing (M1) service returned status {(int)response.StatusCode}.");
+            _logger.LogWarning(
+                "M1 document-processing service returned status {StatusCode}",
+                (int)response.StatusCode);
+
+            throw new AiServiceUnavailableException(
+                $"The document-processing (M1) service returned status {(int)response.StatusCode}.");
         }
 
         var result = await response.Content.ReadFromJsonAsync<M1ClauseResponse>(JsonOptions, cancellationToken);
@@ -151,9 +154,12 @@ public sealed class LexoraContractAnalysisService : IContractAnalysisService
 
         if (!response.IsSuccessStatusCode)
         {
-            var body = await response.Content.ReadAsStringAsync(cancellationToken);
-            _logger.LogError("M5 returned {StatusCode}: {Body}", (int)response.StatusCode, body);
-            throw new AiServiceUnavailableException($"The clause-analysis (M5) service returned status {(int)response.StatusCode}.");
+            _logger.LogWarning(
+                "M5 clause-analysis service returned status {StatusCode}",
+                (int)response.StatusCode);
+
+            throw new AiServiceUnavailableException(
+                $"The clause-analysis (M5) service returned status {(int)response.StatusCode}.");
         }
 
         var result = await response.Content.ReadFromJsonAsync<M5AnalyzeResponse>(JsonOptions, cancellationToken);
@@ -180,9 +186,12 @@ public sealed class LexoraContractAnalysisService : IContractAnalysisService
 
         if (!response.IsSuccessStatusCode)
         {
-            var body = await response.Content.ReadAsStringAsync(cancellationToken);
-            _logger.LogError("M6 returned {StatusCode}: {Body}", (int)response.StatusCode, body);
-            throw new AiServiceUnavailableException($"The risk-analysis (M6) service returned status {(int)response.StatusCode}.");
+            _logger.LogWarning(
+                "M6 risk-analysis service returned status {StatusCode}",
+                (int)response.StatusCode);
+
+            throw new AiServiceUnavailableException(
+                $"The risk-analysis (M6) service returned status {(int)response.StatusCode}.");
         }
 
         var result = await response.Content.ReadFromJsonAsync<M6RiskResponse>(JsonOptions, cancellationToken);
