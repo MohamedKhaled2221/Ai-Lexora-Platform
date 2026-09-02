@@ -6,6 +6,7 @@ from src.api.logging_config import (
     configure_application_logging,
 )
 from src.api.runtime import (
+    build_document_ingestion_service,
     build_rag_service,
     build_raw_rag_service,
 )
@@ -26,5 +27,8 @@ app = create_app(
     ),
     raw_rag_service_factory=(
         build_raw_rag_service
+    ),
+    document_ingestion_service_factory=(
+        build_document_ingestion_service
     ),
 )
