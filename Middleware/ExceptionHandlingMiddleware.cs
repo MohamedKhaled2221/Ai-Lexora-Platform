@@ -50,6 +50,21 @@ public class ExceptionHandlingMiddleware
                "Document indexing failed",
                "The document could not be prepared for AI search.");
        }
+       catch (AiQuestionAnsweringException exception)
+        {
+            _logger.LogWarning(
+                "Document-scoped AI question answering failed "
+                + "with response status {StatusCode}. "
+                + "TraceId: {TraceId}",
+                exception.ResponseStatusCode,
+                context.TraceIdentifier);
+
+            await WriteErrorAsync(
+                context,
+                exception.ResponseStatusCode,
+                "AI question answering failed",
+                "The selected documents could not be queried.");
+        }
         catch (Exception exception)
         {
             _logger.LogError(exception, "Unhandled exception for {Method} {Path}. TraceId: {TraceId}",

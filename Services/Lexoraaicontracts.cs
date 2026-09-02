@@ -19,6 +19,9 @@ public sealed class LexoraAskRequest
 
 public sealed class LexoraQueryFilters
 {
+    [JsonPropertyName("document_ids")]
+    public List<string> DocumentIds { get; set; } = new();
+
     [JsonPropertyName("document_type")]
     public string? DocumentType { get; set; }
 
