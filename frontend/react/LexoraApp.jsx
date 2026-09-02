@@ -645,7 +645,9 @@ export function LegalAssistantWidget({ mode = "ai" }) {
           multiple
           accept=".pdf,.docx,.txt,.png,.jpg,.jpeg"
           onChange={async (event) => {
-            const files = event.target.files;
+            const files = Array.from(
+              event.target.files || [],
+            );
             event.target.value = "";
             await addAttachments(files, "local_file");
           }}
@@ -657,7 +659,9 @@ export function LegalAssistantWidget({ mode = "ai" }) {
           multiple
           accept=".png,.jpg,.jpeg,image/png,image/jpeg"
           onChange={async (event) => {
-            const files = event.target.files;
+            const files = Array.from(
+              event.target.files || [],
+            );
             event.target.value = "";
             await addAttachments(files, "image");
           }}
@@ -669,7 +673,9 @@ export function LegalAssistantWidget({ mode = "ai" }) {
           accept="image/jpeg,image/png"
           capture="environment"
           onChange={async (event) => {
-            const files = event.target.files;
+            const files = Array.from(
+              event.target.files || [],
+            );
             event.target.value = "";
             await addAttachments(files, "camera");
           }}
