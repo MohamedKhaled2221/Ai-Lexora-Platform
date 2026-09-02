@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import {
   API_BASE,
   askDocuments,
+  listDocuments,
   requestApi,
   uploadDocument,
 } from "./apiClient.js";
@@ -254,13 +255,45 @@ export function LegalAssistantWidget({ mode = "ai" }) {
   const [result, setResult] = useState({ status: "waiting" });
   const [loading, setLoading] = useState(false);
   const [lastQuestion, setLastQuestion] = useState("");
-  const [filters, setFilters] = useState({ document_type: "", language: "" });
+  const [documents, setDocuments] = useState([]);
+  const [selectedDocumentIds, setSelectedDocumentIds] = useState([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [documentsError, setDocumentsError] = useState("");
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const imageInputRef = useRef(null);
   const isFullSearch = mode === "search";
   const attachmentIdsRef = useRef(new Set());
 
+  async function refreshDocuments() {
+    setDocumentsLoading(true);
+    setDocumentsError("");
+
+    try {
+      const loaded = await listDocuments();
+
+      const validDocuments = loaded.filter(
+        (document) => Number.isInteger(document?.id),
+      );
+
+      setDocuments(validDocuments);
+
+      const availableIds = new Set(
+        validDocuments.map((document) => document.id),
+      );
+
+      setSelectedDocumentIds((current) =>
+        current.filter((id) => availableIds.has(id)),
+      );
+    } catch (error) {
+      setDocumentsError(
+        error?.message ||
+        "تعذر تحميل قائمة المستندات.",
+      );
+    } finally {
+      setDocumentsLoading(false);
+    }
+  }
   async function addAttachments(fileList, source) {
     const selectedFiles = Array.from(fileList || []);
 
@@ -295,14 +328,21 @@ export function LegalAssistantWidget({ mode = "ai" }) {
 
       try {
         const uploaded = await uploadDocument(file, "Contract");
+        const backendDocumentId = Number(uploaded?.id);
 
+        if (!Number.isInteger(backendDocumentId)) {
+          throw new Error(
+            "تعذر تأكيد معرف المستند المرفوع.",
+          );
+        }
+        setDocumentsError("");
         setAttachments((current) =>
           current.map((item) =>
             item.id === localId
               ? {
                   ...item,
                   status: "ready",
-                  backendDocumentId: uploaded.id,
+                  backendDocumentId,
                   name: uploaded.fileName || item.name,
                   size: uploaded.sizeBytes ?? item.size,
                   sizeLabel: formatFileSize(
@@ -312,6 +352,19 @@ export function LegalAssistantWidget({ mode = "ai" }) {
                 }
               : item,
           ),
+        );
+        setDocuments((current) => [
+          uploaded,
+          ...current.filter(
+            (document) =>
+              document.id !== backendDocumentId,
+          ),
+        ]);
+
+        setSelectedDocumentIds((current) =>
+          current.includes(backendDocumentId)
+            ? current
+            : [...current, backendDocumentId],
         );
       } catch (error) {
         setAttachments((current) =>
@@ -332,7 +385,25 @@ export function LegalAssistantWidget({ mode = "ai" }) {
   }
 
   function removeAttachment(id) {
+    const attachment = attachments.find(
+      (item) => item.id === id,
+    );
+
     attachmentIdsRef.current.delete(id);
+
+    if (
+      Number.isInteger(
+        attachment?.backendDocumentId,
+      )
+    ) {
+      setSelectedDocumentIds((current) =>
+        current.filter(
+          (documentId) =>
+            documentId !==
+            attachment.backendDocumentId,
+        ),
+      );
+    }
 
     setAttachments((current) =>
       current.filter((item) => item.id !== id),
@@ -371,13 +442,13 @@ export function LegalAssistantWidget({ mode = "ai" }) {
       return;
     }
 
-    const documentIds = attachments
-      .filter(
-        (item) =>
-          item.status === "ready" &&
-          Number.isInteger(item.backendDocumentId),
-      )
-      .map((item) => item.backendDocumentId);
+    const documentIds = [
+      ...new Set(
+        selectedDocumentIds.filter(
+          Number.isInteger,
+        ),
+      ),
+    ];
 
     if (!documentIds.length) {
       setResult({
@@ -493,22 +564,77 @@ export function LegalAssistantWidget({ mode = "ai" }) {
           </div>
         </label>
 
-        <div className="search-filters" aria-label="فلاتر البحث">
-          <label>نوع المستند
-            <select value={filters.document_type} onChange={(event) => setFilters({ ...filters, document_type: event.target.value })}>
-              <option value="">كل الأنواع</option>
-              <option value="contract">عقد</option>
-              <option value="law">قانون</option>
-              <option value="decree">مرسوم</option>
-              <option value="court_verdict">حكم قضائي</option>
+        <div
+          className="search-filters"
+          aria-label="اختيار المستندات"
+        >
+          <label>
+            المستندات المستخدمة في الإجابة
+
+            <select
+              multiple
+              size={Math.min(
+                Math.max(documents.length, 3),
+                6,
+              )}
+              value={selectedDocumentIds.map(String)}
+              disabled={
+                documentsLoading ||
+                documents.length === 0
+              }
+              onChange={(event) => {
+                const ids = Array.from(
+                  event.currentTarget.selectedOptions,
+                  (option) => Number(option.value),
+                ).filter(Number.isInteger);
+
+                setSelectedDocumentIds(ids);
+              }}
+            >
+              {documents.length ? (
+                documents.map((document) => (
+                  <option
+                    key={document.id}
+                    value={document.id}
+                  >
+                    {document.fileName}
+                  </option>
+                ))
+              ) : (
+                <option disabled value="">
+                  لا توجد مستندات محملة
+                </option>
+              )}
             </select>
           </label>
-          <label>لغة المصدر
-            <select value={filters.language} onChange={(event) => setFilters({ ...filters, language: event.target.value })}>
-              <option value="">كل اللغات</option>
-              <option value="ar">العربية</option>
-              <option value="en">English</option>
-            </select>
+
+          <label>
+            إدارة المستندات
+
+            <button
+              className="ghost-btn"
+              type="button"
+              disabled={
+                documentsLoading ||
+                attachments.some(
+                  (item) =>
+                    item.status === "uploading",
+                )
+              }
+              onClick={() => void refreshDocuments()}
+            >
+              {documentsLoading
+                ? "جاري تحميل المستندات..."
+                : "تحديث قائمة المستندات"}
+            </button>
+
+            <small className="empty-result">
+              {documentsError
+                ? documentsError
+                : documents.length === 0
+                  ? "ارفع مستندا أو حدّث القائمة."
+                  : `${selectedDocumentIds.length} من ${documents.length} مستند محدد`}
+            </small>
           </label>
         </div>
 
