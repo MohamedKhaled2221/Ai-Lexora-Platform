@@ -3,6 +3,7 @@ import {
   API_BASE,
   buildRawRagRequest,
   requestApi,
+  uploadDocument,
 } from "./apiClient.js";
 
 const cases = [
@@ -231,33 +232,84 @@ export function LegalAssistantWidget({ mode = "ai" }) {
   const cameraInputRef = useRef(null);
   const imageInputRef = useRef(null);
   const isFullSearch = mode === "search";
+  const attachmentIdsRef = useRef(new Set());
 
-  function addAttachments(fileList, source) {
+  async function addAttachments(fileList, source) {
     const selectedFiles = Array.from(fileList || []);
 
     if (!selectedFiles.length) return;
 
-    setAttachments((current) => {
-      const knownIds = new Set(current.map((item) => item.id));
-      const next = selectedFiles
-        .map((file) => ({
-          id: `${source}_${file.name}_${file.lastModified}_${file.size}`,
-          name: file.name || "camera-image",
+    setAttachmentMenuOpen(false);
+
+    for (const file of selectedFiles) {
+      const localId =
+        `${source}_${file.name}_${file.lastModified}_${file.size}`;
+
+      if (attachmentIdsRef.current.has(localId)) {
+        continue;
+      }
+
+      attachmentIdsRef.current.add(localId);
+
+      setAttachments((current) => [
+        ...current,
+        {
+          id: localId,
+          name: file.name || "document",
           type: file.type || "unknown",
           size: file.size,
           sizeLabel: formatFileSize(file.size),
           source,
-        }))
-        .filter((item) => !knownIds.has(item.id));
+          status: "uploading",
+          backendDocumentId: null,
+          error: null,
+        },
+      ]);
 
-      return [...current, ...next];
-    });
+      try {
+        const uploaded = await uploadDocument(file, "Contract");
 
-    setAttachmentMenuOpen(false);
+        setAttachments((current) =>
+          current.map((item) =>
+            item.id === localId
+              ? {
+                  ...item,
+                  status: "ready",
+                  backendDocumentId: uploaded.id,
+                  name: uploaded.fileName || item.name,
+                  size: uploaded.sizeBytes ?? item.size,
+                  sizeLabel: formatFileSize(
+                    uploaded.sizeBytes ?? item.size,
+                  ),
+                  error: null,
+                }
+              : item,
+          ),
+        );
+      } catch (error) {
+        setAttachments((current) =>
+          current.map((item) =>
+            item.id === localId
+              ? {
+                  ...item,
+                  status: "error",
+                  error:
+                    error?.message ||
+                    "تعذر رفع المستند وفهرسته.",
+                }
+              : item,
+          ),
+        );
+      }
+    }
   }
 
   function removeAttachment(id) {
-    setAttachments((current) => current.filter((item) => item.id !== id));
+    attachmentIdsRef.current.delete(id);
+
+    setAttachments((current) =>
+      current.filter((item) => item.id !== id),
+    );
   }
 
   function getAttachmentSummary() {
@@ -394,10 +446,11 @@ export function LegalAssistantWidget({ mode = "ai" }) {
           className="visually-hidden"
           type="file"
           multiple
-          accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.webp,image/*"
-          onChange={(event) => {
-            addAttachments(event.target.files, "local_file");
+          accept=".pdf,.docx,.txt,.png,.jpg,.jpeg"
+          onChange={async (event) => {
+            const files = event.target.files;
             event.target.value = "";
+            await addAttachments(files, "local_file");
           }}
         />
         <input
@@ -405,21 +458,23 @@ export function LegalAssistantWidget({ mode = "ai" }) {
           className="visually-hidden"
           type="file"
           multiple
-          accept="image/*,.png,.jpg,.jpeg,.webp"
-          onChange={(event) => {
-            addAttachments(event.target.files, "image");
+          accept=".png,.jpg,.jpeg,image/png,image/jpeg"
+          onChange={async (event) => {
+            const files = event.target.files;
             event.target.value = "";
+            await addAttachments(files, "image");
           }}
         />
         <input
           ref={cameraInputRef}
           className="visually-hidden"
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png"
           capture="environment"
-          onChange={(event) => {
-            addAttachments(event.target.files, "camera");
+          onChange={async (event) => {
+            const files = event.target.files;
             event.target.value = "";
+            await addAttachments(files, "camera");
           }}
         />
 
@@ -429,9 +484,26 @@ export function LegalAssistantWidget({ mode = "ai" }) {
               <span className="attachment-chip" key={item.id}>
                 <span>
                   {item.name}
-                  <small>{item.source === "camera" ? "كاميرا" : item.source === "image" ? "صورة" : "ملف"} - {item.sizeLabel}</small>
+                  <small>
+                    {item.status === "uploading"
+                      ? `جاري الرفع والفهرسة - ${item.sizeLabel}`
+                      : item.status === "error"
+                        ? item.error
+                        : `${
+                            item.source === "camera"
+                              ? "كاميرا"
+                              : item.source === "image"
+                                ? "صورة"
+                                : "ملف"
+                          } - جاهز للبحث - ${item.sizeLabel}`}
+                  </small>
                 </span>
-                <button type="button" aria-label={`حذف ${item.name}`} onClick={() => removeAttachment(item.id)}>
+                <button
+                  type="button"
+                  aria-label={`حذف ${item.name}`}
+                  disabled={item.status === "uploading"}
+                  onClick={() => removeAttachment(item.id)}
+                >
                   x
                 </button>
               </span>
@@ -439,7 +511,16 @@ export function LegalAssistantWidget({ mode = "ai" }) {
           </div>
         ) : null}
 
-        <button className="submit-btn" type="submit" disabled={loading}>
+        <button
+          className="submit-btn"
+          type="submit"
+          disabled={
+            loading ||
+            attachments.some(
+              (item) => item.status === "uploading",
+            )
+          }
+        >
           {isFullSearch ? "تشغيل البحث بالمصادر" : "إرسال السؤال"}
         </button>
       </form>
