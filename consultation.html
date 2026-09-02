@@ -132,10 +132,10 @@
         <div>
           <p class="eyebrow">Legal AI</p>
           <h2>تجربة المساعد القانوني والبحث بالمصادر</h2>
-          <p>المساعد القانوني يستخدم مصادر تجريبية. البحث بالمصادر يحتاج تجهيز الفهرسة وقاعدة المصادر وبيانات البحث كاملة.</p>
+            <p>المساعد القانوني يجيب بالاعتماد على المستندات المرفوعة والمفهرسة والمحددة للبحث.</p>
         </div>
         <div class="quick-actions">
-          <button class="ghost-btn" type="button" data-copy-endpoint="/api/v1/rag/ask">نسخ رابط البحث</button>
+          <button class="ghost-btn" type="button" data-copy-endpoint="/api/search/ask">نسخ رابط البحث</button>
         </div>
       </div>
 
@@ -163,9 +163,9 @@
                   <textarea name="question" placeholder="اكتب سؤالك القانوني هنا..." required></textarea>
                 </div>
               </label>
-              <input class="visually-hidden" type="file" multiple accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.webp,image/*" data-file-input>
+              <input class="visually-hidden" type="file" multiple accept=".pdf,.docx,.txt,.png,.jpg,.jpeg" data-file-input>
               <input class="visually-hidden" type="file" accept="image/*" capture="environment" data-camera-input>
-              <input class="visually-hidden" type="file" multiple accept="image/*,.png,.jpg,.jpeg,.webp" data-image-input>
+              <input class="visually-hidden" type="file" multiple accept=".png,.jpg,.jpeg,image/png,image/jpeg" data-image-input>
               <div class="attachment-list" data-attachment-list aria-label="المرفقات المختارة"></div>
               <button class="submit-btn" type="submit">إرسال السؤال</button>
             </form>
@@ -181,7 +181,7 @@
               <div>
                 <p class="eyebrow">AI Agent Workspace</p>
                 <h2>البحث القانوني بالمصادر</h2>
-                <p>واجهة جاهزة للبحث الكامل عند توفر embedding و upload endpoint في الباك.</p>
+                <p>اختر المستندات المفهرسة ثم اطرح سؤالك للبحث القانوني بالمصادر.</p>
               </div>
             </div>
             <form class="assistant-form" data-agent-form data-agent-mode="search">
@@ -198,9 +198,9 @@
                   <textarea name="question" placeholder="اكتب سؤال البحث هنا..." required></textarea>
                 </div>
               </label>
-              <input class="visually-hidden" type="file" multiple accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.webp,image/*" data-file-input>
+              <input class="visually-hidden" type="file" multiple accept=".pdf,.docx,.txt,.png,.jpg,.jpeg" data-file-input>
               <input class="visually-hidden" type="file" accept="image/*" capture="environment" data-camera-input>
-              <input class="visually-hidden" type="file" multiple accept="image/*,.png,.jpg,.jpeg,.webp" data-image-input>
+              <input class="visually-hidden" type="file" multiple accept=".png,.jpg,.jpeg,image/png,image/jpeg" data-image-input>
               <div class="attachment-list" data-attachment-list aria-label="المرفقات المختارة"></div>
               <button class="submit-btn" type="submit">تشغيل البحث بالمصادر</button>
             </form>
