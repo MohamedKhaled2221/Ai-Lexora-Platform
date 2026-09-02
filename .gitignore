@@ -91,3 +91,7 @@ desktop.ini
 tmp/
 temp/
 *.tmp
+
+# Frontend dependencies and generated build output
+node_modules/
+dist/

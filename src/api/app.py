@@ -21,6 +21,7 @@ from src.api.routes import (
     router as system_router,
 )
 from src.api.runtime import (
+    build_document_ingestion_service,
     build_rag_service,
     build_raw_rag_service,
 )
@@ -34,6 +35,10 @@ from src.orchestration import (
 )
 
 from src.api.risk_routes import router as risk_router
+
+from src.api.document_routes import (
+    router as document_router,
+)
 
 
 def create_app(
@@ -54,6 +59,16 @@ def create_app(
     ) = None,
     api_security_settings: (
         APISecuritySettings | None
+    ) = None,
+    document_ingestion_service_factory: (
+        Callable[
+            [
+                M3M4RAGService,
+                M2M3M4RAGService,
+            ],
+            object,
+        ]
+        | None
     ) = None,
 ) -> FastAPI:
     security_settings = (
@@ -94,6 +109,7 @@ def create_app(
         lifespan=create_lifespan(
             rag_service_factory,
             raw_rag_service_factory,
+            document_ingestion_service_factory,
         ),
     )
 
@@ -127,10 +143,14 @@ def create_app(
     )
 
     app.include_router(
+        document_router
+    )
+
+    app.include_router(
         risk_router
     )
 
-    
+
     return app
 
 
@@ -142,5 +162,8 @@ app = create_app(
     rag_service_factory=build_rag_service,
     raw_rag_service_factory=(
         build_raw_rag_service
+    ),
+    document_ingestion_service_factory=(
+        build_document_ingestion_service
     ),
 )

@@ -160,76 +160,20 @@ document.querySelectorAll("[data-check-ready]").forEach((button) => {
   });
 });
 
-document.querySelectorAll("[data-ai-form]").forEach((form) => {
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const output = document.querySelector(form.dataset.output || "[data-api-output]");
-    const button = form.querySelector("button[type='submit']");
-    const question = new FormData(form).get("question")?.toString().trim();
 
-    if (!question) {
-      showToast("اكتب السؤال القانوني الأول.", "error");
-      return;
-    }
+document
+  .querySelectorAll("[data-ai-form], [data-rag-form]")
+  .forEach((form) => {
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
 
-    const payload = { question, filters: { jurisdiction: "Egypt" } };
-
-    button.disabled = true;
-    renderJson(output, { status: "sending", endpoint: "/api/v1/rag/ask", payload });
-
-    try {
-      const result = await requestApi("/api/v1/rag/ask", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-      renderApiResult(output, "/api/v1/rag/ask", result);
-      showToast("تم توليد إجابة قانونية بالمصادر.", "success");
-    } catch (error) {
-      renderJson(output, { error: error.message, endpoint: "/api/v1/rag/ask", payload });
-      showToast("تعذر توليد الإجابة. تأكد من خدمة الذكاء الاصطناعي.", "error");
-    } finally {
-      button.disabled = false;
-    }
+      showToast(
+        "هذه الواجهة القديمة غير مفعلة. استخدم واجهة المساعد القانوني المتصلة بالنظام.",
+        "error"
+      );
+    });
   });
-});
 
-document.querySelectorAll("[data-rag-form]").forEach((form) => {
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const output = document.querySelector(form.dataset.output || "[data-api-output]");
-    const button = form.querySelector("button[type='submit']");
-    const question = new FormData(form).get("question")?.toString().trim();
-
-    if (!question) {
-      showToast("اكتب سؤال البحث القانوني الأول.", "error");
-      return;
-    }
-
-    const payload = { question, filters: { jurisdiction: "Egypt" } };
-
-    button.disabled = true;
-    renderJson(output, { status: "sending", endpoint: "/api/v1/rag/ask", payload });
-
-    try {
-      const result = await requestApi("/api/v1/rag/ask", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-      renderJson(output, result);
-      showToast("تم تنفيذ البحث بالمصادر.", "success");
-    } catch (error) {
-      renderJson(output, {
-        error: error.message,
-        note: "هذا المسار يحتاج بيانات بحث مفهرسة وقاعدة مصادر جاهزة.",
-        endpoint: "/api/v1/rag/ask",
-        payload,
-      });
-      showToast("البحث بالمصادر يحتاج تجهيز الفهرسة وقاعدة المصادر.", "error");
-    } finally {
-      button.disabled = false;
-    }
-  });
-});
 
 document.querySelectorAll("form:not([data-ai-form]):not([data-rag-form]):not([data-file-search-form]):not([data-agent-form])").forEach((form) => {
   form.addEventListener("submit", (event) => {
@@ -464,57 +408,13 @@ document.querySelectorAll("[data-agent-form]").forEach((form) => {
     event.target.value = "";
   });
 
-  form.addEventListener("submit", async (event) => {
+  form.addEventListener("submit", (event) => {
     event.preventDefault();
-    const question = new FormData(form).get("question")?.toString().trim();
 
-    if (!question) {
-      showToast("اكتب السؤال القانوني الأول.", "error");
-      return;
-    }
-
-    const attachmentSummary = attachments.map(({ name, type, size, source }) => ({
-        name,
-        type,
-        size,
-        source,
-      }));
-
-    const payload = { question, filters: { jurisdiction: "Egypt" } };
-
-    renderAgentResult(output, {
-      status: "success",
-      title: "جاري تجهيز الإجابة",
-      message: "يتم إرسال السؤال للمساعد القانوني...",
-      endpoint: "/api/v1/rag/ask",
-      attachments: attachmentSummary,
-    });
-
-    try {
-      const result = await requestApi("/api/v1/rag/ask", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-
-      renderAgentResult(output, {
-        status: "success",
-        title: "الإجابة",
-        answer: result.answer,
-        confidence: result.confidence,
-        endpoint: "/api/v1/rag/ask",
-        attachments: attachmentSummary,
-      });
-      showToast("تم عرض الإجابة.", "success");
-    } catch (error) {
-      renderAgentResult(output, {
-        status: "error",
-        title: "تعذر جلب الإجابة",
-        message: error.message,
-        endpoint: "/api/v1/rag/ask",
-        attachments: attachmentSummary,
-      });
-      showToast("تعذر الاتصال بخدمة الإجابة.", "error");
-    }
+    showToast(
+      "واجهة React غير متاحة حالياً. أعد تحميل الصفحة ثم حاول مرة أخرى.",
+      "error"
+    );
   });
 });
 

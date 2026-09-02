@@ -27,6 +27,7 @@ dependencies = [
     "fastapi",
     "uvicorn[standard]",
     "python-dotenv>=1.2.3",
+    "python-multipart==0.0.32",
 ]
 
 [dependency-groups]

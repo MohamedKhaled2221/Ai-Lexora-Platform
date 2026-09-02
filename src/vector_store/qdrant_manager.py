@@ -2,8 +2,15 @@ import logging
 from typing import List, Dict, Any, Optional
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qmodels
-from qdrant_client.http.models import Distance, VectorParams, PointStruct, Filter, FieldCondition, MatchValue
-
+from qdrant_client.http.models import (
+    Distance,
+    VectorParams,
+    PointStruct,
+    Filter,
+    FieldCondition,
+    MatchAny,
+    MatchValue,
+)
 logger = logging.getLogger(__name__)
 
 
@@ -70,15 +77,29 @@ class QdrantVectorStore:
 
     def build_qdrant_filter(
         self,
+        document_ids: Optional[
+            List[str]
+        ] = None,
         document_type: Optional[str] = None,
         jurisdiction: Optional[str] = None,
         language: Optional[str] = None,
-        extra_filters: Optional[Dict[str, Any]] = None
+        extra_filters: Optional[
+            Dict[str, Any]
+        ] = None,
     ) -> Optional[Filter]:
         """
         Construct Qdrant Filter object based on M2 metadata query filters.
         """
         must_conditions = []
+        if document_ids:
+            must_conditions.append(
+                FieldCondition(
+                    key="document_id",
+                    match=MatchAny(
+                        any=document_ids
+                    ),
+                )
+            )
 
         if document_type:
             must_conditions.append(

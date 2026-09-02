@@ -1,8 +1,10 @@
 import { useMemo, useRef, useState } from "react";
 import {
   API_BASE,
-  buildRawRagRequest,
+  askDocuments,
+  listDocuments,
   requestApi,
+  uploadDocument,
 } from "./apiClient.js";
 
 const cases = [
@@ -76,17 +78,44 @@ function ErrorState({ error, onRetry }) {
 
 function CitationList({ citations }) {
   if (!citations.length) {
-    return <p className="empty-result">لم تُرجع الخدمة مراجع قابلة للعرض لهذا السؤال.</p>;
+    return (
+      <p className="empty-result">
+        لم تُرجع الخدمة مراجع قابلة للعرض لهذا السؤال.
+      </p>
+    );
   }
 
   return (
     <div className="citation-list">
       {citations.map((citation) => (
-        <article className="citation-card" key={`${citation.evidence_id}-${citation.document_id}-${citation.chunk_id}`}>
-          <strong>{citation.evidence_id} - {citation.document_id}</strong>
-          <span>المقطع: {citation.chunk_id}</span>
-          {citation.page !== null && citation.page !== undefined ? <span>الصفحة: {citation.page}</span> : null}
-          {citation.section ? <span>القسم: {citation.section}</span> : null}
+        <article
+          className="citation-card"
+          key={`${citation.evidenceId}-${citation.documentId}-${citation.chunkId}`}
+        >
+          <strong>
+            {citation.evidenceId} - {citation.fileName}
+          </strong>
+
+          <span>
+            المستند: #{citation.documentId}
+          </span>
+
+          <span>
+            المقطع: {citation.chunkId}
+          </span>
+
+          {citation.page !== null &&
+          citation.page !== undefined ? (
+            <span>
+              الصفحة: {citation.page}
+            </span>
+          ) : null}
+
+          {citation.section ? (
+            <span>
+              القسم: {citation.section}
+            </span>
+          ) : null}
         </article>
       ))}
     </div>
@@ -226,38 +255,159 @@ export function LegalAssistantWidget({ mode = "ai" }) {
   const [result, setResult] = useState({ status: "waiting" });
   const [loading, setLoading] = useState(false);
   const [lastQuestion, setLastQuestion] = useState("");
-  const [filters, setFilters] = useState({ document_type: "", language: "" });
+  const [documents, setDocuments] = useState([]);
+  const [selectedDocumentIds, setSelectedDocumentIds] = useState([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [documentsError, setDocumentsError] = useState("");
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const imageInputRef = useRef(null);
   const isFullSearch = mode === "search";
+  const attachmentIdsRef = useRef(new Set());
 
-  function addAttachments(fileList, source) {
+  async function refreshDocuments() {
+    setDocumentsLoading(true);
+    setDocumentsError("");
+
+    try {
+      const loaded = await listDocuments();
+
+      const validDocuments = loaded.filter(
+        (document) => Number.isInteger(document?.id),
+      );
+
+      setDocuments(validDocuments);
+
+      const availableIds = new Set(
+        validDocuments.map((document) => document.id),
+      );
+
+      setSelectedDocumentIds((current) =>
+        current.filter((id) => availableIds.has(id)),
+      );
+    } catch (error) {
+      setDocumentsError(
+        error?.message ||
+        "تعذر تحميل قائمة المستندات.",
+      );
+    } finally {
+      setDocumentsLoading(false);
+    }
+  }
+  async function addAttachments(fileList, source) {
     const selectedFiles = Array.from(fileList || []);
 
     if (!selectedFiles.length) return;
 
-    setAttachments((current) => {
-      const knownIds = new Set(current.map((item) => item.id));
-      const next = selectedFiles
-        .map((file) => ({
-          id: `${source}_${file.name}_${file.lastModified}_${file.size}`,
-          name: file.name || "camera-image",
+    setAttachmentMenuOpen(false);
+
+    for (const file of selectedFiles) {
+      const localId =
+        `${source}_${file.name}_${file.lastModified}_${file.size}`;
+
+      if (attachmentIdsRef.current.has(localId)) {
+        continue;
+      }
+
+      attachmentIdsRef.current.add(localId);
+
+      setAttachments((current) => [
+        ...current,
+        {
+          id: localId,
+          name: file.name || "document",
           type: file.type || "unknown",
           size: file.size,
           sizeLabel: formatFileSize(file.size),
           source,
-        }))
-        .filter((item) => !knownIds.has(item.id));
+          status: "uploading",
+          backendDocumentId: null,
+          error: null,
+        },
+      ]);
 
-      return [...current, ...next];
-    });
+      try {
+        const uploaded = await uploadDocument(file, "Contract");
+        const backendDocumentId = Number(uploaded?.id);
 
-    setAttachmentMenuOpen(false);
+        if (!Number.isInteger(backendDocumentId)) {
+          throw new Error(
+            "تعذر تأكيد معرف المستند المرفوع.",
+          );
+        }
+        setDocumentsError("");
+        setAttachments((current) =>
+          current.map((item) =>
+            item.id === localId
+              ? {
+                  ...item,
+                  status: "ready",
+                  backendDocumentId,
+                  name: uploaded.fileName || item.name,
+                  size: uploaded.sizeBytes ?? item.size,
+                  sizeLabel: formatFileSize(
+                    uploaded.sizeBytes ?? item.size,
+                  ),
+                  error: null,
+                }
+              : item,
+          ),
+        );
+        setDocuments((current) => [
+          uploaded,
+          ...current.filter(
+            (document) =>
+              document.id !== backendDocumentId,
+          ),
+        ]);
+
+        setSelectedDocumentIds((current) =>
+          current.includes(backendDocumentId)
+            ? current
+            : [...current, backendDocumentId],
+        );
+      } catch (error) {
+        setAttachments((current) =>
+          current.map((item) =>
+            item.id === localId
+              ? {
+                  ...item,
+                  status: "error",
+                  error:
+                    error?.message ||
+                    "تعذر رفع المستند وفهرسته.",
+                }
+              : item,
+          ),
+        );
+      }
+    }
   }
 
   function removeAttachment(id) {
-    setAttachments((current) => current.filter((item) => item.id !== id));
+    const attachment = attachments.find(
+      (item) => item.id === id,
+    );
+
+    attachmentIdsRef.current.delete(id);
+
+    if (
+      Number.isInteger(
+        attachment?.backendDocumentId,
+      )
+    ) {
+      setSelectedDocumentIds((current) =>
+        current.filter(
+          (documentId) =>
+            documentId !==
+            attachment.backendDocumentId,
+        ),
+      );
+    }
+
+    setAttachments((current) =>
+      current.filter((item) => item.id !== id),
+    );
   }
 
   function getAttachmentSummary() {
@@ -271,32 +421,74 @@ export function LegalAssistantWidget({ mode = "ai" }) {
 
   async function submitQuestion(trimmedQuestion) {
     if (!trimmedQuestion) {
-      setResult({ status: "error", error: new Error("اكتب السؤال القانوني الاول.") });
+      setResult({
+        status: "error",
+        error: new Error("اكتب السؤال القانوني الاول."),
+      });
+      return;
+    }
+
+    if (
+      attachments.some(
+        (item) => item.status === "uploading",
+      )
+    ) {
+      setResult({
+        status: "error",
+        error: new Error(
+          "انتظر حتى تكتمل فهرسة المستندات.",
+        ),
+      });
+      return;
+    }
+
+    const documentIds = [
+      ...new Set(
+        selectedDocumentIds.filter(
+          Number.isInteger,
+        ),
+      ),
+    ];
+
+    if (!documentIds.length) {
+      setResult({
+        status: "error",
+        error: new Error(
+          "ارفع مستندا واحدا على الأقل قبل إرسال السؤال.",
+        ),
+      });
       return;
     }
 
     setLastQuestion(trimmedQuestion);
+
     const attachmentSummary = getAttachmentSummary();
-    const endpoint = "/api/v1/rag/ask";
-    const payload = buildRawRagRequest(trimmedQuestion, filters);
+    const endpoint = "/api/search/ask";
 
     setLoading(true);
+
     setResult({
       status: "sending",
       endpoint,
-      payload,
-      attachments_ready_for_future_ai_agent: attachmentSummary,
     });
 
     try {
-      const response = await requestApi(endpoint, {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
+      const response = await askDocuments(
+        trimmedQuestion,
+        documentIds,
+      );
 
-      setResult({ status: "success", ...response, attachments: attachmentSummary });
+      setResult({
+        status: "success",
+        ...response,
+        attachments: attachmentSummary,
+      });
     } catch (error) {
-      setResult({ status: "error", error, endpoint });
+      setResult({
+        status: "error",
+        error,
+        endpoint,
+      });
     } finally {
       setLoading(false);
     }
@@ -319,7 +511,9 @@ export function LegalAssistantWidget({ mode = "ai" }) {
           <p className="eyebrow">AI Agent Workspace</p>
           <h2>{isFullSearch ? "البحث القانوني بالمصادر" : "اسأل المساعد القانوني"}</h2>
           <p>
-            اكتب سؤالا بالعربية أو الإنجليزية للحصول على إجابة من مسار البحث والاسترجاع الكامل. المرفقات تُحفظ في الواجهة فقط حتى يتوفر upload endpoint.
+           ارفع مستندا ثم اكتب سؤالك بالعربية أو الإنجليزية.
+           يتم رفع المستند وفهرسته أولا، ثم تُولّد الإجابة من
+           المستندات المختارة مع عرض المراجع المرتبطة بها.
           </p>
         </div>
       </div>
@@ -370,22 +564,77 @@ export function LegalAssistantWidget({ mode = "ai" }) {
           </div>
         </label>
 
-        <div className="search-filters" aria-label="فلاتر البحث">
-          <label>نوع المستند
-            <select value={filters.document_type} onChange={(event) => setFilters({ ...filters, document_type: event.target.value })}>
-              <option value="">كل الأنواع</option>
-              <option value="contract">عقد</option>
-              <option value="law">قانون</option>
-              <option value="decree">مرسوم</option>
-              <option value="court_verdict">حكم قضائي</option>
+        <div
+          className="search-filters"
+          aria-label="اختيار المستندات"
+        >
+          <label>
+            المستندات المستخدمة في الإجابة
+
+            <select
+              multiple
+              size={Math.min(
+                Math.max(documents.length, 3),
+                6,
+              )}
+              value={selectedDocumentIds.map(String)}
+              disabled={
+                documentsLoading ||
+                documents.length === 0
+              }
+              onChange={(event) => {
+                const ids = Array.from(
+                  event.currentTarget.selectedOptions,
+                  (option) => Number(option.value),
+                ).filter(Number.isInteger);
+
+                setSelectedDocumentIds(ids);
+              }}
+            >
+              {documents.length ? (
+                documents.map((document) => (
+                  <option
+                    key={document.id}
+                    value={document.id}
+                  >
+                    {document.fileName}
+                  </option>
+                ))
+              ) : (
+                <option disabled value="">
+                  لا توجد مستندات محملة
+                </option>
+              )}
             </select>
           </label>
-          <label>لغة المصدر
-            <select value={filters.language} onChange={(event) => setFilters({ ...filters, language: event.target.value })}>
-              <option value="">كل اللغات</option>
-              <option value="ar">العربية</option>
-              <option value="en">English</option>
-            </select>
+
+          <label>
+            إدارة المستندات
+
+            <button
+              className="ghost-btn"
+              type="button"
+              disabled={
+                documentsLoading ||
+                attachments.some(
+                  (item) =>
+                    item.status === "uploading",
+                )
+              }
+              onClick={() => void refreshDocuments()}
+            >
+              {documentsLoading
+                ? "جاري تحميل المستندات..."
+                : "تحديث قائمة المستندات"}
+            </button>
+
+            <small className="empty-result">
+              {documentsError
+                ? documentsError
+                : documents.length === 0
+                  ? "ارفع مستندا أو حدّث القائمة."
+                  : `${selectedDocumentIds.length} من ${documents.length} مستند محدد`}
+            </small>
           </label>
         </div>
 
@@ -394,10 +643,13 @@ export function LegalAssistantWidget({ mode = "ai" }) {
           className="visually-hidden"
           type="file"
           multiple
-          accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.webp,image/*"
-          onChange={(event) => {
-            addAttachments(event.target.files, "local_file");
+          accept=".pdf,.docx,.txt,.png,.jpg,.jpeg"
+          onChange={async (event) => {
+            const files = Array.from(
+              event.target.files || [],
+            );
             event.target.value = "";
+            await addAttachments(files, "local_file");
           }}
         />
         <input
@@ -405,21 +657,27 @@ export function LegalAssistantWidget({ mode = "ai" }) {
           className="visually-hidden"
           type="file"
           multiple
-          accept="image/*,.png,.jpg,.jpeg,.webp"
-          onChange={(event) => {
-            addAttachments(event.target.files, "image");
+          accept=".png,.jpg,.jpeg,image/png,image/jpeg"
+          onChange={async (event) => {
+            const files = Array.from(
+              event.target.files || [],
+            );
             event.target.value = "";
+            await addAttachments(files, "image");
           }}
         />
         <input
           ref={cameraInputRef}
           className="visually-hidden"
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png"
           capture="environment"
-          onChange={(event) => {
-            addAttachments(event.target.files, "camera");
+          onChange={async (event) => {
+            const files = Array.from(
+              event.target.files || [],
+            );
             event.target.value = "";
+            await addAttachments(files, "camera");
           }}
         />
 
@@ -429,9 +687,26 @@ export function LegalAssistantWidget({ mode = "ai" }) {
               <span className="attachment-chip" key={item.id}>
                 <span>
                   {item.name}
-                  <small>{item.source === "camera" ? "كاميرا" : item.source === "image" ? "صورة" : "ملف"} - {item.sizeLabel}</small>
+                  <small>
+                    {item.status === "uploading"
+                      ? `جاري الرفع والفهرسة - ${item.sizeLabel}`
+                      : item.status === "error"
+                        ? item.error
+                        : `${
+                            item.source === "camera"
+                              ? "كاميرا"
+                              : item.source === "image"
+                                ? "صورة"
+                                : "ملف"
+                          } - جاهز للبحث - ${item.sizeLabel}`}
+                  </small>
                 </span>
-                <button type="button" aria-label={`حذف ${item.name}`} onClick={() => removeAttachment(item.id)}>
+                <button
+                  type="button"
+                  aria-label={`حذف ${item.name}`}
+                  disabled={item.status === "uploading"}
+                  onClick={() => removeAttachment(item.id)}
+                >
                   x
                 </button>
               </span>
@@ -439,7 +714,16 @@ export function LegalAssistantWidget({ mode = "ai" }) {
           </div>
         ) : null}
 
-        <button className="submit-btn" type="submit" disabled={loading}>
+        <button
+          className="submit-btn"
+          type="submit"
+          disabled={
+            loading ||
+            attachments.some(
+              (item) => item.status === "uploading",
+            )
+          }
+        >
           {isFullSearch ? "تشغيل البحث بالمصادر" : "إرسال السؤال"}
         </button>
       </form>

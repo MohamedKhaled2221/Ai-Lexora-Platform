@@ -11,6 +11,35 @@ from fastapi import (
     Request,
     status,
 )
+from src.indexing import (
+    DocumentIngestionService,
+)
+def get_document_ingestion_service(
+    request: Request,
+) -> DocumentIngestionService:
+    """
+    Retrieve the process-wide M1 -> M2 -> Qdrant
+    document ingestion runtime.
+    """
+
+    service = getattr(
+        request.app.state,
+        "document_ingestion_service",
+        None,
+    )
+
+    if service is None:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_503_SERVICE_UNAVAILABLE
+            ),
+            detail=(
+                "The document-ingestion runtime "
+                "is not initialized."
+            ),
+        )
+
+    return service
 
 def get_rag_service(
     request: Request,

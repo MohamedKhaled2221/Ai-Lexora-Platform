@@ -14,6 +14,11 @@ from src.pipeline import M3RetrievalPipeline
 from src.vector_store.qdrant_manager import (
     QdrantVectorStore,
 )
+from src.indexing import (
+    DocumentIndexingService,
+    DocumentIngestionService,
+    M1Client,
+)
 
 _TRUE_VALUES = {
     "1",
@@ -163,7 +168,7 @@ def build_rag_service(
         settings
         or RAGRuntimeSettings()
     )
-    
+
     validate_offline_runtime_environment(
         settings
     )
@@ -278,4 +283,62 @@ def build_raw_rag_service(
         validated_embedding_dimension=(
             actual_dimension
         ),
+    )
+
+def build_document_ingestion_service(
+    rag_service: M3M4RAGService,
+    raw_rag_service: M2M3M4RAGService,
+) -> DocumentIngestionService:
+    """
+    Build the M1 -> M2 -> Qdrant document-ingestion
+    runtime by reusing the process-wide M2 embedding
+    model and M3 Qdrant vector store.
+
+    No second BGE-M3 instance is loaded.
+    """
+
+    query_pipeline = getattr(
+        raw_rag_service,
+        "query_pipeline",
+        None,
+    )
+
+    embedding_service = getattr(
+        query_pipeline,
+        "embedding_service",
+        None,
+    )
+
+    retrieval_pipeline = getattr(
+        rag_service,
+        "retrieval_pipeline",
+        None,
+    )
+
+    vector_store = getattr(
+        retrieval_pipeline,
+        "vector_store",
+        None,
+    )
+
+    if embedding_service is None:
+        raise RuntimeError(
+            "Document ingestion requires the "
+            "initialized M2 embedding service."
+        )
+
+    if vector_store is None:
+        raise RuntimeError(
+            "Document ingestion requires the "
+            "initialized Qdrant vector store."
+        )
+
+    indexing_service = DocumentIndexingService(
+        embedding_service=embedding_service,
+        vector_store=vector_store,
+    )
+
+    return DocumentIngestionService(
+        m1_client=M1Client(),
+        indexing_service=indexing_service,
     )
