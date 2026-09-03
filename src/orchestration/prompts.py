@@ -54,8 +54,12 @@ CITATION RULES
 13. Include each supporting evidence alias in citation_ids only once.
 14. Never include an evidence alias that was not supplied in the current
     request.
-15. You may place citation markers such as [E1] directly after supported
-    claims when useful. If you use an inline citation marker, that alias must
+15. You may place citation markers directly after supported claims when
+    useful. Each marker must contain exactly one evidence alias and must use
+    the exact form [E1], [E2], [E3], and so on. When multiple evidence
+    sources support the same claim, use separate markers such as [E1] [E2].
+    Never combine multiple aliases inside one marker such as [E1, E2],
+    [E1,E2], or [E1/E2]. Every alias used in an inline citation marker must
     also appear in citation_ids.
 16. Never output or guess document IDs, chunk IDs, page numbers, file names,
     or source metadata. Python resolves that trusted metadata after

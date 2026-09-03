@@ -7,6 +7,7 @@ from src.schemas import (
 )
 
 from src.orchestration import (
+    CitationValidationError,
     RAGExecutionMetrics,
     RAGExecutionResult,
 )
@@ -73,6 +74,15 @@ class FakeRAGService:
             ),
         )
 
+class CitationFailureRAGService:
+    async def aanswer_with_metrics(
+        self,
+        processed_query,
+    ):
+        raise CitationValidationError(
+            "private citation diagnostic"
+        )
+        
 def test_rag_answer_endpoint():
     app = create_app(
         rag_service_factory=(
@@ -98,6 +108,25 @@ def test_rag_answer_endpoint():
         == "chunk_017"
     )
 
+def test_rag_endpoint_maps_citation_validation_failure_to_502():
+    app = create_app(
+        rag_service_factory=(
+            lambda: CitationFailureRAGService()
+        )
+    )
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/rag/answer",
+            json=make_request_body(),
+        )
+
+    assert response.status_code == 502
+
+    assert (
+        "private citation diagnostic"
+        not in str(response.json())
+    )
 
 def test_rag_endpoint_returns_503_without_runtime():
     app = create_app()

@@ -61,17 +61,6 @@ async def answer(
             ),
         )
 
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=(
-                status.HTTP_400_BAD_REQUEST
-            ),
-            detail=(
-                "ProcessedQuery and RetrievedEvidence "
-                "are inconsistent."
-            ),
-        ) from exc
-
     except M4LLMConnectionError as exc:
         logger.error(
             "m4_ollama_connection_failed",
@@ -112,5 +101,16 @@ async def answer(
             detail=(
                 "The local AI runtime failed to "
                 "produce a valid grounded response."
+            ),
+        ) from exc
+
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_400_BAD_REQUEST
+            ),
+            detail=(
+                "ProcessedQuery and RetrievedEvidence "
+                "are inconsistent."
             ),
         ) from exc

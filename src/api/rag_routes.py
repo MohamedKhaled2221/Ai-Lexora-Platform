@@ -234,23 +234,6 @@ async def answer_raw_rag(
             ),
         ) from exc
 
-    except ValueError as exc:
-        _log_raw_rag_failure(
-            request=request,
-            exc=exc,
-            failure_stage="retrieval",
-        )
-
-        raise HTTPException(
-            status_code=(
-                status.HTTP_400_BAD_REQUEST
-            ),
-            detail=(
-                "The processed query is invalid "
-                "for retrieval."
-            ),
-        ) from exc
-
     except M4LLMConnectionError as exc:
         _log_raw_rag_failure(
             request=request,
@@ -286,6 +269,23 @@ async def answer_raw_rag(
                 "The local AI runtime failed to "
                 "produce a valid grounded "
                 "response."
+            ),
+        ) from exc
+
+    except ValueError as exc:
+        _log_raw_rag_failure(
+            request=request,
+            exc=exc,
+            failure_stage="retrieval",
+        )
+
+        raise HTTPException(
+            status_code=(
+                status.HTTP_400_BAD_REQUEST
+            ),
+            detail=(
+                "The processed query is invalid "
+                "for retrieval."
             ),
         ) from exc
 @router.post(
@@ -347,24 +347,6 @@ async def answer_rag(
 
         return result.response
 
-    except ValueError as exc:
-        _log_rag_failure(
-            request=request,
-            request_body=request_body,
-            exc=exc,
-            failure_stage="retrieval",
-        )
-
-        raise HTTPException(
-            status_code=(
-                status.HTTP_400_BAD_REQUEST
-            ),
-            detail=(
-                "The processed query is invalid "
-                "for retrieval."
-            ),
-        ) from exc
-
     except M4LLMConnectionError as exc:
         _log_rag_failure(
             request=request,
@@ -401,5 +383,23 @@ async def answer_rag(
             detail=(
                 "The local AI runtime failed to "
                 "produce a valid grounded response."
+            ),
+        ) from exc
+
+    except ValueError as exc:
+        _log_rag_failure(
+            request=request,
+            request_body=request_body,
+            exc=exc,
+            failure_stage="retrieval",
+        )
+
+        raise HTTPException(
+            status_code=(
+                status.HTTP_400_BAD_REQUEST
+            ),
+            detail=(
+                "The processed query is invalid "
+                "for retrieval."
             ),
         ) from exc

@@ -6,6 +6,7 @@ from fastapi.testclient import (
 
 from src.api.app import create_app
 from src.orchestration import (
+    CitationValidationError,
     M2EmbeddingContractError,
     M2QueryRuntimeError,
     RAGExecutionMetrics,
@@ -237,6 +238,66 @@ def test_raw_rag_maps_m2_runtime_failure_to_503():
         )
     )
 
+def test_raw_rag_maps_citation_validation_failure_to_502(
+    caplog,
+):
+    app = make_app(
+        FakeRawRAGService(
+            error=CitationValidationError(
+                "private citation diagnostic"
+            )
+        )
+    )
+
+    caplog.set_level(
+        logging.ERROR,
+        logger="src.api.rag_routes",
+    )
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/rag/ask",
+            json={
+                "question": (
+                    "What provision applies?"
+                )
+            },
+        )
+
+    assert response.status_code == 502
+
+    assert (
+        "private citation diagnostic"
+        not in str(response.json())
+    )
+
+    records = [
+        record
+        for record in caplog.records
+        if (
+            record.name
+            == "src.api.rag_routes"
+            and record.getMessage()
+            == "raw_rag_request_failed"
+        )
+    ]
+
+    assert len(records) == 1
+
+    assert (
+        records[0].failure_stage
+        == "generation"
+    )
+
+    assert (
+        records[0].error_type
+        == "CitationValidationError"
+    )
+
+    assert (
+        "private citation diagnostic"
+        not in caplog.text
+    )
 
 def test_raw_rag_logging_does_not_include_question(
     caplog,

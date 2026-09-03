@@ -462,7 +462,49 @@ def test_system_prompt_contains_grounding_and_citation_policy():
     )
 
     assert (
-        "If you use an inline citation marker, that alias "
-        "must also appear in citation_ids."
+        "Every alias used in an inline citation marker must "
+        "also appear in citation_ids."
+        in system_content
+    )
+
+def test_system_prompt_requires_canonical_multi_evidence_citations():
+    builder = M4PromptBuilder()
+
+    query = make_query()
+
+    retrieved = RetrievedEvidence(
+        query_id=query.query_id,
+        retrieved_evidence=[
+            make_evidence(
+                document_id="doc_001",
+                chunk_id="chunk_001",
+            ),
+            make_evidence(
+                document_id="doc_002",
+                chunk_id="chunk_002",
+            ),
+        ],
+    )
+
+    bundle = builder.build_search_prompt(
+        processed_query=query,
+        retrieved_evidence=retrieved,
+    )
+
+    system_content = normalize_whitespace(
+        get_system_content(bundle)
+    )
+
+    assert (
+        "Each marker must contain exactly one evidence alias"
+        in system_content
+    )
+
+    assert "[E1] [E2]" in system_content
+
+    assert "[E1, E2]" in system_content
+
+    assert (
+        "Never combine multiple aliases inside one marker"
         in system_content
     )
