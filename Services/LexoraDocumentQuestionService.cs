@@ -84,7 +84,7 @@ public sealed class LexoraDocumentQuestionService
         catch (HttpRequestException exception)
         {
             _logger.LogWarning(
-                "AI RAG service could not be reached for a document-scoped request");
+                "AI RAG service could not be reached for an authorized-library request");
 
             throw new AiQuestionAnsweringException(
                 "The AI question-answering service could not be reached.",
@@ -95,7 +95,7 @@ public sealed class LexoraDocumentQuestionService
             when (!cancellationToken.IsCancellationRequested)
         {
             _logger.LogWarning(
-                "AI RAG service timed out for a document-scoped request");
+                "AI RAG service timed out for an authorized-library request");
 
             throw new AiQuestionAnsweringException(
                 "The AI question-answering service timed out.",
@@ -112,7 +112,7 @@ public sealed class LexoraDocumentQuestionService
 
                 _logger.LogWarning(
                     "AI RAG service returned status {StatusCode} "
-                    + "for a document-scoped request",
+                    + "for an authorized-library request",
                     upstreamStatus);
 
                 var downstreamStatus =
@@ -198,7 +198,7 @@ public sealed class LexoraDocumentQuestionService
             }
 
             _logger.LogInformation(
-                "Document-scoped RAG request completed "
+                "Authorized-library RAG request completed "
                 + "with {CitationCount} citations",
                 citations.Count);
 

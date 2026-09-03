@@ -151,8 +151,10 @@ builder.Services.AddHttpClient<LexoraDocumentQuestionService>(
 
         var timeoutSeconds =
             config.GetValue<int?>(
+                "AiService:QuestionTimeoutSeconds")
+            ?? config.GetValue<int?>(
                 "AiService:TimeoutSeconds")
-            ?? 60;
+            ?? 180;
 
         client.BaseAddress =
             new Uri(baseUrl);
