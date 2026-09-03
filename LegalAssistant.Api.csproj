@@ -25,5 +25,8 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
 	  <PackageReference Include="PdfPig" Version="0.1.16" />
   </ItemGroup>
+    <ItemGroup>
+      <Compile Remove="LegalAssistant.Api.Tests/**/*.cs" />
+    </ItemGroup>
 
 </Project>
