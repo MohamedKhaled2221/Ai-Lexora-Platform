@@ -155,3 +155,18 @@ def test_invalid_confidence_is_rejected(confidence):
             citation_ids=[],
             confidence=confidence,
         )
+
+def test_m4_output_schema_documents_multi_source_citation_format():
+    schema = M4ModelOutput.model_json_schema()
+
+    answer_description = (
+        schema["properties"]["answer"]["description"]
+    )
+
+    citation_ids_description = (
+        schema["properties"]["citation_ids"]["description"]
+    )
+
+    assert "[E1] [E2]" in answer_description
+    assert "[E1, E2]" in answer_description
+    assert '["E1", "E2"]' in citation_ids_description

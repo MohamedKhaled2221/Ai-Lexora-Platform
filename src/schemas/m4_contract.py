@@ -44,12 +44,22 @@ class M4ModelOutput(BaseModel):
     answer: str = Field(
         ...,
         min_length=1,
-        description="Grounded natural-language answer generated from retrieved evidence",
+        description=(
+            "Grounded natural-language answer generated from retrieved "
+            "evidence. If inline citations are used, each marker must "
+            "contain exactly one evidence alias such as [E1]. Multiple "
+            "supporting sources must use separate markers such as "
+            "[E1] [E2], never a grouped marker such as [E1, E2]."
+        ),
     )
 
     citation_ids: List[str] = Field(
         default_factory=list,
-        description="Evidence aliases cited by the model, for example E1 or E2",
+        description=(
+            "Unique evidence aliases supporting the answer. Each list "
+            "item must contain exactly one alias, for example "
+            '["E1", "E2"].'
+        ),
     )
 
     confidence: float = Field(
