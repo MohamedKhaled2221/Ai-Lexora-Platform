@@ -153,13 +153,14 @@ export async function askDocuments(question) {
       throw new Error("Question is required.");
     }
 
-    return requestBackendApi("/api/search/ask", {
-      method: "POST",
-      body: JSON.stringify({
-        question: normalizedQuestion,
-      }),
-    });
-  }
+  return requestBackendApi("/api/search/ask", {
+    method: "POST",
+    body: JSON.stringify({
+      question: normalizedQuestion,
+      documentIds,
+    }),
+  });
+}
 
 // Temporary compatibility helper for the existing FastAPI widget.
 // Step 6C removes its use from LegalAssistantWidget.

@@ -5,11 +5,13 @@ import {
   CaseInsightsWidget,
   LegalAssistantWidget,
 } from "./LexoraApp.jsx";
+import { ContractGenerationPage } from "./ContractGeneration.jsx";
 
 const widgets = {
   "backend-status": BackendStatusWidget,
   "case-insights": CaseInsightsWidget,
   "legal-assistant": LegalAssistantWidget,
+  "contract-generation": ContractGenerationPage,
 };
 
 document.querySelectorAll("[data-react-widget]").forEach((element) => {

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI-Lexora | المساعد القانوني</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header class="navbar">
+    <a class="brand" href="index.html">AI-Lexora<small>المساعد القانوني</small></a>
+    <nav aria-label="التنقل الرئيسي">
+      <a href="index.html">الرئيسية</a>
+      <a href="dashboard.html">لوحة العمل</a>
+      <a href="consultation.html">القضايا والبحث</a>
+      <a href="contract-generation.html">إنشاء العقود</a>
+      <a class="active" href="legal-chat.html">المساعد القانوني</a>
+      <a href="auth.html">الدخول والصلاحيات</a>
+    </nav>
+    <div class="nav-tools">
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="تبديل الوضع الليلي" aria-pressed="false">
+        <span class="theme-toggle-track" aria-hidden="true"></span>
+        <span data-theme-label>الوضع الغامق</span>
+      </button>
+      <a class="nav-action" href="dashboard.html">لوحة العمل</a>
+    </div>
+  </header>
+
+  <main class="standalone-page">
+    <div data-react-widget="legal-assistant" data-mode="ai"></div>
+  </main>
+
+  <footer class="footer">
+    <p>المساعد القانوني يقدم إجابات مساعدة ولا يستبدل المراجعة القانونية للمحامي.</p>
+    <div><a href="dashboard.html">لوحة العمل</a><a href="consultation.html">البحث القانوني</a></div>
+  </footer>
+  <div class="toast" data-toast></div>
+  <script type="module" src="script.js"></script>
+  <script type="module" src="/frontend/react/main.jsx"></script>
+</body>
+</html>

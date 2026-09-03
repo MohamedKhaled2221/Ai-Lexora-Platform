@@ -16,6 +16,8 @@
       <a href="index.html">الرئيسية</a>
       <a href="dashboard.html">لوحة العمل</a>
       <a class="active" href="consultation.html">القضايا والبحث</a>
+      <a href="contract-generation.html">انشاء العقود</a>
+      <a href="legal-chat.html">المساعد القانوني</a>
       <a href="auth.html">الدخول والصلاحيات</a>
     </nav>
     <div class="nav-tools">
@@ -209,6 +211,39 @@
               <p>نتيجة البحث هتظهر هنا بشكل منظم عند الربط الكامل بالباك.</p>
             </div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="case-detail-section file-search-widget" id="file-search">
+      <div class="react-widget legal-agent-widget">
+        <div class="table-header">
+          <div>
+            <p class="eyebrow">البحث داخل المستندات</p>
+            <h2>البحث داخل ملفات المحامي</h2>
+            <p>ارفع ملفات القضية وابحث داخلها. النص المطابق يظهر بعلامة هايلايت لتسهيل المراجعة.</p>
+          </div>
+        </div>
+
+        <form class="assistant-form" data-file-search-form>
+          <label class="assistant-composer-label">ملفات البحث
+            <div class="assistant-composer file-search-actions">
+              <input type="file" multiple accept=".txt,.md,.csv,.json,.pdf,.doc,.docx" data-search-files>
+              <button class="ghost-btn" type="button" data-clear-search-files>مسح الملفات</button>
+            </div>
+          </label>
+
+          <label>كلمة أو جملة البحث
+            <input type="search" name="searchTerm" placeholder="مثال: الإخطار الكتابي أو مدة العقد" required>
+          </label>
+
+          <div class="attachment-list" data-search-file-list aria-label="ملفات البحث المختارة"></div>
+          <button class="submit-btn" type="submit">بحث داخل الملفات</button>
+        </form>
+
+        <div class="agent-result file-search-results" data-file-search-output data-state="waiting">
+          <h3>ارفع ملف وابدأ البحث</h3>
+          <p>يدعم البحث داخل TXT وMD وCSV وJSON وPDF وDOCX. ملفات DOC القديمة غير قابلة للقراءة الموثوقة داخل المتصفح.</p>
         </div>
       </div>
     </section>

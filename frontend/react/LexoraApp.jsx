@@ -1,6 +1,5 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  API_BASE,
   askDocuments,
   listDocuments,
   requestApi,
@@ -45,10 +44,6 @@ const cases = [
     deadline: "لا يوجد",
   },
 ];
-
-function JsonBlock({ value }) {
-  return <pre className="api-output">{JSON.stringify(value, null, 2)}</pre>;
-}
 
 function StatusPill({ state, children }) {
   return (
@@ -125,7 +120,6 @@ function CitationList({ citations }) {
 export function BackendStatusWidget() {
   const [result, setResult] = useState({
     status: "waiting",
-    apiBase: API_BASE,
   });
   const [loading, setLoading] = useState("");
 
@@ -140,8 +134,7 @@ export function BackendStatusWidget() {
       setResult({
         status: "error",
         endpoint: path,
-        apiBase: API_BASE,
-        message: error.message,
+        message: "تعذر الاتصال بالخدمة حاليًا. حاول مرة أخرى بعد قليل.",
       });
     } finally {
       setLoading("");
@@ -155,9 +148,9 @@ export function BackendStatusWidget() {
     <div className="react-widget">
       <div className="table-header">
         <div>
-          <p className="eyebrow">Live Backend Widget</p>
-          <h2>متابعة جاهزية خدمات النظام</h2>
-          <p>مكون React يفحص FastAPI وخدمات الذكاء الاصطناعي من غير تغيير أوامر الباك.</p>
+          <p className="eyebrow">حالة الخدمات</p>
+          <h2>متابعة جاهزية النظام</h2>
+          <p>تحقق من اتصال الخدمات قبل بدء العمل على القضايا والمستندات.</p>
         </div>
         <StatusPill state={isReady ? "ready" : isError ? "error" : "idle"}>
           {isReady ? "جاهز" : isError ? "يحتاج مراجعة" : "بانتظار الفحص"}
@@ -183,7 +176,18 @@ export function BackendStatusWidget() {
         </button>
       </div>
 
-      <JsonBlock value={result} />
+      <div className={`service-status-message ${isError ? "error" : isReady ? "ready" : "idle"}`} role="status">
+        <strong>
+          {result.status === "loading"
+            ? "جاري التحقق من الخدمة..."
+            : isReady
+              ? "الخدمة متصلة وجاهزة للعمل."
+              : isError
+                ? "الخدمة تحتاج إلى مراجعة الاتصال."
+                : "لم يتم التحقق من حالة الخدمة بعد."}
+        </strong>
+        {result.message ? <span>{result.message}</span> : null}
+      </div>
     </div>
   );
 }
@@ -256,6 +260,7 @@ export function LegalAssistantWidget({ mode = "ai" }) {
   const [loading, setLoading] = useState(false);
   const [lastQuestion, setLastQuestion] = useState("");
   const [documents, setDocuments] = useState([]);
+  const [selectedDocumentIds, setSelectedDocumentIds] = useState([]);
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [documentsError, setDocumentsError] = useState("");
   const fileInputRef = useRef(null);
@@ -276,15 +281,47 @@ export function LegalAssistantWidget({ mode = "ai" }) {
       );
 
       setDocuments(validDocuments);
+
+      const availableIds = new Set(
+        validDocuments.map((document) => document.id),
+      );
+
+      setSelectedDocumentIds((current) =>
+        current.filter((id) => availableIds.has(id)),
+      );
     } catch (error) {
       setDocumentsError(
-        error?.message ||
-        "تعذر تحميل قائمة المستندات.",
+        error?.status === 401
+          ? "سجّل الدخول لعرض المستندات المرتبطة بحسابك."
+          : "تعذر مزامنة المستندات حاليًا.",
       );
     } finally {
       setDocumentsLoading(false);
     }
   }
+
+  useEffect(() => {
+    function refreshWhenVisible() {
+      if (document.visibilityState === "visible") {
+        void refreshDocuments();
+      }
+    }
+
+    refreshWhenVisible();
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+
+    function refreshAfterDocumentChange() {
+      void refreshDocuments();
+    }
+
+    window.addEventListener("lexora:documents-changed", refreshAfterDocumentChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+      window.removeEventListener("lexora:documents-changed", refreshAfterDocumentChange);
+    };
+  }, []);
+
   async function addAttachments(fileList, source) {
     const selectedFiles = Array.from(fileList || []);
 
@@ -351,6 +388,13 @@ export function LegalAssistantWidget({ mode = "ai" }) {
               document.id !== backendDocumentId,
           ),
         ]);
+
+        setSelectedDocumentIds((current) =>
+          current.includes(backendDocumentId)
+            ? current
+            : [...current, backendDocumentId],
+        );
+        window.dispatchEvent(new CustomEvent("lexora:documents-changed"));
       } catch (error) {
         setAttachments((current) =>
           current.map((item) =>
@@ -370,7 +414,25 @@ export function LegalAssistantWidget({ mode = "ai" }) {
   }
 
   function removeAttachment(id) {
+    const attachment = attachments.find(
+      (item) => item.id === id,
+    );
+
     attachmentIdsRef.current.delete(id);
+
+    if (
+      Number.isInteger(
+        attachment?.backendDocumentId,
+      )
+    ) {
+      setSelectedDocumentIds((current) =>
+        current.filter(
+          (documentId) =>
+            documentId !==
+            attachment.backendDocumentId,
+        ),
+      );
+    }
 
     setAttachments((current) =>
       current.filter((item) => item.id !== id),
@@ -409,7 +471,23 @@ export function LegalAssistantWidget({ mode = "ai" }) {
       return;
     }
 
-    
+    const documentIds = [
+      ...new Set(
+        selectedDocumentIds.filter(
+          Number.isInteger,
+        ),
+      ),
+    ];
+
+    if (!documentIds.length) {
+      setResult({
+        status: "error",
+        error: new Error(
+          "ارفع مستندا واحدا على الأقل قبل إرسال السؤال.",
+        ),
+      });
+      return;
+    }
 
     setLastQuestion(trimmedQuestion);
 
@@ -426,6 +504,7 @@ export function LegalAssistantWidget({ mode = "ai" }) {
     try {
       const response = await askDocuments(
         trimmedQuestion,
+        documentIds,
       );
 
       setResult({
@@ -461,9 +540,9 @@ export function LegalAssistantWidget({ mode = "ai" }) {
           <p className="eyebrow">AI Agent Workspace</p>
           <h2>{isFullSearch ? "البحث القانوني بالمصادر" : "اسأل المساعد القانوني"}</h2>
           <p>
-          اكتب سؤالك بالعربية أو الإنجليزية، ويمكنك رفع مستندات
-          جديدة عند الحاجة. يبحث النظام تلقائيا في جميع المستندات
-          المفهرسة المرتبطة بحسابك ويعرض المراجع المستخدمة في الإجابة.
+           ارفع مستندا ثم اكتب سؤالك بالعربية أو الإنجليزية.
+           يتم رفع المستند وفهرسته أولا، ثم تُولّد الإجابة من
+           المستندات المختارة مع عرض المراجع المرتبطة بها.
           </p>
         </div>
       </div>
@@ -519,42 +598,54 @@ export function LegalAssistantWidget({ mode = "ai" }) {
           aria-label="اختيار المستندات"
         >
           <label>
-            نطاق البحث
+            المستندات المستخدمة في الإجابة
 
-            <small className="empty-result">
-              يتم البحث تلقائيا في جميع المستندات المفهرسة
-              المرتبطة بحسابك.
-            </small>
-          </label>
-
-          <label>
-            إدارة المستندات
-
-            <button
-              className="ghost-btn"
-              type="button"
+            <select
+              multiple
+              size={Math.min(
+                Math.max(documents.length, 3),
+                6,
+              )}
+              value={selectedDocumentIds.map(String)}
               disabled={
                 documentsLoading ||
-                attachments.some(
-                  (item) =>
-                    item.status === "uploading",
-                )
+                documents.length === 0
               }
-              onClick={() => void refreshDocuments()}
-            >
-              {documentsLoading
-                ? "جاري تحميل المستندات..."
-                : "تحديث قائمة المستندات"}
-            </button>
+              onChange={(event) => {
+                const ids = Array.from(
+                  event.currentTarget.selectedOptions,
+                  (option) => Number(option.value),
+                ).filter(Number.isInteger);
 
-            <small className="empty-result">
-              {documentsError
-                ? documentsError
-                : documents.length === 0
-                  ? "ارفع مستندا أو حدّث القائمة."
-                  : `${documents.length} مستند متاح للبحث التلقائي`}
-            </small>
+                setSelectedDocumentIds(ids);
+              }}
+            >
+              {documents.length ? (
+                documents.map((document) => (
+                  <option
+                    key={document.id}
+                    value={document.id}
+                  >
+                    {document.fileName}
+                  </option>
+                ))
+              ) : (
+                <option disabled value="">
+                  لا توجد مستندات محملة
+                </option>
+              )}
+            </select>
           </label>
+
+          <small className="empty-result document-sync-status" role="status">
+            {documentsError
+              ? documentsError
+              : documentsLoading
+                ? "جاري مزامنة المستندات..."
+                : documents.length === 0
+                  ? "لا توجد مستندات متاحة حاليًا."
+                  : `${selectedDocumentIds.length} من ${documents.length} مستند محدد`}
+          </small>
         </div>
 
         <input
@@ -622,8 +713,7 @@ export function LegalAssistantWidget({ mode = "ai" }) {
                 </span>
                 <button
                   type="button"
-                  aria-label={`إخفاء المرفق ${item.name}`}
-                  title="إخفاء المرفق من هذه القائمة فقط"
+                  aria-label={`حذف ${item.name}`}
                   disabled={item.status === "uploading"}
                   onClick={() => removeAttachment(item.id)}
                 >

@@ -49,7 +49,13 @@ async function requestApi(path, options = {}) {
   });
 
   const text = await response.text();
-  const payload = text ? JSON.parse(text) : {};
+  let payload = {};
+
+  try {
+    payload = text ? JSON.parse(text) : {};
+  } catch {
+    payload = { detail: "استجاب الخادم بتنسيق غير صالح." };
+  }
 
   if (!response.ok) {
     const message = payload.error?.message || payload.detail || `Request failed with status ${response.status}`;
@@ -65,7 +71,7 @@ function renderJson(target, payload) {
 }
 
 function escapeHtml(value) {
-  return value.replace(/[&<>"']/g, (char) => ({
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
     "&": "&amp;",
     "<": "&lt;",
     ">": "&gt;",
@@ -448,6 +454,7 @@ document.querySelectorAll("[data-file-search-form]").forEach((form) => {
       removeButton.addEventListener("click", () => {
         selectedFiles.splice(fileIndex, 1);
         renderSearchFiles();
+        if (activeSearchTerm) renderCurrentSearch();
       });
 
       chip.append(text, removeButton);
@@ -457,13 +464,13 @@ document.querySelectorAll("[data-file-search-form]").forEach((form) => {
 
   function highlightText(text, term) {
     const escapedText = escapeHtml(text);
-    const escapedTerm = escapeHtml(term);
+    if (!term) return escapedText;
 
-    if (!escapedTerm) return escapedText;
+    const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
     return escapedText.replace(
-      new RegExp(escapedTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"),
-      (match) => `<mark class="search-highlight">${match}</mark>`
+      new RegExp(escapedTerm, "gi"),
+      (match) => `<mark class="search-highlight">${escapeHtml(match)}</mark>`
     );
   }
 
@@ -475,6 +482,34 @@ document.querySelectorAll("[data-file-search-form]").forEach((form) => {
       reader.onerror = () => resolve("");
       reader.readAsText(file);
     });
+  }
+
+  function findFileSearchResults(term) {
+    const normalizedTerm = term.toLocaleLowerCase();
+    const results = [];
+
+    for (const item of selectedFiles) {
+      if (item.status !== "ready" || !item.parsed?.text) continue;
+
+      const content = item.parsed.text;
+      const matches = content.match(
+        new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"),
+      ) || [];
+
+      if (matches.length) {
+        results.push({
+          fileName: item.file.name,
+          fileType: item.parsed.extension.toUpperCase(),
+          content,
+          matchCount: matches.length,
+          pages: item.parsed.pages.filter((page) =>
+            page.text.toLocaleLowerCase().includes(normalizedTerm),
+          ),
+        });
+      }
+    }
+
+    return results;
   }
 
   function renderFileSearchResults(results, term) {
@@ -500,10 +535,18 @@ document.querySelectorAll("[data-file-search-form]").forEach((form) => {
     output.innerHTML = results.map((result) => `
       <article class="file-result-card">
         <strong>${escapeHtml(result.fileName)} <small>${escapeHtml(result.fileType)}</small></strong>
-        <p>${highlightText(result.preview, term)}</p>
+        <span>عدد التطابقات: ${result.matchCount}</span>
+        <p>${highlightText(result.content, term)}</p>
         ${result.pages.length ? `<span>الصفحات المطابقة: ${result.pages.map((page) => page.page).join(", ")}</span>` : ""}
       </article>
     `).join("");
+  }
+
+  let activeSearchTerm = "";
+
+  function renderCurrentSearch() {
+    if (!activeSearchTerm) return;
+    renderFileSearchResults(findFileSearchResults(activeSearchTerm), activeSearchTerm);
   }
 
   fileInput?.addEventListener("change", async (event) => {
@@ -541,11 +584,13 @@ document.querySelectorAll("[data-file-search-form]").forEach((form) => {
         showToast(`${item.file.name}: ${error.message}`, "error");
       }
       renderSearchFiles();
+      if (activeSearchTerm) renderCurrentSearch();
     });
   });
 
   clearButton?.addEventListener("click", () => {
     selectedFiles = [];
+    activeSearchTerm = "";
     renderSearchFiles();
     if (output) {
       output.dataset.state = "waiting";
@@ -575,25 +620,8 @@ document.querySelectorAll("[data-file-search-form]").forEach((form) => {
       return;
     }
 
-    const results = [];
-
-    for (const item of selectedFiles) {
-      if (!item.parsed) continue;
-      const { file, parsed } = item;
-      const content = parsed.text;
-      const matchIndex = content.toLowerCase().indexOf(term.toLowerCase());
-
-      if (matchIndex >= 0) {
-        const start = Math.max(0, matchIndex - 90);
-        const end = Math.min(content.length, matchIndex + term.length + 140);
-        results.push({
-          fileName: file.name,
-          fileType: parsed.extension.toUpperCase(),
-          preview: content.slice(start, end).replace(/\s+/g, " ").trim(),
-          pages: parsed.pages.filter((page) => page.text.toLowerCase().includes(term.toLowerCase())),
-        });
-      }
-    }
+    const results = findFileSearchResults(term);
+    activeSearchTerm = term;
 
     renderFileSearchResults(results, term);
     showToast(results.length ? "تم العثور على نتائج داخل الملفات." : "لا توجد نتيجة مطابقة.", results.length ? "success" : "error");
