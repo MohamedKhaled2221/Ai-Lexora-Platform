@@ -61,6 +61,19 @@ public class DocumentRepository : IDocumentRepository
             documents,
             totalCount);
     }
+    public async Task<IReadOnlyCollection<Document>>
+        GetAllOwnedAsync(
+            string ownerId,
+            CancellationToken cancellationToken = default)
+    {
+        return await _db.Documents
+            .AsNoTracking()
+            .Where(
+                document =>
+                    document.OwnerId == ownerId)
+            .OrderBy(document => document.Id)
+            .ToListAsync(cancellationToken);
+    }
 
     public async Task<IReadOnlyCollection<Document>>
         GetOwnedByIdsAsync(

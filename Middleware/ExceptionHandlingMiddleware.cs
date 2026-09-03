@@ -53,7 +53,7 @@ public class ExceptionHandlingMiddleware
        catch (AiQuestionAnsweringException exception)
         {
             _logger.LogWarning(
-                "Document-scoped AI question answering failed "
+                "Authorized-library AI question answering failed "
                 + "with response status {StatusCode}. "
                 + "TraceId: {TraceId}",
                 exception.ResponseStatusCode,
@@ -63,7 +63,7 @@ public class ExceptionHandlingMiddleware
                 context,
                 exception.ResponseStatusCode,
                 "AI question answering failed",
-                "The selected documents could not be queried.");
+                "The authorized document library could not be queried.");
         }
         catch (Exception exception)
         {

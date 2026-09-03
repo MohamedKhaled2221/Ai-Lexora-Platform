@@ -63,37 +63,6 @@ public class SearchController : ControllerBase
                 });
         }
 
-        if (request.DocumentIds is null
-            || request.DocumentIds.Count == 0)
-        {
-            return BadRequest(
-                new
-                {
-                    message =
-                        "At least one document must be selected."
-                });
-        }
-
-        if (request.DocumentIds.Count > 50)
-        {
-            return BadRequest(
-                new
-                {
-                    message =
-                        "No more than 50 documents may be selected."
-                });
-        }
-
-        if (request.DocumentIds.Any(id => id <= 0))
-        {
-            return BadRequest(
-                new
-                {
-                    message =
-                        "Document IDs must be positive integers."
-                });
-        }
-
         var userId =
             User.FindFirstValue(
                 ClaimTypes.NameIdentifier)
@@ -107,7 +76,6 @@ public class SearchController : ControllerBase
         var result =
             await _documentQuestionService.AskAsync(
                 request.Question,
-                request.DocumentIds,
                 userId,
                 HttpContext.RequestAborted);
 

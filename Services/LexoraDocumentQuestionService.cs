@@ -7,7 +7,6 @@ namespace LegalAssistant.Api.Services;
 public sealed class LexoraDocumentQuestionService
     : ILexoraDocumentQuestionService
 {
-    private const int MaxSelectedDocuments = 50;
     private const int MaxQuestionLength = 4000;
 
     private static readonly JsonSerializerOptions JsonOptions =
@@ -29,7 +28,6 @@ public sealed class LexoraDocumentQuestionService
 
     public async Task<DocumentQuestionResult> AskAsync(
         string question,
-        IReadOnlyCollection<int> documentIds,
         string userId,
         CancellationToken cancellationToken = default)
     {
@@ -48,42 +46,16 @@ public sealed class LexoraDocumentQuestionService
                 $"Question must be {MaxQuestionLength} characters or fewer.",
                 nameof(question));
         }
-
-        if (documentIds is null || documentIds.Count == 0)
-        {
-            throw new ArgumentException(
-                "At least one document must be selected.",
-                nameof(documentIds));
-        }
-
-        if (documentIds.Count > MaxSelectedDocuments)
-        {
-            throw new ArgumentException(
-                $"No more than {MaxSelectedDocuments} documents may be selected.",
-                nameof(documentIds));
-        }
-
-        if (documentIds.Any(id => id <= 0))
-        {
-            throw new ArgumentException(
-                "Document IDs must be positive integers.",
-                nameof(documentIds));
-        }
-
-        var distinctDocumentIds = documentIds
-            .Distinct()
-            .ToArray();
-
+        
         var ownedDocuments =
-            await _documents.GetOwnedByIdsAsync(
-                distinctDocumentIds,
+            await _documents.GetAllOwnedAsync(
                 userId,
                 cancellationToken);
 
-        if (ownedDocuments.Count != distinctDocumentIds.Length)
+        if (ownedDocuments.Count == 0)
         {
             throw new KeyNotFoundException(
-                "One or more selected documents were not found.");
+                "No documents are available for question answering.");
         }
 
         var documentsByAiId = ownedDocuments.ToDictionary(

@@ -5,8 +5,7 @@ public record SearchResponse(IReadOnlyCollection<SearchHitResponse> Results, int
 public record SearchHitResponse(int DocumentId, string FileName, string Snippet, double Score);
 
 public sealed record AskDocumentsRequest(
-    string Question,
-    IReadOnlyCollection<int> DocumentIds);
+    string Question);
 
 public sealed record AskDocumentsResponse(
     string QueryId,

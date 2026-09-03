@@ -16,6 +16,10 @@ public interface IDocumentRepository
         int pageSize,
         string? search,
         string? type);
+    
+    Task<IReadOnlyCollection<Document>> GetAllOwnedAsync(
+        string ownerId,
+        CancellationToken cancellationToken = default);
 
     Task<IReadOnlyCollection<Document>> GetOwnedByIdsAsync(
         IReadOnlyCollection<int> ids,

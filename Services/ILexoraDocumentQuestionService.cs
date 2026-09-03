@@ -4,7 +4,6 @@ public interface ILexoraDocumentQuestionService
 {
     Task<DocumentQuestionResult> AskAsync(
         string question,
-        IReadOnlyCollection<int> documentIds,
         string userId,
         CancellationToken cancellationToken = default);
 }
