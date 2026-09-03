@@ -256,7 +256,6 @@ export function LegalAssistantWidget({ mode = "ai" }) {
   const [loading, setLoading] = useState(false);
   const [lastQuestion, setLastQuestion] = useState("");
   const [documents, setDocuments] = useState([]);
-  const [selectedDocumentIds, setSelectedDocumentIds] = useState([]);
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [documentsError, setDocumentsError] = useState("");
   const fileInputRef = useRef(null);
@@ -277,14 +276,6 @@ export function LegalAssistantWidget({ mode = "ai" }) {
       );
 
       setDocuments(validDocuments);
-
-      const availableIds = new Set(
-        validDocuments.map((document) => document.id),
-      );
-
-      setSelectedDocumentIds((current) =>
-        current.filter((id) => availableIds.has(id)),
-      );
     } catch (error) {
       setDocumentsError(
         error?.message ||
@@ -360,12 +351,6 @@ export function LegalAssistantWidget({ mode = "ai" }) {
               document.id !== backendDocumentId,
           ),
         ]);
-
-        setSelectedDocumentIds((current) =>
-          current.includes(backendDocumentId)
-            ? current
-            : [...current, backendDocumentId],
-        );
       } catch (error) {
         setAttachments((current) =>
           current.map((item) =>
@@ -385,25 +370,7 @@ export function LegalAssistantWidget({ mode = "ai" }) {
   }
 
   function removeAttachment(id) {
-    const attachment = attachments.find(
-      (item) => item.id === id,
-    );
-
     attachmentIdsRef.current.delete(id);
-
-    if (
-      Number.isInteger(
-        attachment?.backendDocumentId,
-      )
-    ) {
-      setSelectedDocumentIds((current) =>
-        current.filter(
-          (documentId) =>
-            documentId !==
-            attachment.backendDocumentId,
-        ),
-      );
-    }
 
     setAttachments((current) =>
       current.filter((item) => item.id !== id),
@@ -442,23 +409,7 @@ export function LegalAssistantWidget({ mode = "ai" }) {
       return;
     }
 
-    const documentIds = [
-      ...new Set(
-        selectedDocumentIds.filter(
-          Number.isInteger,
-        ),
-      ),
-    ];
-
-    if (!documentIds.length) {
-      setResult({
-        status: "error",
-        error: new Error(
-          "ارفع مستندا واحدا على الأقل قبل إرسال السؤال.",
-        ),
-      });
-      return;
-    }
+    
 
     setLastQuestion(trimmedQuestion);
 
@@ -475,7 +426,6 @@ export function LegalAssistantWidget({ mode = "ai" }) {
     try {
       const response = await askDocuments(
         trimmedQuestion,
-        documentIds,
       );
 
       setResult({
@@ -511,9 +461,9 @@ export function LegalAssistantWidget({ mode = "ai" }) {
           <p className="eyebrow">AI Agent Workspace</p>
           <h2>{isFullSearch ? "البحث القانوني بالمصادر" : "اسأل المساعد القانوني"}</h2>
           <p>
-           ارفع مستندا ثم اكتب سؤالك بالعربية أو الإنجليزية.
-           يتم رفع المستند وفهرسته أولا، ثم تُولّد الإجابة من
-           المستندات المختارة مع عرض المراجع المرتبطة بها.
+          اكتب سؤالك بالعربية أو الإنجليزية، ويمكنك رفع مستندات
+          جديدة عند الحاجة. يبحث النظام تلقائيا في جميع المستندات
+          المفهرسة المرتبطة بحسابك ويعرض المراجع المستخدمة في الإجابة.
           </p>
         </div>
       </div>
@@ -569,43 +519,12 @@ export function LegalAssistantWidget({ mode = "ai" }) {
           aria-label="اختيار المستندات"
         >
           <label>
-            المستندات المستخدمة في الإجابة
+            نطاق البحث
 
-            <select
-              multiple
-              size={Math.min(
-                Math.max(documents.length, 3),
-                6,
-              )}
-              value={selectedDocumentIds.map(String)}
-              disabled={
-                documentsLoading ||
-                documents.length === 0
-              }
-              onChange={(event) => {
-                const ids = Array.from(
-                  event.currentTarget.selectedOptions,
-                  (option) => Number(option.value),
-                ).filter(Number.isInteger);
-
-                setSelectedDocumentIds(ids);
-              }}
-            >
-              {documents.length ? (
-                documents.map((document) => (
-                  <option
-                    key={document.id}
-                    value={document.id}
-                  >
-                    {document.fileName}
-                  </option>
-                ))
-              ) : (
-                <option disabled value="">
-                  لا توجد مستندات محملة
-                </option>
-              )}
-            </select>
+            <small className="empty-result">
+              يتم البحث تلقائيا في جميع المستندات المفهرسة
+              المرتبطة بحسابك.
+            </small>
           </label>
 
           <label>
@@ -633,7 +552,7 @@ export function LegalAssistantWidget({ mode = "ai" }) {
                 ? documentsError
                 : documents.length === 0
                   ? "ارفع مستندا أو حدّث القائمة."
-                  : `${selectedDocumentIds.length} من ${documents.length} مستند محدد`}
+                  : `${documents.length} مستند متاح للبحث التلقائي`}
             </small>
           </label>
         </div>
@@ -703,7 +622,8 @@ export function LegalAssistantWidget({ mode = "ai" }) {
                 </span>
                 <button
                   type="button"
-                  aria-label={`حذف ${item.name}`}
+                  aria-label={`إخفاء المرفق ${item.name}`}
+                  title="إخفاء المرفق من هذه القائمة فقط"
                   disabled={item.status === "uploading"}
                   onClick={() => removeAttachment(item.id)}
                 >

@@ -146,27 +146,20 @@ export async function listDocuments() {
     : [];
 }
 
-export async function askDocuments(question, documentIds) {
-  const normalizedQuestion = question?.trim();
+export async function askDocuments(question) {
+    const normalizedQuestion = question?.trim();
 
-  if (!normalizedQuestion) {
-    throw new Error("Question is required.");
+    if (!normalizedQuestion) {
+      throw new Error("Question is required.");
+    }
+
+    return requestBackendApi("/api/search/ask", {
+      method: "POST",
+      body: JSON.stringify({
+        question: normalizedQuestion,
+      }),
+    });
   }
-
-  if (!Array.isArray(documentIds) || documentIds.length === 0) {
-    throw new Error(
-      "At least one indexed document must be selected.",
-    );
-  }
-
-  return requestBackendApi("/api/search/ask", {
-    method: "POST",
-    body: JSON.stringify({
-      question: normalizedQuestion,
-      documentIds,
-    }),
-  });
-}
 
 // Temporary compatibility helper for the existing FastAPI widget.
 // Step 6C removes its use from LegalAssistantWidget.
