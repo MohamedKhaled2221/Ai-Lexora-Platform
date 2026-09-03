@@ -5,6 +5,7 @@ from src.api.dependencies import (
     get_m4_orchestration_service,
 )
 from src.orchestration import (
+    CitationValidationError,
     M4LLMConnectionError,
     M4LLMInvocationError,
 )
@@ -204,6 +205,36 @@ class InvalidGenerationM4Service:
             "invalid structured output"
         )
 
+class InvalidCitationM4Service:
+    async def aanswer_search(
+        self,
+        *,
+        processed_query,
+        retrieved_evidence,
+    ):
+        raise CitationValidationError(
+            "private citation diagnostic"
+        )
+        
+def test_answer_endpoint_returns_502_for_citation_failure():
+    app = create_app()
+
+    app.dependency_overrides[
+        get_m4_orchestration_service
+    ] = lambda: InvalidCitationM4Service()
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/ai/answer",
+            json=make_request_body(),
+        )
+
+    assert response.status_code == 502
+
+    assert (
+        "private citation diagnostic"
+        not in str(response.json())
+    )
 
 def test_answer_endpoint_returns_502_for_generation_failure():
     app = create_app()
