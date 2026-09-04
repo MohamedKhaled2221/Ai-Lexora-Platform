@@ -200,55 +200,51 @@ class ClauseClassifier:
         language: str = "unknown",
     ) -> Tuple[ClauseType, float, Dict]:
         if not self.use_transformers:
-            raise RuntimeError(
-                "Transformer classification is disabled. Set "
-                "M5_USE_TRANSFORMERS=true."
+            return self._classify_rules(text, title)
+
+        try:
+            model_name, language_used = self._select_model(text, language)
+
+            if not model_name:
+                return self._classify_rules(text, title)
+
+            tokenizer, model = self._load_model(model_name)
+
+            import torch
+
+            input_text = text or ""
+            if title:
+                input_text = f"{title}\n{input_text}"
+
+            inputs = tokenizer(
+                input_text,
+                return_tensors="pt",
+                truncation=True,
+                max_length=512,
             )
 
-        model_name, language_used = self._select_model(text, language)
+            with torch.no_grad():
+                logits = model(**inputs).logits
 
-        if not model_name:
-            raise RuntimeError(
-                f"No LegalBERT classifier model is configured for language "
-                f"'{language_used}'. Set M5_ENGLISH_CLASSIFIER_MODEL or "
-                "M5_ARABIC_CLASSIFIER_MODEL to a fine-tuned checkpoint."
+            probabilities = torch.softmax(logits, dim=-1)[0]
+            label_id = int(torch.argmax(probabilities).item())
+            confidence = float(probabilities[label_id].item())
+            label = self._label_for_id(model, label_id)
+            clause_type = self._clause_type_for_label(label)
+
+            return (
+                clause_type,
+                round(confidence, 6),
+                {
+                    "method": "transformer_sequence_classification",
+                    "model": model_name,
+                    "language": language_used,
+                    "label": label,
+                    "label_id": label_id,
+                },
             )
-
-        tokenizer, model = self._load_model(model_name)
-
-        import torch
-
-        input_text = text or ""
-        if title:
-            input_text = f"{title}\n{input_text}"
-
-        inputs = tokenizer(
-            input_text,
-            return_tensors="pt",
-            truncation=True,
-            max_length=512,
-        )
-
-        with torch.no_grad():
-            logits = model(**inputs).logits
-
-        probabilities = torch.softmax(logits, dim=-1)[0]
-        label_id = int(torch.argmax(probabilities).item())
-        confidence = float(probabilities[label_id].item())
-        label = self._label_for_id(model, label_id)
-        clause_type = self._clause_type_for_label(label)
-
-        return (
-            clause_type,
-            round(confidence, 6),
-            {
-                "method": "transformer_sequence_classification",
-                "model": model_name,
-                "language": language_used,
-                "label": label,
-                "label_id": label_id,
-            },
-        )
+        except (RuntimeError, ImportError, ValueError):
+            return self._classify_rules(text, title)
 
     def _select_model(
         self,

@@ -510,6 +510,63 @@ def _build_m5_section(
     )
 
 
+def analyze_request_to_m1_payload(
+    request: Any,
+) -> Dict[str, Any]:
+    """
+    Adapt the public API request shape into the existing M1-to-M5 section model.
+
+    This keeps the HTTP layer thin and preserves the current M5 business logic.
+    """
+
+    document_id = "unknown_document"
+    clauses: List[Dict[str, Any]] = []
+
+    if hasattr(request, "document_id"):
+        document_id = str(request.document_id or "unknown_document")
+
+    raw_clauses = getattr(request, "clauses", []) or []
+
+    for item in raw_clauses:
+        if hasattr(item, "model_dump"):
+            clause = item.model_dump()
+        elif isinstance(item, dict):
+            clause = dict(item)
+        else:
+            continue
+
+        text = str(clause.get("text") or "").strip()
+        if not text:
+            continue
+
+        clause_id = clause.get("clause_id")
+        page = clause.get("page")
+        section = clause.get("section")
+        language = clause.get("language")
+
+        sections_item: Dict[str, Any] = {
+            "document_id": document_id,
+            "section_id": str(clause_id) if clause_id is not None else None,
+            "section": section,
+            "title": section,
+            "text": text,
+            "page_start": page,
+            "page_end": page,
+            "language": language,
+            "metadata": {"source_clause_id": str(clause_id) if clause_id is not None else None},
+        }
+
+        if clause_id is None:
+            sections_item["metadata"].pop("source_clause_id", None)
+
+        clauses.append(sections_item)
+
+    return {
+        "document_id": document_id,
+        "sections": clauses,
+    }
+
+
 def m1_payload_to_sections(
     payload: Any,
 ) -> List[M1ContractSection]:
