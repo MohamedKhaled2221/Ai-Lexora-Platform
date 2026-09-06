@@ -21,7 +21,7 @@ public class DocumentsController : ControllerBase
     }
 
     [HttpPost]
-    [RequestSizeLimit(20 * 1024 * 1024)]
+    [RequestSizeLimit(FileUploadLimits.MaxSingleFileBytes)]
     [Consumes("multipart/form-data")]
     public async Task<ActionResult<DocumentResponse>> Upload( IFormFile? file, [FromForm] string? type)
     {
@@ -42,7 +42,7 @@ public class DocumentsController : ControllerBase
     }
 
     [HttpPost("batch")]
-    [RequestSizeLimit(100 * 1024 * 1024)]
+    [RequestSizeLimit(FileUploadLimits.MaxBatchTotalBytes)]
     [Consumes("multipart/form-data")]
     public async Task<ActionResult<IReadOnlyCollection<DocumentResponse>>> UploadBatch([FromForm] IFormFileCollection? files, [FromForm] string? type)
     {

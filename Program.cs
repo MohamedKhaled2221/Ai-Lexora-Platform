@@ -129,8 +129,8 @@ builder.Services.AddHttpClient<LexoraDocumentIndexingService>(
     });
 
 builder.Services.AddScoped<ILexoraDocumentIndexingService>(
-    sp => sp.GetRequiredService<
-        LexoraDocumentIndexingService>());
+    sp => sp.GetRequiredService
+        LexoraDocumentIndexingService > ());
 builder.Services.AddHttpClient<LexoraRagChatbotService>((sp, client) =>
 {
     var config = sp.GetRequiredService<IConfiguration>();
@@ -164,8 +164,8 @@ builder.Services.AddHttpClient<LexoraDocumentQuestionService>(
     });
 
 builder.Services.AddScoped<ILexoraDocumentQuestionService>(
-    sp => sp.GetRequiredService<
-        LexoraDocumentQuestionService>());
+    sp => sp.GetRequiredService
+        LexoraDocumentQuestionService > ());
 builder.Services.AddScoped<IChatbotService>(sp => sp.GetRequiredService<LexoraRagChatbotService>());
 // To fall back to the offline placeholder instead (e.g. the AI service isn't
 // running locally), comment the two lines above and uncomment this one:
@@ -246,13 +246,59 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+// ---------- CORS ----------
+// Cors:AllowedOrigins in appsettings.json is the real, deployed frontend
+// origin(s). AllowAnyOrigin is only tolerated in Development when that list
+// is empty (local dev convenience); any other environment MUST set real
+// origins, or the app refuses to start rather than silently shipping an
+// open CORS policy to production.
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+if (allowedOrigins.Length == 0 && !builder.Environment.IsDevelopment())
+{
+    throw new InvalidOperationException(
+        "Cors:AllowedOrigins is empty. Set it to the real frontend origin(s) in appsettings.json " +
+        "(or via environment/secret configuration) before running outside Development.");
+}
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+        if (allowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+        }
+        else
+        {
+            // Development-only fallback - no origins configured.
+            policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+        }
     });
 });
+
+// ---------- Health check dependencies ----------
+// Short-timeout clients dedicated to /health probes, separate from the
+// long-timeout typed clients used for actual AI calls above, so a slow/dead
+// AI service doesn't make /health itself hang.
+builder.Services.AddHttpClient("AiServiceHealth", (sp, client) =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    client.BaseAddress = new Uri(config["AiService:BaseUrl"] ?? "http://localhost:8000");
+    client.Timeout = TimeSpan.FromSeconds(config.GetValue<int?>("HealthCheck:AiService:TimeoutSeconds") ?? 5);
+});
+builder.Services.AddHttpClient("M1ServiceHealth", (sp, client) =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    client.BaseAddress = new Uri(config["M1Service:BaseUrl"] ?? "http://localhost:8001");
+    client.Timeout = TimeSpan.FromSeconds(config.GetValue<int?>("HealthCheck:M1Service:TimeoutSeconds") ?? 5);
+});
+builder.Services.AddHttpClient("M5ServiceHealth", (sp, client) =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    client.BaseAddress = new Uri(config["M5Service:BaseUrl"] ?? "http://localhost:8002");
+    client.Timeout = TimeSpan.FromSeconds(config.GetValue<int?>("HealthCheck:M5Service:TimeoutSeconds") ?? 5);
+});
+builder.Services.AddScoped<SystemHealthCheckService>();
 
 var app = builder.Build();
 
@@ -270,7 +316,21 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // ---------- Health check ----------
-app.MapGet("/health", () => Results.Ok(new { status = "ok", service = "dotnet-backend" }));
+// Real readiness probe: checks the database AND the 3 external AI services
+// (AiService/8000, M1Service/8001, M5Service/8002), not just "the .NET
+// process is alive". Returns 200 only if every dependency is reachable, so
+// the frontend can trust "System is ready" instead of just backend uptime.
+app.MapGet("/health", async (SystemHealthCheckService healthCheckService, CancellationToken cancellationToken) =>
+{
+    var report = await healthCheckService.CheckAsync(cancellationToken);
+    var payload = new
+    {
+        status = report.Healthy ? "ok" : "degraded",
+        service = "dotnet-backend",
+        dependencies = report.Dependencies.Select(d => new { d.Name, healthy = d.Healthy, detail = d.Detail })
+    };
+    return report.Healthy ? Results.Ok(payload) : Results.Json(payload, statusCode: StatusCodes.Status503ServiceUnavailable);
+});
 
 app.MapControllers();
 
