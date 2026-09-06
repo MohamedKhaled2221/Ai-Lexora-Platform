@@ -1,12 +1,10 @@
 export const AI_API_BASE =
   window.AI_LEXORA_API_BASE || "http://127.0.0.1:8000";
 
-export const BACKEND_API_BASE =
-  window.LEXORA_BACKEND_API_BASE || "http://127.0.0.1:5080";
-
 // Temporary compatibility alias.
 // Existing React components still use API_BASE until Step 6C.
 export const API_BASE = AI_API_BASE;
+const DOCUMENTS_STORAGE_KEY = "lexora-indexed-documents";
 
 function extractErrorMessage(payload, status) {
   const detail =
@@ -78,44 +76,12 @@ async function request(baseUrl, path, options = {}) {
   return payload;
 }
 
-// Existing FastAPI client.
-// Kept temporarily so Step 6B does not break the current UI.
-// We will remove direct browser -> FastAPI usage after the React
-// Package 1 flow has been migrated.
 export async function requestApi(path, options = {}) {
   return request(AI_API_BASE, path, options);
 }
 
-function getBackendAccessToken() {
-  const token = window.LEXORA_ACCESS_TOKEN;
-
-  return typeof token === "string"
-    ? token.trim()
-    : "";
-}
-
 export async function requestBackendApi(path, options = {}) {
-  const token = getBackendAccessToken();
-
-  if (!token) {
-    const error = new Error(
-      "An authenticated backend access token is required.",
-    );
-
-    error.status = 401;
-    throw error;
-  }
-
-  const headers = new Headers(options.headers || {});
-
-  if (!headers.has("Authorization")) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
-
-  return request(BACKEND_API_BASE, path, {
-    ...options,
-    headers,
-  });
+  return requestApi(path, options);
 }
 
 export async function uploadDocument(file, type = "Contract") {
@@ -126,40 +92,80 @@ export async function uploadDocument(file, type = "Contract") {
   const formData = new FormData();
   formData.append("file", file);
 
-  if (type) {
-    formData.append("type", type);
-  }
-
-  return requestBackendApi("/api/documents", {
+  const response = await requestApi("/api/v1/documents/ingest", {
     method: "POST",
     body: formData,
   });
+
+  const document = {
+    id: response.document_id,
+    fileName: response.source_file || file.name,
+    sizeBytes: file.size,
+    ...response,
+  };
+
+  const documents = await listDocuments();
+  localStorage.setItem(
+    DOCUMENTS_STORAGE_KEY,
+    JSON.stringify([
+      document,
+      ...documents.filter((item) => item.id !== document.id),
+    ]),
+  );
+
+  return document;
 }
 
 export async function listDocuments() {
-  const response = await requestBackendApi(
-    "/api/documents?page=1&pageSize=100",
-  );
-
-  return Array.isArray(response.items)
-    ? response.items
-    : [];
+  try {
+    const documents = JSON.parse(
+      localStorage.getItem(DOCUMENTS_STORAGE_KEY) || "[]",
+    );
+    return Array.isArray(documents) ? documents : [];
+  } catch {
+    return [];
+  }
 }
 
-export async function askDocuments(question) {
-    const normalizedQuestion = question?.trim();
+export async function askDocuments(question, documentIds = []) {
+  const normalizedQuestion = question?.trim();
 
-    if (!normalizedQuestion) {
-      throw new Error("Question is required.");
-    }
+  if (!normalizedQuestion) {
+    throw new Error("Question is required.");
+  }
 
-  return requestBackendApi("/api/search/ask", {
+  return requestApi("/api/v1/rag/ask", {
     method: "POST",
     body: JSON.stringify({
       question: normalizedQuestion,
-      documentIds,
+      filters: {
+        document_ids: documentIds,
+        jurisdiction: "Egypt",
+      },
     }),
   });
+}
+
+export async function generateContract(request) {
+  const data = request?.contractData || {};
+  const prompt = [
+    "اكتب مسودة عقد قانونية باللغة المناسبة للبيانات التالية.",
+    `نوع العقد: ${request?.contractType || "غير محدد"}`,
+    `القالب: ${request?.template || "غير محدد"}`,
+    `البيانات: ${JSON.stringify(data)}`,
+    `تعليمات إضافية: ${request?.additionalInstructions || "لا توجد"}`,
+    "أخرج نص العقد فقط مع عناوين واضحة، واذكر أن الناتج مسودة تحتاج مراجعة قانونية.",
+  ].join("\n");
+
+  return askDocuments(prompt);
+}
+
+export async function reviewContract(contractText, action) {
+  return askDocuments([
+    action || "راجع هذا العقد",
+    "حلل النص التالي وحدد الملاحظات القانونية العملية دون إعادة كتابة العقد كاملًا:",
+    contractText,
+  ].join("\n\n"));
 }
 
 // Temporary compatibility helper for the existing FastAPI widget.

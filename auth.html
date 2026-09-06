@@ -40,7 +40,7 @@
           <div><strong>Manager / Admin</strong><span>كل القضايا، الفريق، العملاء، التقارير، والصلاحيات.</span></div>
         </div>
 
-        <section class="api-section" style="width:100%;margin:22px 0 0">
+        <section class="api-section auth-status-section">
           <div data-react-widget="backend-status"></div>
         </section>
       </div>
@@ -55,10 +55,12 @@
         <form class="auth-form active" data-auth-panel="login" data-success="تم تسجيل الدخول تجريبيا.">
           <h2>تسجيل الدخول</h2>
           <label>البريد الإلكتروني
-            <input type="email" placeholder="lawyer@ai-lexora.local" required>
+            <input id="login-email" type="email" aria-describedby="login-email-error" placeholder="lawyer@ai-lexora.local" required>
+            <small id="login-email-error" class="field-error">أدخل بريدًا إلكترونيًا صالحًا.</small>
           </label>
           <label>كلمة المرور
-            <input type="password" placeholder="••••••••" required>
+            <input id="login-password" type="password" aria-describedby="login-password-error" placeholder="••••••••" required>
+            <small id="login-password-error" class="field-error">أدخل كلمة المرور.</small>
           </label>
           <label>الدور
             <select>
@@ -72,13 +74,16 @@
         <form class="auth-form" data-auth-panel="register" data-success="تم حفظ المستخدم تجريبيا.">
           <h2>إضافة مستخدم داخلي</h2>
           <label>الاسم الكامل
-            <input type="text" placeholder="اسم المحامي أو الموظف" required>
+            <input id="register-name" type="text" aria-describedby="register-name-error" placeholder="اسم المحامي أو الموظف" required>
+            <small id="register-name-error" class="field-error">أدخل الاسم الكامل.</small>
           </label>
           <label>البريد الإلكتروني
-            <input type="email" placeholder="name@ai-lexora.local" required>
+            <input id="register-email" type="email" aria-describedby="register-email-error" placeholder="name@ai-lexora.local" required>
+            <small id="register-email-error" class="field-error">أدخل بريدًا إلكترونيًا صالحًا.</small>
           </label>
           <label>كلمة المرور المؤقتة
-            <input type="password" placeholder="8 أحرف على الأقل" required minlength="8">
+            <input id="register-password" type="password" aria-describedby="register-password-error" placeholder="8 أحرف على الأقل" required minlength="8">
+            <small id="register-password-error" class="field-error">يجب أن تتكون كلمة المرور من 8 أحرف على الأقل.</small>
           </label>
           <label>الدور
             <select>
@@ -93,7 +98,8 @@
           <h2>استعادة كلمة المرور</h2>
           <p>أدخل البريد الداخلي لاستلام رابط إعادة التعيين عند إضافة خدمة البريد.</p>
           <label>البريد الإلكتروني
-            <input type="email" placeholder="name@ai-lexora.local" required>
+            <input id="forgot-email" type="email" aria-describedby="forgot-email-error" placeholder="name@ai-lexora.local" required>
+            <small id="forgot-email-error" class="field-error">أدخل بريدًا إلكترونيًا صالحًا.</small>
           </label>
           <button class="submit-btn" type="submit">إرسال الرابط</button>
         </form>
