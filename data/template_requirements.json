@@ -1,0 +1,122 @@
+{
+  "version": "1.0.0",
+  "updated_at": "2026-09-06T10:00:00Z",
+  "templates": [
+    {
+      "template_id": "TMPL-EMP-EG-001",
+      "document_type": "employment_contract",
+      "jurisdiction": "EG",
+      "required_clauses": [
+        "CLZ-TERM-EG-001",
+        "CLZ-GLAW-EG-001",
+        "CLZ-DISP-EG-001"
+      ],
+      "optional_clauses": [
+        "CLZ-CONF-EG-001",
+        "CLZ-NCOM-EG-001"
+      ],
+      "prohibited_clauses": [
+        "CLZ-TERM-KSA-001"
+      ],
+      "conditional_clauses": [
+        {
+          "clause_id": "CLZ-NCOM-EG-001",
+          "condition": "has_trade_secrets",
+          "description": "Non-compete required when employee has access to trade secrets"
+        }
+      ]
+    },
+    {
+      "template_id": "TMPL-EMP-KSA-001",
+      "document_type": "employment_contract",
+      "jurisdiction": "KSA",
+      "required_clauses": [
+        "CLZ-TERM-KSA-001"
+      ],
+      "optional_clauses": [],
+      "prohibited_clauses": [
+        "CLZ-TERM-EG-001"
+      ],
+      "conditional_clauses": []
+    },
+    {
+      "template_id": "TMPL-SVC-EG-001",
+      "document_type": "service_agreement",
+      "jurisdiction": "EG",
+      "required_clauses": [
+        "CLZ-GLAW-EG-001",
+        "CLZ-DISP-EG-001",
+        "CLZ-PAYM-EG-001"
+      ],
+      "optional_clauses": [
+        "CLZ-CONF-EG-001",
+        "CLZ-PNLT-EG-001",
+        "CLZ-FMAJ-INT-001"
+      ],
+      "prohibited_clauses": [],
+      "conditional_clauses": [
+        {
+          "clause_id": "CLZ-CONF-EG-001",
+          "condition": "involves_confidential_data",
+          "description": "Confidentiality clause required when handling confidential data"
+        }
+      ]
+    },
+    {
+      "template_id": "TMPL-NDA-EG-001",
+      "document_type": "nda",
+      "jurisdiction": "EG",
+      "required_clauses": [
+        "CLZ-CONF-EG-001",
+        "CLZ-GLAW-EG-001"
+      ],
+      "optional_clauses": [
+        "CLZ-DISP-EG-001",
+        "CLZ-PNLT-EG-001"
+      ],
+      "prohibited_clauses": [],
+      "conditional_clauses": []
+    },
+    {
+      "template_id": "TMPL-SVC-INT-001",
+      "document_type": "service_agreement",
+      "jurisdiction": "INTERNATIONAL",
+      "required_clauses": [
+        "CLZ-CONF-INT-001",
+        "CLZ-LIAB-INT-001"
+      ],
+      "optional_clauses": [
+        "CLZ-FMAJ-INT-001"
+      ],
+      "prohibited_clauses": [],
+      "conditional_clauses": [
+        {
+          "clause_id": "CLZ-FMAJ-INT-001",
+          "condition": "cross_border_service",
+          "description": "Force majeure recommended for cross-border service agreements"
+        }
+      ]
+    },
+    {
+      "template_id": "TMPL-SVC-UAE-001",
+      "document_type": "service_agreement",
+      "jurisdiction": "UAE",
+      "required_clauses": [
+        "CLZ-DPRT-UAE-001"
+      ],
+      "optional_clauses": [
+        "CLZ-CONF-INT-001",
+        "CLZ-LIAB-INT-001",
+        "CLZ-FMAJ-INT-001"
+      ],
+      "prohibited_clauses": [],
+      "conditional_clauses": [
+        {
+          "clause_id": "CLZ-DPRT-UAE-001",
+          "condition": "processes_personal_data",
+          "description": "Data protection clause mandatory when processing personal data under UAE PDPL"
+        }
+      ]
+    }
+  ]
+}
