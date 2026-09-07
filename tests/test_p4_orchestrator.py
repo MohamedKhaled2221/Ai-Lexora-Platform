@@ -5,6 +5,7 @@ from src.orchestration.p4_grounding_validator import (
     P4GroundingValidator,
 )
 from src.orchestration.p4_orchestrator import (
+    P4GroundingValidationError,
     P4M4Orchestrator,
 )
 from src.orchestration.settings import (
@@ -233,7 +234,8 @@ def test_grounded_p4_answer_passes():
     )
 
 
-def test_grounding_failure_is_recorded():
+
+def test_grounding_failure_is_blocked():
     generation = FakeGenerationLLM(
         output=M4ModelOutput(
             answer=(
@@ -259,23 +261,52 @@ def test_grounding_failure_is_recorded():
         ),
     )
 
-    result = orchestrator.answer(
-        make_request()
+    with pytest.raises(
+        P4GroundingValidationError
+    ):
+        orchestrator.answer(
+            make_request()
+        )
+
+    assert generation.calls == 1
+    assert checker.calls == 1
+
+@pytest.mark.asyncio
+async def test_async_grounding_failure_is_blocked():
+    generation = FakeGenerationLLM(
+        output=M4ModelOutput(
+            answer=(
+                "Article 10 requires written notice "
+                "and imposes an unsupported penalty. [E1]"
+            ),
+            citation_ids=["E1"],
+            confidence=0.8,
+        )
     )
 
-    response = result.response
+    checker = FakeGroundingChecker(
+        grounded=False
+    )
 
-    assert response.grounding_valid is False
+    orchestrator = P4M4Orchestrator(
+        settings=settings(),
+        llm_service=generation,
+        grounding_validator=(
+            P4GroundingValidator(
+                checker=checker
+            )
+        ),
+    )
 
-    assert response.citations_valid is True
+    with pytest.raises(
+        P4GroundingValidationError
+    ):
+        await orchestrator.aanswer(
+            make_request()
+        )
 
-    assert response.unsupported_claims == [
-        "The answer introduced a penalty."
-    ]
-
-    assert response.validation_errors
-
-
+    assert generation.calls == 1
+    assert checker.calls == 1
 def test_insufficient_evidence_skips_all_llm_calls():
     generation = FakeGenerationLLM()
 

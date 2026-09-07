@@ -19,6 +19,28 @@ from typing import Any, Dict, List
 from pydantic import BaseModel, Field
 
 from src.schemas.m6_contract import ContractRisk
+from src.orchestration.grounding_validator import (
+    P3GroundingContext,
+)
+from src.schemas.p3_generation_contract import (
+    AssembledDraft,
+    GenerationManifest,
+)
+
+
+class P3ValidationRequest(BaseModel):
+    """
+    Stable API contract for M1 -> M4
+    Package 3 validation.
+    """
+
+    model_config = ConfigDict(
+        extra="forbid"
+    )
+
+    draft: AssembledDraft
+    manifest: GenerationManifest
+    grounding_context: P3GroundingContext
 
 class RawRAGAnswerRequest(BaseModel):
     """

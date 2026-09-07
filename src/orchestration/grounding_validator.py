@@ -573,30 +573,11 @@ class P3GroundingValidator:
                     in transformations
                 ]
 
-                try:
-                    result = checker.check(
-                        section=section,
-                        sources=semantic_sources,
-                        transformation_metadata=(
-                            metadata
-                        ),
-                    )
-
-                except M4LLMError:
-                    errors.append(
-                        f"Semantic grounding validation "
-                        f"could not be completed for "
-                        f"section "
-                        f"{section.section_id!r} "
-                        "because the local validation "
-                        "model was unavailable."
-                    )
-
-                    ungrounded_section_ids.add(
-                        section.section_id
-                    )
-
-                    continue
+                result = checker.check(
+                    section=section,
+                    sources=semantic_sources,
+                    transformation_metadata=metadata,
+                )
 
                 if result.grounded:
                     grounded_section_ids.add(

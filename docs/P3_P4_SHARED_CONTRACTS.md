@@ -234,3 +234,57 @@ M4 → backend:
 7. Insufficient evidence must produce an abstention-style response.
 8. Existing Packages 1 and 2 interfaces must remain backward compatible
    until integration migration is complete.
+
+---
+
+# M4 Delivery API
+
+## Package 3
+
+POST `/api/v1/m4/p3/validate`
+
+Input:
+
+- AssembledDraft
+- GenerationManifest
+- P3GroundingContext
+
+Output:
+
+- ValidatedDraft
+
+Behavior:
+
+- structural contract mismatch -> HTTP 400
+- local AI unavailable -> HTTP 503
+- local AI validation failure -> HTTP 502
+- legal/provenance validation failure -> HTTP 200 with
+  `is_valid=false` and `requires_lawyer_review=true`
+
+## Package 4
+
+POST `/api/v1/m4/p4/answer`
+
+Input:
+
+- AnswerGenerationRequest
+
+Output:
+
+- ValidatedAIResponse
+
+Behavior:
+
+- insufficient trusted evidence -> deterministic abstention
+- Ollama unavailable -> HTTP 503
+- invalid structured generation -> HTTP 502
+- invalid citations -> HTTP 502
+- semantic grounding failure -> HTTP 502
+
+The existing Packages 1 and 2 endpoints remain available during
+migration.
+
+M4 API logging records safe operational metadata and runtime resource
+metrics only. Legal question text, retrieved legal passages, generated
+legal text, credentials, and confidential document content must not
+be written to application logs.

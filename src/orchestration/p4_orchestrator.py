@@ -55,7 +55,13 @@ class P4OrchestrationResult:
     response: ValidatedAIResponse
     metrics: P4OrchestrationMetrics
 
-
+class P4GroundingValidationError(
+    RuntimeError
+):
+    """
+    Raised when generated Package 4 content
+    fails semantic grounding validation.
+    """
 class P4M4Orchestrator:
     """
     Package 4 M4 generation and validation service.
@@ -136,6 +142,11 @@ class P4M4Orchestrator:
                 ),
             )
         )
+        if not grounding.grounded:
+            raise P4GroundingValidationError(
+                "The generated answer failed "
+                "semantic grounding validation."
+            )
 
         response = ValidatedAIResponse(
             request_id=request.request_id,
@@ -215,6 +226,11 @@ class P4M4Orchestrator:
                 ),
             )
         )
+        if not grounding.grounded:
+            raise P4GroundingValidationError(
+                "The generated answer failed "
+                "semantic grounding validation."
+            )
 
         response = ValidatedAIResponse(
             request_id=request.request_id,
