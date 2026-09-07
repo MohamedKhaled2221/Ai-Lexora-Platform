@@ -39,6 +39,9 @@ from src.api.risk_routes import router as risk_router
 from src.api.document_routes import (
     router as document_router,
 )
+from src.api.m4_p3_p4_routes import (
+    router as m4_p3_p4_router,
+)
 
 
 def create_app(
@@ -148,6 +151,9 @@ def create_app(
 
     app.include_router(
         risk_router
+    )
+    app.include_router(
+        m4_p3_p4_router
     )
 
 

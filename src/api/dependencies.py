@@ -14,6 +14,12 @@ from fastapi import (
 from src.indexing import (
     DocumentIngestionService,
 )
+from src.orchestration.p3_orchestrator import (
+    P3M4Orchestrator,
+)
+from src.orchestration.p4_orchestrator import (
+    P4M4Orchestrator,
+)
 def get_document_ingestion_service(
     request: Request,
 ) -> DocumentIngestionService:
@@ -105,3 +111,14 @@ def get_m4_orchestration_service(
     """
 
     return M4OrchestrationService()
+
+@lru_cache(maxsize=1)
+def get_p3_m4_orchestrator(
+) -> P3M4Orchestrator:
+    return P3M4Orchestrator()
+
+
+@lru_cache(maxsize=1)
+def get_p4_m4_orchestrator(
+) -> P4M4Orchestrator:
+    return P4M4Orchestrator()
