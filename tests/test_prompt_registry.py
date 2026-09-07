@@ -55,11 +55,26 @@ def test_registry_contains_p4_grounded_prompt():
         == "p4-grounded-answer-v1"
     )
 
-
-def test_registry_contains_three_prompts():
+def test_registry_contains_four_prompts():
     prompts = prompt_registry.all()
 
-    assert len(prompts) == 3
+    assert len(prompts) == 4
+    
+def test_registry_contains_p4_grounding_validation_prompt():
+    prompt = prompt_registry.get(
+        PromptKey.P4_CLAIM_GROUNDING_VALIDATION
+    )
+
+    assert (
+        prompt.version
+        == "p4-claim-grounding-validation-v1"
+    )
+
+    normalized = prompt.system_prompt.lower()
+
+    assert "validation only" in normalized
+    assert "unsupported_claims" in normalized
+    assert "outside model knowledge" in normalized
 
 
 def test_prompt_versions_are_unique():
