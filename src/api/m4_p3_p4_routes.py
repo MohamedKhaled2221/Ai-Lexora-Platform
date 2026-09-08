@@ -18,8 +18,11 @@ from fastapi import (
 )
 
 from src.api.dependencies import (
-    get_p3_m4_orchestrator,
+    get_p3_m5_validation_service,
     get_p4_m4_orchestrator,
+)
+from src.orchestration.m5_grounding_adapter import (
+    M5GroundingAdapterError,
 )
 from src.api.schemas import (
     P3ValidationRequest,
@@ -34,8 +37,10 @@ from src.orchestration.llm_service import (
 from src.orchestration.model_usage_metrics import (
     ModelUsageTracker,
 )
+from src.orchestration.p3_m5_service import (
+    P3M5ValidationService,
+)
 from src.orchestration.p3_orchestrator import (
-    P3M4Orchestrator,
     P3ValidationContractError,
 )
 from src.orchestration.p4_orchestrator import (
@@ -63,9 +68,9 @@ router = APIRouter(
 
 
 P3Dependency = Annotated[
-    P3M4Orchestrator,
+    P3M5ValidationService,
     Depends(
-        get_p3_m4_orchestrator
+        get_p3_m5_validation_service
     ),
 ]
 
@@ -96,7 +101,10 @@ async def validate_p3(
                 service.validate,
                 draft=request.draft,
                 manifest=request.manifest,
-                grounding_context=(
+                clause_language=(
+                    request.clause_language
+                ),
+                base_grounding_context=(
                     request.grounding_context
                 ),
             )
@@ -141,6 +149,18 @@ async def validate_p3(
             detail=(
                 "The Package 3 draft and "
                 "generation manifest are inconsistent."
+            ),
+        ) from exc
+        
+    except M5GroundingAdapterError as exc:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_422_UNPROCESSABLE_ENTITY
+            ),
+            detail=(
+                "The Package 3 manifest references "
+                "an unavailable or unusable approved "
+                "clause."
             ),
         ) from exc
 

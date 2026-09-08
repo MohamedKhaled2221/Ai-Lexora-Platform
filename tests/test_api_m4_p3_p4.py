@@ -1,16 +1,13 @@
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
 from src.api.app import create_app
 from src.api.dependencies import (
-    get_p3_m4_orchestrator,
     get_p4_m4_orchestrator,
 )
-from src.orchestration.grounding_validator import (
-    P3GroundingContext,
-    TrustedSourceText,
-)
-from src.orchestration.p3_orchestrator import (
-    P3M4Orchestrator,
+from src.clause_engine.service import (
+    M5ClauseService,
 )
 from src.orchestration.p4_orchestrator import (
     P4GroundingValidationError,
@@ -36,13 +33,28 @@ from src.schemas.p4_chat_contract import (
 )
 
 
-CLAUSE_TEXT = (
-    "The receiving party shall keep "
-    "the information confidential."
-)
+CLAUSE_ID = "CLZ-CONF-EG-001"
+CLAUSE_VERSION = "1.0.0"
+
+
+def get_real_m5_clause():
+    service = M5ClauseService(
+        library_path=Path(
+            "data/clause_library.json"
+        ),
+        requirements_path=Path(
+            "data/template_requirements.json"
+        ),
+    )
+
+    return service.clause_library.get_clause(
+        CLAUSE_ID
+    )
 
 
 def make_p3_body():
+    clause = get_real_m5_clause()
+
     draft = AssembledDraft(
         draft_id="draft-001",
         document_type="nda",
@@ -52,15 +64,15 @@ def make_p3_body():
             DraftSection(
                 section_id="confidentiality",
                 title="Confidentiality",
-                text=CLAUSE_TEXT,
+                text=clause.text_en,
                 source_references=[
                     SourceReference(
                         source_type=(
                             DraftSourceType
                             .APPROVED_CLAUSE
                         ),
-                        source_id="clause-001",
-                        source_version="1.0",
+                        source_id=CLAUSE_ID,
+                        source_version=CLAUSE_VERSION,
                     )
                 ],
             )
@@ -74,24 +86,10 @@ def make_p3_body():
         template_version="1.0",
         clause_references=[
             ClauseReference(
-                clause_id="clause-001",
-                clause_version="1.0",
+                clause_id=CLAUSE_ID,
+                clause_version=CLAUSE_VERSION,
             )
         ],
-    )
-
-    context = P3GroundingContext(
-        sources=[
-            TrustedSourceText(
-                source_type=(
-                    DraftSourceType
-                    .APPROVED_CLAUSE
-                ),
-                source_id="clause-001",
-                source_version="1.0",
-                text=CLAUSE_TEXT,
-            )
-        ]
     )
 
     return {
@@ -101,11 +99,7 @@ def make_p3_body():
         "manifest": manifest.model_dump(
             mode="json"
         ),
-        "grounding_context": (
-            context.model_dump(
-                mode="json"
-            )
-        ),
+        "clause_language": "en",
     }
 
 
@@ -196,10 +190,6 @@ class FailingP4Service:
 def test_p3_validation_endpoint():
     app = create_app()
 
-    app.dependency_overrides[
-        get_p3_m4_orchestrator
-    ] = lambda: P3M4Orchestrator()
-
     with TestClient(app) as client:
         response = client.post(
             "/api/v1/m4/p3/validate",
@@ -216,6 +206,16 @@ def test_p3_validation_endpoint():
     )
 
     assert (
+        body["validation"]["provenance_valid"]
+        is True
+    )
+
+    assert (
+        body["validation"]["grounding_valid"]
+        is True
+    )
+
+    assert (
         body["requires_lawyer_review"]
         is False
     )
@@ -223,10 +223,6 @@ def test_p3_validation_endpoint():
 
 def test_p3_contract_mismatch_returns_400():
     app = create_app()
-
-    app.dependency_overrides[
-        get_p3_m4_orchestrator
-    ] = lambda: P3M4Orchestrator()
 
     body = make_p3_body()
 
@@ -241,6 +237,101 @@ def test_p3_contract_mismatch_returns_400():
         )
 
     assert response.status_code == 400
+
+
+def test_p3_unknown_m5_clause_returns_422():
+    app = create_app()
+
+    body = make_p3_body()
+
+    unknown_clause_id = (
+        "CLZ-DOES-NOT-EXIST"
+    )
+
+    body["manifest"][
+        "clause_references"
+    ][0]["clause_id"] = (
+        unknown_clause_id
+    )
+
+    body["draft"][
+        "sections"
+    ][0]["source_references"][0][
+        "source_id"
+    ] = unknown_clause_id
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/m4/p3/validate",
+            json=body,
+        )
+
+    assert response.status_code == 422
+
+
+def test_p3_wrong_m5_version_returns_422():
+    app = create_app()
+
+    body = make_p3_body()
+
+    body["manifest"][
+        "clause_references"
+    ][0]["clause_version"] = "9.9.9"
+
+    body["draft"][
+        "sections"
+    ][0]["source_references"][0][
+        "source_version"
+    ] = "9.9.9"
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/m4/p3/validate",
+            json=body,
+        )
+
+    assert response.status_code == 422
+
+
+def test_p3_tampered_clause_text_requires_review():
+    app = create_app()
+
+    body = make_p3_body()
+
+    body["draft"]["sections"][0]["text"] += (
+        " The receiving party shall also "
+        "pay EGP 100,000."
+    )
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/m4/p3/validate",
+            json=body,
+        )
+
+    assert response.status_code == 200
+
+    result = response.json()
+
+    assert (
+        result["validation"]["provenance_valid"]
+        is True
+    )
+
+    assert (
+        result["validation"]["grounding_valid"]
+        is False
+    )
+
+    assert (
+        result["validation"]["is_valid"]
+        is False
+    )
+
+    assert (
+        result["requires_lawyer_review"]
+        is True
+    )
 
 
 def test_p4_answer_endpoint():
@@ -265,6 +356,7 @@ def test_p4_answer_endpoint():
     body = response.json()
 
     assert body["grounding_valid"] is True
+
     assert body["citations_valid"] is True
 
     assert (
