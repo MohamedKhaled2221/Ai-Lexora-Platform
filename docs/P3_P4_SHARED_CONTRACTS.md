@@ -288,3 +288,52 @@ M4 API logging records safe operational metadata and runtime resource
 metrics only. Legal question text, retrieved legal passages, generated
 legal text, credentials, and confidential document content must not
 be written to application logs.
+
+---
+
+# M5 -> M4 Package 3 Integration
+
+M4 resolves approved-clause grounding text from M5 rather than trusting
+caller-supplied clause text.
+
+Flow:
+
+GenerationManifest
+-> M5GroundingAdapter
+-> M5 ApprovedClause resolution
+-> P3GroundingContext
+-> P3M4Orchestrator
+-> ValidatedDraft
+
+## Trust rules
+
+For each approved-clause reference:
+
+- clause_id must exist in the authoritative M5 library;
+- manifest clause version must exactly match the resolved M5 version;
+- the clause must be approved;
+- the clause must be currently effective;
+- the clause must not be expired;
+- the clause must not be superseded;
+- lawyer-edited clauses requiring separate approval are not reusable;
+- grounding text is taken from the exact M5 Arabic or English field;
+- M4 does not reconstruct missing approved text using an LLM.
+
+## Failure semantics
+
+Source-integrity failures such as unknown clauses, version mismatch,
+expiry, supersession, or unapproved state are rejected before ordinary
+draft grounding and map to HTTP 422 at the API boundary.
+
+A valid M5 source with altered or unsupported draft text is a different
+case. The request can return HTTP 200 with:
+
+- provenance_valid = true
+- grounding_valid = false
+- is_valid = false
+- requires_lawyer_review = true
+
+This distinction preserves ownership:
+
+- M5 owns clause approval, lifecycle, versioning, and authoritative text.
+- M4 owns provenance validation, grounding validation, and AI safety.
