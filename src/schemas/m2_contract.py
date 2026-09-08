@@ -1,4 +1,5 @@
-from typing import List, Dict, Any, Optional
+from typing import Any
+
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -9,40 +10,108 @@ from pydantic import (
 from .m1_contract import DocumentType, Language
 
 
+_MIXED_LANGUAGE_ALIASES = {
+    "mixed",
+    "en-ar",
+    "arabic-english",
+    "english-arabic",
+}
+
+
+def _normalize_language_value(
+    value: Any,
+) -> Any:
+    """
+    Normalize legacy language labels to the canonical M2 values.
+
+    M2 emits:
+    - ar
+    - en
+    - ar-en
+    - unknown
+
+    Older callers using "mixed" remain compatible.
+    """
+    if value is None or not isinstance(value, str):
+        return value
+
+    normalized = value.strip().lower()
+
+    if normalized in _MIXED_LANGUAGE_ALIASES:
+        return "ar-en"
+
+    return normalized
+
+
 class QueryFilters(BaseModel):
     """
-    Metadata filtering parameters passed from M2.
+    Metadata filtering parameters passed from M2 to M3.
     """
-    document_type: Optional[str] = Field(
-        default=None,
-        description="Type of legal document (e.g., contract, law, decree, court_verdict)"
+
+    model_config = ConfigDict(
+        extra="forbid"
     )
-    jurisdiction: Optional[str] = Field(
+
+    document_type: str | None = Field(
         default=None,
-        description="Legal jurisdiction (e.g., Egypt, KSA, UAE, international)"
+        description=(
+            "Legal document type filter understood "
+            "by the retrieval layer"
+        ),
     )
-    language: Optional[str] = Field(
+
+    jurisdiction: str | None = Field(
         default=None,
-        description="Language filter (e.g., ar, en)"
+        description=(
+            "Legal jurisdiction, for example "
+            "Egypt, KSA, or UAE"
+        ),
     )
-    extra_filters: Optional[Dict[str, Any]] = Field(
+
+    language: Language | None = Field(
+        default=None,
+        description=(
+            "Canonical language filter: "
+            "ar, en, ar-en, or unknown"
+        ),
+    )
+
+    extra_filters: dict[str, Any] = Field(
         default_factory=dict,
-        description="Custom additional filter criteria"
+        description=(
+            "Custom additional retrieval "
+            "filter criteria"
+        ),
     )
-    document_ids: List[str] = Field(
+
+    document_ids: list[str] = Field(
         default_factory=list,
         description=(
             "Document IDs that define the allowed "
             "retrieval scope for this query"
         ),
     )
+
+    @field_validator(
+        "language",
+        mode="before",
+    )
+    @classmethod
+    def normalize_language(
+        cls,
+        value: Any,
+    ) -> Any:
+        return _normalize_language_value(
+            value
+        )
+
     @field_validator("document_ids")
     @classmethod
     def validate_document_ids(
         cls,
-        values: List[str],
-    ) -> List[str]:
-        normalized: List[str] = []
+        values: list[str],
+    ) -> list[str]:
+        normalized: list[str] = []
         seen: set[str] = set()
 
         for value in values:
@@ -50,8 +119,8 @@ class QueryFilters(BaseModel):
 
             if not cleaned:
                 raise ValueError(
-                    "document_ids must not contain "
-                    "empty values"
+                    "document_ids must not "
+                    "contain empty values"
                 )
 
             if any(
@@ -59,129 +128,331 @@ class QueryFilters(BaseModel):
                 for character in cleaned
             ):
                 raise ValueError(
-                    "document_ids must not contain "
-                    "whitespace"
+                    "document_ids must not "
+                    "contain whitespace"
                 )
 
             if cleaned not in seen:
-                normalized.append(cleaned)
-                seen.add(cleaned)
+                normalized.append(
+                    cleaned
+                )
+                seen.add(
+                    cleaned
+                )
 
         return normalized
 
+
 class IdentifierSet(BaseModel):
-    article_numbers: List[str] = Field(default_factory=list)
-    case_numbers: List[str] = Field(default_factory=list)
-    dates: List[str] = Field(default_factory=list)
-    monetary_values: List[str] = Field(default_factory=list)
-    party_names: List[str] = Field(default_factory=list)
+    """
+    Exact legal identifiers extracted by M2 and handed to M3.
 
+    M3 may use these values for exact-identifier retrieval in
+    addition to semantic and keyword retrieval.
+    """
 
+    model_config = ConfigDict(
+        extra="forbid"
+    )
+
+    article_numbers: list[str] = Field(
+        default_factory=list,
+    )
+
+    case_numbers: list[str] = Field(
+        default_factory=list,
+    )
+
+    dates: list[str] = Field(
+        default_factory=list,
+    )
+
+    monetary_values: list[str] = Field(
+        default_factory=list,
+    )
+
+    party_names: list[str] = Field(
+        default_factory=list,
+    )
+
+    named_legal_terms: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Named legal concepts or terms that "
+            "should be preserved for exact or "
+            "hybrid retrieval"
+        ),
+    )
 
 
 class ProcessedQuery(BaseModel):
     """
-    Upstream Interface Contract (M2 -> M3).
-    Output generated by M2 (Embedding Engineer) and consumed by M3 (Retrieval Engineer).
+    Stable M2 -> M3 query handoff contract.
+
+    M2 owns:
+    - multilingual processing;
+    - exact identifier preservation;
+    - controlled query variants;
+    - retrieval filters;
+    - query embeddings.
+
+    M3 consumes this object for retrieval and should not
+    reproduce M2 query-processing logic.
     """
-    query_id: str = Field(..., description="Unique query identifier")
-    text_original: str = Field(..., description="Original user raw query text")
-    normalized_text: str = Field(..., description="Preprocessed/normalized query text")
-    language: str = Field(default="ar", description="Query language (ar, en, mixed)")
-    embedding: Optional[List[float]] = Field(default_factory=list, description="BGE-M3 dense embedding vector (dim=1024)")
-    sparse_embedding: Optional[Dict[str, float]] = Field(
-        default=None,
-        description="Optional sparse embedding indices/weights for hybrid BM25 search"
+
+    model_config = ConfigDict(
+        extra="forbid"
     )
+
+    query_id: str = Field(
+        ...,
+        min_length=1,
+        description=(
+            "Unique query identifier"
+        ),
+    )
+
+    text_original: str = Field(
+        ...,
+        min_length=1,
+        description=(
+            "Original user query preserved exactly"
+        ),
+    )
+
+    normalized_text: str = Field(
+        ...,
+        min_length=1,
+        description=(
+            "Conservatively normalized query text"
+        ),
+    )
+
+    language: Language = Field(
+        default="unknown",
+        description=(
+            "Canonical query language: "
+            "ar, en, ar-en, or unknown"
+        ),
+    )
+
+    embedding: list[float] = Field(
+        default_factory=list,
+        description=(
+            "Dense BGE-M3 embedding vector. "
+            "Empty before embedding and populated "
+            "before the final M2 -> M3 retrieval handoff."
+        ),
+    )
+
+    sparse_embedding: (
+        dict[str, float] | None
+    ) = Field(
+        default=None,
+        description=(
+            "Optional sparse representation retained "
+            "for backward compatibility with hybrid "
+            "retrieval experiments"
+        ),
+    )
+
     filters: QueryFilters = Field(
         default_factory=QueryFilters,
-        description="Metadata filters to scope search space in vector store"
+        description=(
+            "Metadata filters used to scope "
+            "M3 retrieval"
+        ),
     )
-    query_variants: Optional[List[str]] = Field(default_factory=list)
-    identifiers: Optional[IdentifierSet] = Field(default=None)
+
+    query_variants: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Ordered controlled query variants "
+            "produced by M2. The original user text "
+            "remains available separately."
+        ),
+    )
+
+    identifiers: IdentifierSet = Field(
+        default_factory=IdentifierSet,
+        description=(
+            "Exact legal identifiers preserved by M2"
+        ),
+    )
+
+    @field_validator(
+        "language",
+        mode="before",
+    )
+    @classmethod
+    def normalize_language(
+        cls,
+        value: Any,
+    ) -> Any:
+        return _normalize_language_value(
+            value
+        )
+
+    @field_validator(
+        "query_id",
+        "text_original",
+        "normalized_text",
+    )
+    @classmethod
+    def reject_whitespace_only(
+        cls,
+        value: str,
+    ) -> str:
+        if not value.strip():
+            raise ValueError(
+                "query identifiers and query text "
+                "must not be whitespace-only"
+            )
+
+        return value
+
 
 class EmbeddedDocumentChunk(BaseModel):
     """
     M2 output for one embedded M1 document chunk.
 
-    Source metadata is preserved so M3 can store it in Qdrant and later
-    reconstruct trustworthy retrieval evidence and citations.
+    Source metadata is preserved so M3 can store it in
+    Qdrant and later reconstruct trustworthy retrieval
+    evidence and citations.
     """
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid"
+    )
 
     document_id: str = Field(
         ...,
         min_length=1,
-        description="Source legal document ID",
+        description=(
+            "Source legal document ID"
+        ),
     )
 
     chunk_id: str = Field(
         ...,
         min_length=1,
-        description="Unique chunk ID within the document",
+        description=(
+            "Unique chunk ID within the document"
+        ),
     )
 
     text: str = Field(
         ...,
         min_length=1,
-        description="Original M1 chunk text",
+        description=(
+            "Original M1 chunk text"
+        ),
     )
 
     page: int | None = Field(
         default=None,
         ge=1,
-        description="1-based source page",
+        description=(
+            "1-based source page"
+        ),
     )
 
     section: str | None = Field(
         default=None,
-        description="Source section or heading",
+        description=(
+            "Source section or heading"
+        ),
     )
 
     clause: str | None = Field(
         default=None,
-        description="Source clause/article identifier",
+        description=(
+            "Source clause/article identifier"
+        ),
     )
 
     language: Language = Field(
         default="unknown",
-        description="Chunk language",
+        description=(
+            "Chunk language"
+        ),
     )
 
     document_type: DocumentType = Field(
         default="unknown",
-        description="Legal document type",
+        description=(
+            "Legal document type"
+        ),
     )
 
-    metadata: Dict[str, Any] = Field(
+    metadata: dict[str, Any] = Field(
         default_factory=dict,
-        description="Preserved M1 metadata",
+        description=(
+            "Preserved M1 metadata"
+        ),
     )
 
-    embedding: List[float] = Field(
+    embedding: list[float] = Field(
         ...,
         min_length=1,
-        description="Dense BGE-M3 embedding vector",
+        description=(
+            "Dense BGE-M3 embedding vector"
+        ),
     )
 
     model: str = Field(
         ...,
         min_length=1,
-        description="Embedding model name",
+        description=(
+            "Embedding model name"
+        ),
     )
 
     dimension: int = Field(
         ...,
         ge=1,
-        description="Embedding vector dimension",
+        description=(
+            "Embedding vector dimension"
+        ),
     )
+
 
 class EmbeddedQuery(BaseModel):
     """
-    Output generated by M2 for a processed query.
+    M2 query-processing result before M3 retrieval.
     """
-    processed_query: ProcessedQuery = Field(..., description="The processed query")
-    embedding: List[float] = Field(..., description="Dense embedding vector")
-    model: str = Field(..., description="Embedding model name")
-    dimension: int = Field(..., description="Embedding vector dimension")
+
+    model_config = ConfigDict(
+        extra="forbid"
+    )
+
+    processed_query: ProcessedQuery = Field(
+        ...,
+        description=(
+            "The processed query"
+        ),
+    )
+
+    embedding: list[float] = Field(
+        ...,
+        min_length=1,
+        description=(
+            "Dense embedding vector"
+        ),
+    )
+
+    model: str = Field(
+        ...,
+        min_length=1,
+        description=(
+            "Embedding model name"
+        ),
+    )
+
+    dimension: int = Field(
+        ...,
+        ge=1,
+        description=(
+            "Embedding vector dimension"
+        ),
+    )
