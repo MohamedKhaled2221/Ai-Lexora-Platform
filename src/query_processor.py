@@ -9,6 +9,9 @@ from src.schemas import (
     IdentifierSet,
     ProcessedQuery,
 )
+from src.query_variant_builder import (
+    QueryVariantBuilder,
+)
 
 
 class QueryProcessor:
@@ -17,10 +20,18 @@ class QueryProcessor:
         identifier_preserver: (
             IdentifierPreserver | None
         ) = None,
+        query_variant_builder: (
+            QueryVariantBuilder | None
+        ) = None,
     ) -> None:
         self.identifier_preserver = (
             identifier_preserver
             or IdentifierPreserver()
+        )
+
+        self.query_variant_builder = (
+            query_variant_builder
+            or QueryVariantBuilder()
         )
     """
     Processes multilingual legal queries before BGE-M3 embedding.
@@ -209,19 +220,25 @@ class QueryProcessor:
         self,
         normalized_text: str,
         language: str,
+        identifiers: IdentifierSet | None = None,
     ) -> list[str]:
         """
-        Return the current conservative query representation.
+        Build controlled multilingual retrieval variants.
 
-        Controlled query expansion is intentionally deferred to M2.4.
+        The original query remains separately preserved in
+        ProcessedQuery.text_original.
         """
 
-        del language
-
-        return [
-            normalized_text
-        ]
-
+        return (
+            self.query_variant_builder.build(
+                normalized_text=normalized_text,
+                language=language,
+                identifiers=(
+                    identifiers
+                    or IdentifierSet()
+                ),
+            )
+        )
     def process(
         self,
         text: str,
@@ -258,6 +275,7 @@ class QueryProcessor:
         variants = self.build_variants(
             normalized,
             language,
+            identifiers,
         )
 
         return ProcessedQuery(

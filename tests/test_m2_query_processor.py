@@ -286,9 +286,19 @@ def test_process_english_query(
 
     assert result.language == "en"
 
-    assert result.query_variants == [
-        result.normalized_text
-    ]
+    assert (
+        result.query_variants[0]
+        == result.normalized_text
+    )
+
+    assert len(
+        result.query_variants
+    ) == 2
+
+    assert (
+        "إنهاء العقد"
+        in result.query_variants[1]
+    )
 
 
 def test_process_formal_arabic_query(
@@ -304,7 +314,59 @@ def test_process_formal_arabic_query(
         "ما هي شروط انهاء العقد؟"
     )
 
+def test_process_arabic_legal_term_adds_english_variant(
+    processor,
+):
+    result = processor.process(
+        "هل تنطبق القوة القاهرة؟"
+    )
 
+    assert result.language == "ar"
+
+    assert len(
+        result.query_variants
+    ) == 2
+
+    assert (
+        "force majeure"
+        in result.query_variants[1]
+    )
+
+
+def test_process_variants_preserve_exact_case_number(
+    processor,
+):
+    result = processor.process(
+        "Does force majeure apply "
+        "in Case 123/2025?"
+    )
+
+    assert (
+        result.identifiers.case_numbers
+        == ["123/2025"]
+    )
+
+    assert all(
+        "123/2025" in variant
+        for variant
+        in result.query_variants
+    )
+
+
+def test_process_mixed_query_with_both_terms_does_not_expand(
+    processor,
+):
+    result = processor.process(
+        "هل force majeure تعني "
+        "القوة القاهرة؟"
+    )
+
+    assert result.language == "ar-en"
+
+    assert (
+        result.query_variants
+        == [result.normalized_text]
+    )
 def test_process_egyptian_arabic_query(
     processor,
 ):
