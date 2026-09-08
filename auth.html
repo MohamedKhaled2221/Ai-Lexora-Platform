@@ -32,7 +32,7 @@
       <div class="auth-copy">
         <p class="eyebrow">Access Control</p>
         <h1>دخول داخلي للمحامين والمديرين مع فصل واضح للصلاحيات.</h1>
-        <p>الباك اند الحالي لا يحتوي authentication endpoints، لذلك الصفحة مجهزة كواجهة Frontend-ready لحين إضافة login/register/password reset API.</p>
+          <p>سجّل الدخول للوصول إلى مستنداتك ونتائج البحث المرتبطة بحسابك.</p>
 
         <div class="permissions">
           <h2>الأدوار</h2>
@@ -52,7 +52,7 @@
           <button type="button" data-auth-tab="forgot">استعادة كلمة السر</button>
         </div>
 
-        <form class="auth-form active" data-auth-panel="login" data-success="تم تسجيل الدخول تجريبيا.">
+        <form class="auth-form active" data-auth-panel="login">
           <h2>تسجيل الدخول</h2>
           <label>البريد الإلكتروني
             <input id="login-email" type="email" aria-describedby="login-email-error" placeholder="lawyer@ai-lexora.local" required>
@@ -71,7 +71,7 @@
           <button class="submit-btn" type="submit">دخول إلى النظام</button>
         </form>
 
-        <form class="auth-form" data-auth-panel="register" data-success="تم حفظ المستخدم تجريبيا.">
+        <form class="auth-form" data-auth-panel="register">
           <h2>إضافة مستخدم داخلي</h2>
           <label>الاسم الكامل
             <input id="register-name" type="text" aria-describedby="register-name-error" placeholder="اسم المحامي أو الموظف" required>
@@ -94,7 +94,7 @@
           <button class="submit-btn" type="submit">حفظ المستخدم</button>
         </form>
 
-        <form class="auth-form" data-auth-panel="forgot" data-success="تم إرسال رابط الاستعادة تجريبيا.">
+        <form class="auth-form" data-auth-panel="forgot">
           <h2>استعادة كلمة المرور</h2>
           <p>أدخل البريد الداخلي لاستلام رابط إعادة التعيين عند إضافة خدمة البريد.</p>
           <label>البريد الإلكتروني
@@ -103,36 +103,37 @@
           </label>
           <button class="submit-btn" type="submit">إرسال الرابط</button>
         </form>
+        <button class="ghost-btn" type="button" data-logout>تسجيل الخروج</button>
       </section>
     </section>
 
     <section class="api-band api-section">
       <div class="section-heading">
-        <p class="eyebrow">Endpoints مقترحة لاحقا</p>
-        <h2>أزرار الصلاحيات جاهزة، لكن تحتاج API مخصص للمستخدمين.</h2>
+        <p class="eyebrow">حالة الحساب</p>
+        <h2>المصادقة متصلة بالـ .NET Backend.</h2>
       </div>
       <div class="endpoint-grid">
         <article class="endpoint-card">
           <h3>Login</h3>
-          <p>تسجيل دخول وإرجاع session/token.</p>
-          <code>POST /api/v1/auth/login</code>
+          <p>تسجيل الدخول وإدارة جلسة المستخدم.</p>
+          <code>POST /api/auth/login</code>
         </article>
         <article class="endpoint-card">
           <h3>Users</h3>
-          <p>إضافة وتعديل مستخدمين داخليين.</p>
-          <code>POST /api/v1/users</code>
+          <p>إنشاء حساب مستخدم جديد.</p>
+          <code>POST /api/auth/register</code>
         </article>
         <article class="endpoint-card">
           <h3>Roles</h3>
-          <p>صلاحيات Lawyer وManager/Admin.</p>
-          <code>GET /api/v1/roles</code>
+          <p>تجديد وإلغاء جلسة المستخدم.</p>
+          <code>POST /api/auth/refresh</code>
         </article>
       </div>
     </section>
   </main>
 
   <footer class="footer">
-    <p>إدارة الصلاحيات حاليا Frontend-only وجاهزة للربط عند إضافة endpoints.</p>
+    <p>بيانات الدخول والجلسة تُدار عبر الـ .NET Backend.</p>
     <div>
       <a href="dashboard.html">Dashboard</a>
       <a href="consultation.html">Cases</a>

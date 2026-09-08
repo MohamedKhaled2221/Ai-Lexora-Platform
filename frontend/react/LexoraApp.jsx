@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import {
   askDocuments,
+  checkPackage2Health,
+  checkPackage2Readiness,
+  deleteDocument as deleteBackendDocument,
+  downloadDocument as downloadBackendDocument,
   requestApi,
   uploadDocument,
 } from "./apiClient.js";
-import { documentActionLabels, documentStatusLabels } from "../documentDemoData.js";
 import {
   addProcessingDocument,
   getSnapshot,
@@ -16,6 +19,18 @@ import {
   upsertDocument,
 } from "../documentStore.js";
 import { demoCases, demoLawyers } from "../demoData.js";
+
+const documentStatusLabels = {
+  processing: "قيد المعالجة",
+  processed: "جاهز للبحث",
+  failed: "فشلت المعالجة",
+};
+
+const documentActionLabels = {
+  preview: "معاينة محلية",
+  download: "تنزيل من الخادم",
+  retry: "إعادة المحاولة",
+};
 
 function StatusPill({ state, children }) {
   return (
@@ -57,6 +72,7 @@ function CitationList({ citations }) {
       {citations.map((citation) => {
         const evidenceId = citation.evidence_id ?? citation.evidenceId;
         const documentId = citation.document_id ?? citation.documentId;
+        const fileName = citation.file_name ?? citation.fileName;
         const chunkId = citation.chunk_id ?? citation.chunkId;
 
         return (
@@ -69,7 +85,7 @@ function CitationList({ citations }) {
           </strong>
 
           <span>
-            المستند: #{documentId}
+            المستند: {fileName || `#${documentId}`}
           </span>
 
           <span>
@@ -88,9 +104,7 @@ function CitationList({ citations }) {
               القسم: {citation.section}
             </span>
           ) : null}
-          <small className="citation-unavailable">
-            فتح المستند والمعاينة غير متاحين حاليًا من الواجهة.
-          </small>
+          <small className="citation-unavailable">معرف المستند: #{documentId}</small>
         </article>
         );
       })}
@@ -109,7 +123,9 @@ export function BackendStatusWidget() {
     setResult({ status: "loading", endpoint: path });
 
     try {
-      const payload = await requestApi(path);
+      const payload = path === "/health"
+        ? await checkPackage2Health()
+        : await checkPackage2Readiness();
       setResult(payload);
     } catch (error) {
       setResult({
@@ -257,7 +273,7 @@ export function DocumentLibraryWidget() {
     setError("");
 
     try {
-      refreshDocumentStore();
+      await refreshDocumentStore();
     } catch {
       setError("تعذر تحميل قائمة المستندات المحلية.");
     } finally {
@@ -339,16 +355,18 @@ export function DocumentLibraryWidget() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
-  function removeDocument(documentId) {
+  async function removeDocument(documentId) {
+    await deleteBackendDocument(documentId);
+    await refreshDocumentStore();
     removeStoredDocument(documentId);
   }
 
-  function downloadDocument(document) {
-    if (!(document.file instanceof File)) return;
-    const url = URL.createObjectURL(document.file);
+  async function downloadDocument(document) {
+    const blob = await downloadBackendDocument(document.id);
+    const url = URL.createObjectURL(blob);
     const link = window.document.createElement("a");
     link.href = url;
-    link.download = document.fileName;
+    link.download = document.fileName || "document";
     link.click();
     URL.revokeObjectURL(url);
   }
@@ -360,11 +378,15 @@ export function DocumentLibraryWidget() {
       return;
     }
     if (action === "download") {
-      downloadDocument(document);
+      void downloadDocument(document).catch((downloadError) => {
+        setError(downloadError?.message || "تعذر تنزيل المستند.");
+      });
       return;
     }
     if (action === "delete") {
-      removeDocument(document.id);
+      void removeDocument(document.id).catch((deleteError) => {
+        setError(deleteError?.message || "تعذر حذف المستند من الخادم.");
+      });
       return;
     }
     if (action === "link") {
@@ -417,12 +439,12 @@ export function DocumentLibraryWidget() {
                   type="checkbox"
                   checked={selectedIds.includes(document.id)}
                   onChange={(event) => updateSelection(document.id, event.target.checked)}
-                  disabled={document.status !== "processed" || !document.localFileAvailable}
+                  disabled={document.status !== "processed"}
                 />
                 <span>تحديد</span>
               </label>
               <span className={`document-status status-${document.status}`}>
-                {document.status === "processed" && !document.localFileAvailable ? "بيانات محفوظة محليًا" : documentStatusLabel(document.status)}
+                {documentStatusLabel(document.status)}
               </span>
             </div>
             <strong className="document-name">{document.fileName || "مستند بدون اسم"}</strong>
@@ -433,16 +455,13 @@ export function DocumentLibraryWidget() {
             </div>
             {document.status === "processing" ? <p className="document-detail">يتم رفع الملف وفهرسته الآن.</p> : null}
             {document.status === "failed" ? <p className="document-detail document-error">{document.error}</p> : null}
-            {document.status === "processed" && document.localFileAvailable ? <p className="document-detail">جاهز للاختيار في البحث، والإجراءات الإضافية محلية.</p> : null}
-            {document.status === "processed" && !document.localFileAvailable ? <p className="document-detail document-local-unavailable">بيانات المستند محفوظة محليًا، لكن الملف الأصلي غير متاح بعد إعادة تحميل الصفحة. ارفع الملف مجددًا للمعاينة أو البحث أو التنزيل.</p> : null}
+            {document.status === "processed" ? <p className="document-detail">جاهز للبحث والتنزيل من الخادم.</p> : null}
             <div className="document-actions">
               {document.status === "failed" ? <button className="ghost-btn" type="button" onClick={() => retryDocument(document)}>{documentActionLabels.retry}</button> : null}
-              {document.status === "processed" && document.localFileAvailable ? <>
-                <button className="ghost-btn" type="button" onClick={(event) => handleDocumentAction("preview", document, event.currentTarget)}>{documentActionLabels.preview}</button>
+              {document.status === "processed" ? <>
+                {document.localFileAvailable ? <button className="ghost-btn" type="button" onClick={(event) => handleDocumentAction("preview", document, event.currentTarget)}>{documentActionLabels.preview}</button> : null}
                 <button className="ghost-btn" type="button" onClick={() => handleDocumentAction("download", document)}>{documentActionLabels.download}</button>
-                <button className="ghost-btn" type="button" onClick={() => handleDocumentAction("link", document)}>{documentActionLabels.link}</button>
               </> : null}
-              {document.status === "processed" && !document.localFileAvailable ? <button className="ghost-btn" type="button" onClick={() => fileInputRef.current?.click()}>رفع الملف مجددًا</button> : null}
               <button className="icon-btn" type="button" aria-label={`إزالة ${document.fileName || "المستند"}`} onClick={() => handleDocumentAction("delete", document)}>×</button>
             </div>
           </article>
@@ -485,7 +504,7 @@ export function LegalAssistantWidget({ mode = "ai" }) {
     setDocumentsError("");
 
     try {
-      refreshDocumentStore();
+      await refreshDocumentStore();
     } catch (error) {
       setDocumentsError(
         error?.status === 401
@@ -544,7 +563,7 @@ export function LegalAssistantWidget({ mode = "ai" }) {
       const uploaded = await uploadDocument(file, "Contract");
       const backendDocumentId = uploaded?.id;
 
-      if (typeof backendDocumentId !== "string" || !backendDocumentId) {
+      if (backendDocumentId === undefined || backendDocumentId === null || backendDocumentId === "") {
         throw new Error("تعذر تأكيد معرف المستند المرفوع.");
       }
       setDocumentsError("");
@@ -654,7 +673,7 @@ export function LegalAssistantWidget({ mode = "ai" }) {
       ),
     ];
 
-    if (!documentIds.length) {
+    if (!documents.length) {
       setResult({
         status: "error",
         error: new Error(
@@ -857,7 +876,7 @@ export function LegalAssistantWidget({ mode = "ai" }) {
                 ? "جاري مزامنة المستندات..."
                 : documents.length === 0
                   ? "لا توجد مستندات متاحة حاليًا."
-                  : `${selectedDocumentIds.length} من ${documents.length} مستند محدد`}
+                  : `${documents.length} مستند متاح لحسابك`}
           </small>
         </div>
 

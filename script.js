@@ -1,6 +1,13 @@
 import { demoCases, demoLawyers } from "./frontend/demoData.js";
+import {
+  API_BASE,
+  getUserErrorMessage,
+  login,
+  logout,
+  register,
+  requestApi as requestBackendApi,
+} from "./frontend/react/apiClient.js";
 
-const API_BASE = window.AI_LEXORA_API_BASE || "http://localhost:8000";
 let documentParserPromise;
 
 function loadDocumentParser() {
@@ -41,31 +48,7 @@ themeToggles.forEach((toggle) => {
   });
 });
 
-async function requestApi(path, options = {}) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-    ...options,
-  });
-
-  const text = await response.text();
-  let payload = {};
-
-  try {
-    payload = text ? JSON.parse(text) : {};
-  } catch {
-    payload = { detail: "استجاب الخادم بتنسيق غير صالح." };
-  }
-
-  if (!response.ok) {
-    const message = payload.error?.message || payload.detail || `Request failed with status ${response.status}`;
-    throw new Error(Array.isArray(message) ? message.map((item) => item.msg).join("، ") : message);
-  }
-
-  return payload;
-}
+const requestApi = requestBackendApi;
 
 function renderJson(target, payload) {
   if (!target) return;
@@ -140,7 +123,7 @@ document.querySelectorAll("[data-check-ready]").forEach((button) => {
 });
 
 
-document.querySelectorAll("form:not([data-file-search-form])").forEach((form) => {
+document.querySelectorAll("form:not([data-file-search-form]):not([data-auth-panel])").forEach((form) => {
   form.addEventListener("invalid", (event) => {
     form.classList.add("was-validated");
     event.target.setAttribute("aria-invalid", "true");
@@ -161,6 +144,64 @@ document.querySelectorAll("form:not([data-file-search-form])").forEach((form) =>
       form.reset();
       form.classList.remove("was-validated");
       form.querySelectorAll("input, select, textarea").forEach((control) => control.setAttribute("aria-invalid", "false"));
+    }
+  });
+});
+
+document.querySelectorAll("form[data-auth-panel]").forEach((form) => {
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!form.checkValidity()) {
+      form.classList.add("was-validated");
+      return;
+    }
+
+    const submitButton = form.querySelector("button[type=submit]");
+    submitButton.disabled = true;
+    const panel = form.dataset.authPanel;
+
+    try {
+      if (panel === "login") {
+        await login(
+          form.querySelector("#login-email").value.trim(),
+          form.querySelector("#login-password").value,
+        );
+        showToast("تم تسجيل الدخول بنجاح.", "success");
+        window.setTimeout(() => window.location.assign("/dashboard.html"), 350);
+      } else if (panel === "register") {
+        await register(
+          form.querySelector("#register-name").value.trim(),
+          form.querySelector("#register-email").value.trim(),
+          form.querySelector("#register-password").value,
+        );
+        showToast("تم إنشاء الحساب وتسجيل الدخول.", "success");
+        window.setTimeout(() => window.location.assign("/dashboard.html"), 350);
+      } else if (panel === "forgot") {
+        await requestApi("/api/auth/forgot-password", {
+          method: "POST",
+          body: JSON.stringify({ email: form.querySelector("#forgot-email").value.trim() }),
+        });
+        showToast("تم إرسال طلب استعادة كلمة المرور.", "success");
+        form.reset();
+      }
+    } catch (error) {
+      showToast(getUserErrorMessage(error), "error");
+    } finally {
+      submitButton.disabled = false;
+    }
+  });
+});
+
+document.querySelectorAll("[data-logout]").forEach((button) => {
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    try {
+      await logout();
+      showToast("تم تسجيل الخروج.", "success");
+      window.location.assign("/auth.html");
+    } catch (error) {
+      showToast(getUserErrorMessage(error), "error");
+      button.disabled = false;
     }
   });
 });

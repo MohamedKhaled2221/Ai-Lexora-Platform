@@ -1,10 +1,19 @@
-export const AI_API_BASE =
-  window.AI_LEXORA_API_BASE || "http://127.0.0.1:8000";
+const configuredApiBase =
+  window.LEXORA_API_BASE || import.meta.env.VITE_LEXORA_API_BASE;
+export const API_BASE = (configuredApiBase || "http://localhost:50662").replace(/\/$/, "");
+const configuredM1ApiBase =
+  window.LEXORA_M1_API_BASE || import.meta.env.VITE_LEXORA_M1_API_BASE;
+export const M1_API_BASE = (configuredM1ApiBase || "http://localhost:8001").replace(/\/$/, "");
+const configuredPackage2ApiBase =
+  window.LEXORA_PACKAGE2_API_BASE || import.meta.env.VITE_LEXORA_PACKAGE2_API_BASE;
+export const PACKAGE2_API_BASE = (configuredPackage2ApiBase || "http://localhost:8000").replace(/\/$/, "");
+const ACCESS_TOKEN_KEY = "lexora-access-token";
+const REFRESH_TOKEN_KEY = "lexora-refresh-token";
+const USER_KEY = "lexora-user";
 
-// Temporary compatibility alias.
-// Existing React components still use API_BASE until Step 6C.
-export const API_BASE = AI_API_BASE;
-const DOCUMENTS_STORAGE_KEY = "lexora-indexed-documents";
+if (!configuredApiBase) {
+  console.warn("Lexora API base is not configured; using local backend:", API_BASE);
+}
 
 function extractErrorMessage(payload, status) {
   const detail =
@@ -26,6 +35,22 @@ function extractErrorMessage(payload, status) {
   return `Request failed with status ${status}`;
 }
 
+export function getUserErrorMessage(error) {
+  const messages = {
+    400: "البيانات المرسلة غير صحيحة. راجع المدخلات وحاول مرة أخرى.",
+    401: "انتهت الجلسة أو بيانات الدخول غير صحيحة. سجّل الدخول مرة أخرى.",
+    403: "ليس لديك صلاحية لتنفيذ هذا الإجراء.",
+    404: "العنصر المطلوب غير موجود.",
+    409: "يوجد تعارض: قد تكون البيانات موجودة بالفعل.",
+    413: "حجم الملف أكبر من الحد المسموح.",
+    415: "نوع الملف غير مدعوم.",
+    422: "تعذر استخراج محتوى صالح من الملف.",
+    502: "الخدمة الوسيطة لم تستطع إكمال الطلب.",
+    503: "الخدمة المطلوبة غير متاحة حاليًا. حاول مرة أخرى بعد قليل.",
+  };
+  return messages[error?.status] || error?.message || "حدث خطأ غير متوقع.";
+}
+
 async function parseResponse(response) {
   const text = await response.text();
 
@@ -44,7 +69,11 @@ async function parseResponse(response) {
   }
 }
 
-async function request(baseUrl, path, options = {}) {
+function getAccessToken() {
+  return localStorage.getItem(ACCESS_TOKEN_KEY);
+}
+
+async function requestPackageApi(baseUrl, path, options = {}) {
   const headers = new Headers(options.headers || {});
   const isFormData = options.body instanceof FormData;
 
@@ -56,13 +85,108 @@ async function request(baseUrl, path, options = {}) {
     ...options,
     headers,
   });
+  const payload = await parseResponse(response);
+
+  if (!response.ok) {
+    const error = new Error(extractErrorMessage(payload, response.status));
+    error.status = response.status;
+    throw error;
+  }
+
+  return payload;
+}
+
+function getRefreshToken() {
+  return localStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
+function storeAuthResponse(response) {
+  localStorage.setItem(ACCESS_TOKEN_KEY, response.token);
+  localStorage.setItem(REFRESH_TOKEN_KEY, response.refreshToken);
+  localStorage.setItem(USER_KEY, JSON.stringify({
+    email: response.email,
+    fullName: response.fullName,
+    role: response.role,
+  }));
+  window.dispatchEvent(new CustomEvent("lexora:auth-changed"));
+  return response;
+}
+
+export function getSession() {
+  return {
+    accessToken: getAccessToken(),
+    refreshToken: getRefreshToken(),
+    user: JSON.parse(localStorage.getItem(USER_KEY) || "null"),
+  };
+}
+
+export function clearSession(redirect = true) {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+  window.dispatchEvent(new CustomEvent("lexora:auth-changed"));
+  if (redirect && !window.location.pathname.endsWith("/auth.html")) {
+    window.location.assign("/auth.html");
+  }
+}
+
+function normalizeDocument(document) {
+  return {
+    ...document,
+    id: String(document.id),
+    fileName: document.fileName,
+    sizeBytes: document.sizeBytes,
+    status: document.status || "processed",
+    localFileAvailable: false,
+  };
+}
+
+async function refreshAccessToken() {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) return false;
+
+  const response = await fetch(`${API_BASE}/api/auth/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refreshToken }),
+  });
+  const payload = await parseResponse(response);
+  if (!response.ok || !payload?.token || !payload?.refreshToken) return false;
+  storeAuthResponse(payload);
+  return true;
+}
+
+async function request(path, options = {}, allowRefresh = true) {
+  const headers = new Headers(options.headers || {});
+  const isFormData = options.body instanceof FormData;
+  const accessToken = getAccessToken();
+
+  if (!isFormData && options.body != null && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  if (accessToken) {
+    headers.set("Authorization", `Bearer ${accessToken}`);
+  }
+
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers,
+  });
 
   const payload = await parseResponse(response);
 
   if (!response.ok) {
-    const error = new Error(
-      extractErrorMessage(payload, response.status),
-    );
+    if (response.status === 401 && allowRefresh && !path.startsWith("/api/auth/")) {
+      const refreshed = await refreshAccessToken().catch(() => false);
+      if (refreshed) return request(path, options, false);
+      clearSession();
+    }
+
+    const error = new Error(getUserErrorMessage({
+      status: response.status,
+      message: extractErrorMessage(payload, response.status),
+    }));
 
     error.status = response.status;
     error.code = payload?.error?.code;
@@ -77,11 +201,148 @@ async function request(baseUrl, path, options = {}) {
 }
 
 export async function requestApi(path, options = {}) {
-  return request(AI_API_BASE, path, options);
+  return request(path, options);
+}
+
+export async function getGeneratorTemplates() {
+  return requestApi("/api/document-generator/templates");
+}
+
+export async function generateBackendDocument(templateKey, fields) {
+  const accessToken = getAccessToken();
+  const response = await fetch(`${API_BASE}/api/document-generator/generate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: JSON.stringify({ templateKey, fields }),
+  });
+
+  if (!response.ok) {
+    const payload = await parseResponse(response);
+    const error = new Error(getUserErrorMessage({
+      status: response.status,
+      message: extractErrorMessage(payload, response.status),
+    }));
+    error.status = response.status;
+    throw error;
+  }
+
+  return {
+    blob: await response.blob(),
+    fileName: response.headers.get("Content-Disposition") || "generated-contract.txt",
+  };
 }
 
 export async function requestBackendApi(path, options = {}) {
   return requestApi(path, options);
+}
+
+export async function requestPackage1(path, options = {}) {
+  return requestPackageApi(M1_API_BASE, path, options);
+}
+
+export async function requestPackage2(path, options = {}) {
+  return requestPackageApi(PACKAGE2_API_BASE, path, options);
+}
+
+export function ingestPackage1(file, options = {}) {
+  const formData = new FormData();
+  formData.append("file", file);
+  const query = new URLSearchParams(
+    Object.entries(options).filter(([, value]) => value !== undefined && value !== null),
+  );
+  return requestPackage1(`/ingest${query.toString() ? `?${query}` : ""}`, {
+    method: "POST",
+    body: formData,
+  });
+}
+
+export function extractClausesPackage1(file, options = {}) {
+  const formData = new FormData();
+  formData.append("file", file);
+  const query = new URLSearchParams(
+    Object.entries(options).filter(([, value]) => value !== undefined && value !== null),
+  );
+  return requestPackage1(`/clauses${query.toString() ? `?${query}` : ""}`, {
+    method: "POST",
+    body: formData,
+  });
+}
+
+export function checkPackage1Health() {
+  return requestPackage1("/health");
+}
+
+export function getPackage1Config() {
+  return requestPackage1("/config");
+}
+
+export function ingestPackage1ThroughPackage2(file, documentId) {
+  const formData = new FormData();
+  formData.append("file", file);
+  const query = documentId ? `?document_id=${encodeURIComponent(documentId)}` : "";
+  return requestPackage2(`/api/v1/documents/ingest${query}`, {
+    method: "POST",
+    body: formData,
+  });
+}
+
+export function askPackage2(question, filters = {}) {
+  return requestPackage2("/api/v1/rag/ask", {
+    method: "POST",
+    body: JSON.stringify({ question, filters }),
+  });
+}
+
+export function checkPackage2Health() {
+  return requestPackage2("/health");
+}
+
+export function checkPackage2Readiness() {
+  return requestPackage2("/ready");
+}
+
+export function answerPackage2(processedQuery, retrievedEvidence) {
+  return requestPackage2("/api/v1/ai/answer", {
+    method: "POST",
+    body: JSON.stringify({ processed_query: processedQuery, retrieved_evidence: retrievedEvidence }),
+  });
+}
+
+export function analyzePackage2Risk(clauses) {
+  return requestPackage2("/api/v1/risk/analyze", {
+    method: "POST",
+    body: JSON.stringify({ clauses }),
+  });
+}
+
+export async function login(email, password) {
+  return storeAuthResponse(await request("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  }, false));
+}
+
+export async function register(fullName, email, password) {
+  return storeAuthResponse(await request("/api/auth/register", {
+    method: "POST",
+    body: JSON.stringify({ fullName, email, password }),
+  }, false));
+}
+
+export async function logout() {
+  try {
+    if (getAccessToken()) {
+      await request("/api/auth/logout", {
+        method: "POST",
+        body: JSON.stringify({ refreshToken: getRefreshToken() }),
+      }, false);
+    }
+  } finally {
+    clearSession(false);
+  }
 }
 
 export async function uploadDocument(file, type = "Contract") {
@@ -91,40 +352,51 @@ export async function uploadDocument(file, type = "Contract") {
 
   const formData = new FormData();
   formData.append("file", file);
+  formData.append("type", type);
 
-  const response = await requestApi("/api/v1/documents/ingest", {
+  const response = await requestApi("/api/documents", {
     method: "POST",
     body: formData,
   });
 
-  const document = {
-    id: response.document_id,
-    fileName: response.source_file || file.name,
-    sizeBytes: file.size,
-    ...response,
-  };
-
-  const documents = await listDocuments();
-  localStorage.setItem(
-    DOCUMENTS_STORAGE_KEY,
-    JSON.stringify([
-      document,
-      ...documents.filter((item) => item.id !== document.id),
-    ]),
-  );
-
-  return document;
+  return normalizeDocument(response);
 }
 
 export async function listDocuments() {
-  try {
-    const documents = JSON.parse(
-      localStorage.getItem(DOCUMENTS_STORAGE_KEY) || "[]",
-    );
-    return Array.isArray(documents) ? documents : [];
-  } catch {
-    return [];
+  const response = await requestApi("/api/documents?page=1&pageSize=100");
+  const documents = Array.isArray(response?.items) ? response.items : [];
+  return documents.map(normalizeDocument);
+}
+
+export async function downloadDocument(documentId) {
+  let response = await fetch(`${API_BASE}/api/documents/${documentId}/download`, {
+    headers: getAccessToken()
+      ? { Authorization: `Bearer ${getAccessToken()}` }
+      : {},
+  });
+
+  if (response.status === 401 && await refreshAccessToken()) {
+    response = await fetch(`${API_BASE}/api/documents/${documentId}/download`, {
+      headers: { Authorization: `Bearer ${getAccessToken()}` },
+    });
   }
+
+  if (!response.ok) {
+    const payload = await parseResponse(response);
+    const error = new Error(getUserErrorMessage({
+      status: response.status,
+      message: extractErrorMessage(payload, response.status),
+    }));
+    error.status = response.status;
+    if (response.status === 401) clearSession();
+    throw error;
+  }
+
+  return response.blob();
+}
+
+export async function deleteDocument(documentId) {
+  await requestApi(`/api/documents/${documentId}`, { method: "DELETE" });
 }
 
 export async function askDocuments(question, documentIds = []) {
@@ -133,15 +405,20 @@ export async function askDocuments(question, documentIds = []) {
   if (!normalizedQuestion) {
     throw new Error("Question is required.");
   }
+  if (normalizedQuestion.length > 4000) {
+    const error = new Error("السؤال يجب ألا يتجاوز 4000 حرف.");
+    error.status = 400;
+    throw error;
+  }
 
-  return requestApi("/api/v1/rag/ask", {
+  // The .NET API derives the authorized document scope from the current user;
+  // its request DTO intentionally accepts only the question.
+  void documentIds;
+
+  return requestApi("/api/search/ask", {
     method: "POST",
     body: JSON.stringify({
       question: normalizedQuestion,
-      filters: {
-        document_ids: documentIds,
-        jurisdiction: "Egypt",
-      },
     }),
   });
 }
@@ -173,11 +450,6 @@ export async function reviewContract(contractText, action) {
 export function buildRawRagRequest(question, filters = {}) {
   return {
     question: question.trim(),
-    filters: {
-      document_type: filters.document_type || null,
-      jurisdiction: filters.jurisdiction || "Egypt",
-      language: filters.language || null,
-      extra_filters: {},
-    },
+    ...filters,
   };
 }

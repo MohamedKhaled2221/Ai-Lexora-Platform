@@ -1,33 +1,14 @@
-const STORAGE_KEY = "lexora-indexed-documents";
+import { listDocuments } from "./react/apiClient.js";
 
 let state = {
-  documents: readStoredDocuments(),
+  documents: [],
   selectedIds: [],
 };
 
 const listeners = new Set();
 
-function readStoredDocuments() {
-  try {
-    const documents = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    return Array.isArray(documents)
-      ? documents.map((document) => ({
-          ...document,
-          localFileAvailable: false,
-          status: document.status === "indexed" ? "processed" : document.status || "processed",
-        }))
-      : [];
-  } catch {
-    return [];
-  }
-}
-
 function emit() {
   listeners.forEach((listener) => listener());
-}
-
-function persistDocuments() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.documents));
 }
 
 export function subscribe(listener) {
@@ -39,8 +20,8 @@ export function getSnapshot() {
   return state;
 }
 
-export function refreshDocuments() {
-  const documents = readStoredDocuments();
+export async function refreshDocuments() {
+  const documents = await listDocuments();
   const availableIds = new Set(documents.map((document) => document.id));
   state = {
     documents,
@@ -74,7 +55,6 @@ export function upsertDocument(document) {
       ),
     ],
   };
-  persistDocuments();
   emit();
 }
 
@@ -83,7 +63,6 @@ export function removeDocument(documentId) {
     documents: state.documents.filter((document) => document.id !== documentId),
     selectedIds: state.selectedIds.filter((id) => id !== documentId),
   };
-  persistDocuments();
   emit();
 }
 
