@@ -40,8 +40,9 @@ class M2QueryPipeline:
 
         Input:
             raw_query:
-                The original Arabic, English, mixed-language,
-                or Arabizi user query.
+                The original Arabic, English,
+                Egyptian Arabic, or Arabic-English
+                mixed user query.
 
         Output:
             EmbeddedQuery containing:
