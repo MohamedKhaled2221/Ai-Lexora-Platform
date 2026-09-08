@@ -1,6 +1,9 @@
 import re
 import unicodedata
 import uuid
+from src.identifier_preserver import (
+    IdentifierPreserver,
+)
 
 from src.schemas import (
     IdentifierSet,
@@ -9,6 +12,16 @@ from src.schemas import (
 
 
 class QueryProcessor:
+    def __init__(
+        self,
+        identifier_preserver: (
+            IdentifierPreserver | None
+        ) = None,
+    ) -> None:
+        self.identifier_preserver = (
+            identifier_preserver
+            or IdentifierPreserver()
+        )
     """
     Processes multilingual legal queries before BGE-M3 embedding.
 
@@ -48,43 +61,6 @@ class QueryProcessor:
         r"\u0670"
         r"\u06D6-\u06ED]"
     )
-
-    ARTICLE_RE = re.compile(
-        r"\b(?:article|art\.?|المادة|مادة)"
-        r"\s*[-:#]?\s*([0-9٠-٩]+)\b",
-        re.IGNORECASE,
-    )
-
-    CASE_RE = re.compile(
-        r"\b(?:case|case\s*no\.?|قضية|دعوى)"
-        r"\s*[-:#]?\s*([A-Za-z0-9٠-٩/-]+)",
-        re.IGNORECASE,
-    )
-
-    DATE_RE = re.compile(
-        r"\b(?:"
-        r"\d{1,4}[/-]\d{1,2}[/-]\d{1,4}"
-        r"|"
-        r"\d{1,2}\s+"
-        r"(?:Jan|January|Feb|February|"
-        r"Mar|March|Apr|April|May|Jun|June|"
-        r"Jul|July|Aug|August|Sep|September|"
-        r"Oct|October|Nov|November|Dec|December)"
-        r"\s+\d{2,4}"
-        r")\b",
-        re.IGNORECASE,
-    )
-
-    MONEY_RE = re.compile(
-        r"(?:"
-        r"[$€£]\s?[\d,]+(?:\.\d+)?"
-        r"|"
-        r"[\d,]+(?:\.\d+)?"
-        r"\s?(?:EGP|USD|EUR|GBP|جنيه|دولار|يورو)"
-        r")",
-        re.IGNORECASE,
-    )
-
     def detect_language(
         self,
         text: str,
@@ -219,53 +195,16 @@ class QueryProcessor:
         text: str,
     ) -> IdentifierSet:
         """
-        Extract legal identifiers that must survive preprocessing.
+        Extract exact legal identifiers from the original query.
 
-        More complete identifier extraction, including party names
-        and named legal terms, is implemented in M2.3.
+        Delegated to IdentifierPreserver so extraction logic remains
+        independent from language detection and normalization.
         """
 
-        articles = [
-            match.group(1)
-            for match
-            in self.ARTICLE_RE.finditer(
-                text
-            )
-        ]
-
-        cases = [
-            match.group(1)
-            for match
-            in self.CASE_RE.finditer(
-                text
-            )
-        ]
-
-        dates = [
-            match.group(0)
-            for match
-            in self.DATE_RE.finditer(
-                text
-            )
-        ]
-
-        money = [
-            match.group(0)
-            for match
-            in self.MONEY_RE.finditer(
-                text
-            )
-        ]
-
-        return IdentifierSet(
-            article_numbers=articles,
-            case_numbers=cases,
-            dates=dates,
-            monetary_values=money,
-            party_names=[],
-            named_legal_terms=[],
+        return (
+            self.identifier_preserver
+            .extract(text)
         )
-
     def build_variants(
         self,
         normalized_text: str,

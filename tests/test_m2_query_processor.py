@@ -373,3 +373,68 @@ def test_process_rejects_whitespace_only_query(
         processor.process(
             "   "
         )
+def test_process_populates_complete_identifier_set(
+    processor,
+):
+    query = (
+        "What happened in Case 123/2025 "
+        "under Article 157 for "
+        "Acme Egypt LLC concerning "
+        "EGP 250,000 and force majeure?"
+    )
+
+    result = processor.process(
+        query
+    )
+
+    identifiers = result.identifiers
+
+    assert (
+        identifiers.article_numbers
+        == ["157"]
+    )
+
+    assert (
+        identifiers.case_numbers
+        == ["123/2025"]
+    )
+
+    assert (
+        identifiers.monetary_values
+        == ["EGP 250,000"]
+    )
+
+    assert (
+        identifiers.party_names
+        == ["Acme Egypt LLC"]
+    )
+
+    assert (
+        identifiers.named_legal_terms
+        == ["force majeure"]
+    )
+
+
+def test_identifier_extraction_uses_original_query(
+    processor,
+):
+    query = (
+        "ما حكم المادة ٦٩ "
+        "بشأن القوة القاهرة؟"
+    )
+
+    result = processor.process(
+        query
+    )
+
+    # Exact identifiers come from the original query,
+    # not from normalized text.
+    assert (
+        result.identifiers.article_numbers
+        == ["٦٩"]
+    )
+
+    assert (
+        result.identifiers.named_legal_terms
+        == ["القوة القاهرة"]
+    )
