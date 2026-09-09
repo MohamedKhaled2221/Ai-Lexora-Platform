@@ -545,3 +545,49 @@ def test_explicit_cuda_is_rejected_when_unavailable(
             expected_dimension=3,
             model=FakeModel(),
         )
+def test_cuda_peak_metric_failure_does_not_break_embedding(
+    monkeypatch,
+):
+    model = FakeModel()
+
+    service = make_service(
+        model=model
+    )
+
+    service.device = "cuda:0"
+
+    monkeypatch.setattr(
+        embedding_module.torch.cuda,
+        "reset_peak_memory_stats",
+        lambda device: (
+            (_ for _ in ())
+            .throw(
+                RuntimeError(
+                    "Invalid device argument"
+                )
+            )
+        ),
+    )
+
+    monkeypatch.setattr(
+        embedding_module.torch.cuda,
+        "synchronize",
+        lambda device: None,
+    )
+
+    vector = service.embed_text(
+        "legal query"
+    )
+
+    assert len(vector) == 3
+
+    assert (
+        service.last_metrics
+        is not None
+    )
+
+    assert (
+        service.last_metrics
+        .cuda_peak_allocated_mib
+        is None
+    )

@@ -72,6 +72,31 @@ class IdentifierPreserver:
         r")",
         re.IGNORECASE,
     )
+    LATIN_ORGANIZATION_LEADING_STOPWORDS = {
+        "does",
+        "do",
+        "did",
+        "is",
+        "are",
+        "was",
+        "were",
+        "can",
+        "could",
+        "will",
+        "would",
+        "shall",
+        "should",
+        "has",
+        "have",
+        "had",
+        "what",
+        "which",
+        "who",
+        "when",
+        "where",
+        "why",
+        "how",
+    }
 
     NUMERIC_DATE_RE = re.compile(
         r"\b"
@@ -389,12 +414,19 @@ class IdentifierPreserver:
             self.LATIN_ORGANIZATION_RE
             .finditer(text)
         ):
-            matches.append(
-                (
-                    match.start(),
-                    match.group(0),
+            value = (
+                self._clean_latin_organization_name(
+                    match.group(0)
                 )
             )
+
+            if value:
+                matches.append(
+                    (
+                        match.start(),
+                        value,
+                    )
+                )
 
         for match in (
             self.ENGLISH_PERSON_ROLE_RE
@@ -608,3 +640,26 @@ class IdentifierPreserver:
             )
 
         return result
+    @classmethod
+    def _clean_latin_organization_name(
+        cls,
+        value: str,
+    ) -> str:
+        """
+        Remove a sentence-initial question/auxiliary token that was
+        accidentally captured as part of a capitalized organization name.
+
+        Example:
+            "Does Acme Egypt LLC" -> "Acme Egypt LLC"
+        """
+
+        words = value.split()
+
+        if (
+            len(words) >= 3
+            and words[0].casefold()
+            in cls.LATIN_ORGANIZATION_LEADING_STOPWORDS
+        ):
+            words = words[1:]
+
+        return " ".join(words)

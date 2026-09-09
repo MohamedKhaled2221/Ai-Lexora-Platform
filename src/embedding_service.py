@@ -155,6 +155,9 @@ class EmbeddingService:
         self.device = self._resolve_device(
             device
         )
+        self._cuda_peak_metrics_available = (
+            self.device.startswith("cuda")
+        )
 
         # FP16 should only be enabled for CUDA inference.
         self.use_fp16 = bool(
@@ -195,7 +198,37 @@ class EmbeddingService:
     # ---------------------------------------------------------
     # Runtime metadata
     # ---------------------------------------------------------
+    def _cuda_device_index(
+        self,
+    ) -> int | None:
+        """
+        Return the integer CUDA device index used by PyTorch's
+        memory-stat APIs.
 
+        Some PyTorch/CUDA combinations are less reliable when a
+        torch.device object is supplied to these APIs.
+        """
+
+        if not self.device.startswith(
+            "cuda"
+        ):
+            return None
+
+        if self.device == "cuda":
+            return 0
+
+        try:
+            return int(
+                self.device.split(
+                    ":",
+                    maxsplit=1,
+                )[1]
+            )
+        except (
+            ValueError,
+            IndexError,
+        ):
+            return None
     @property
     def dimension(
         self,
@@ -766,49 +799,59 @@ class EmbeddingService:
         )
 
     def _prepare_cuda_metrics(
-        self,
-    ) -> None:
-        if not self.device.startswith(
-            "cuda"
-        ):
+    self,
+) -> None:
+        index = self._cuda_device_index()
+
+        if index is None:
             return
 
-        torch.cuda.reset_peak_memory_stats(
-            torch.device(
-                self.device
+        try:
+            torch.cuda.reset_peak_memory_stats(
+                index
             )
-        )
-
+        except RuntimeError:
+            # Metrics are observability only.
+            # A metrics API incompatibility must not prevent
+            # otherwise-valid BGE-M3 inference.
+            self._cuda_peak_metrics_available = False
     def _synchronize_cuda(
         self,
     ) -> None:
-        if not self.device.startswith(
-            "cuda"
-        ):
+        index = self._cuda_device_index()
+
+        if index is None:
             return
 
-        torch.cuda.synchronize(
-            torch.device(
-                self.device
+        try:
+            torch.cuda.synchronize(
+                index
             )
-        )
-
+        except RuntimeError:
+            # If synchronization is unavailable for metrics/timing,
+            # let model inference determine whether CUDA itself works.
+            return
     def _cuda_peak_memory_mib(
         self,
     ) -> float | None:
-        if not self.device.startswith(
-            "cuda"
+        index = self._cuda_device_index()
+
+        if (
+            index is None
+            or not self._cuda_peak_metrics_available
         ):
             return None
 
-        value = (
-            torch.cuda
-            .max_memory_allocated(
-                torch.device(
-                    self.device
+        try:
+            value = (
+                torch.cuda
+                .max_memory_allocated(
+                    index
                 )
             )
-        )
+        except RuntimeError:
+            self._cuda_peak_metrics_available = False
+            return None
 
         return (
             value
@@ -818,20 +861,18 @@ class EmbeddingService:
     def _cuda_device_name(
         self,
     ) -> str | None:
-        if not self.device.startswith(
-            "cuda"
-        ):
+        index = self._cuda_device_index()
+
+        if index is None:
             return None
 
         try:
             return (
                 torch.cuda.get_device_name(
-                    torch.device(
-                        self.device
-                    )
+                    index
                 )
             )
-        except Exception:
+        except RuntimeError:
             return None
 
     @staticmethod

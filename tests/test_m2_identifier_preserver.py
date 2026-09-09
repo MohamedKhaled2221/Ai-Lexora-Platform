@@ -250,7 +250,31 @@ def test_extract_monetary_values(
 # Party names
 # =========================================================
 
+def test_question_auxiliary_is_not_part_of_company_name(
+    preserver,
+):
+    text = (
+        "Does Acme Egypt LLC owe "
+        "EGP 250,000?"
+    )
 
+    assert (
+        preserver.extract_party_names(text)
+        == ["Acme Egypt LLC"]
+    )
+    
+def test_question_word_is_not_part_of_company_name(
+    preserver,
+):
+    text = (
+        "Can Beta Holdings Ltd. "
+        "terminate the contract?"
+    )
+
+    assert (
+        preserver.extract_party_names(text)
+        == ["Beta Holdings Ltd."]
+    )
 def test_extract_english_company_name(
     preserver,
 ):
