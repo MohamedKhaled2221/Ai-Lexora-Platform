@@ -1,49 +1,36 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import {
   askDocuments,
-  listDocuments,
+  checkPackage2Health,
+  checkPackage2Readiness,
+  deleteDocument as deleteBackendDocument,
+  downloadDocument as downloadBackendDocument,
   requestApi,
   uploadDocument,
 } from "./apiClient.js";
+import {
+  addProcessingDocument,
+  getSnapshot,
+  refreshDocuments as refreshDocumentStore,
+  removeDocument as removeStoredDocument,
+  setSelectedIds,
+  subscribe,
+  toggleSelectedId,
+  upsertDocument,
+} from "../documentStore.js";
+import { demoCases, demoLawyers } from "../demoData.js";
 
-const cases = [
-  {
-    id: "LEX-1024",
-    title: "نزاع عقد توريد",
-    client: "شركة النور",
-    lawyer: "محامي 1",
-    status: "نشطة",
-    priority: "متوسطة",
-    deadline: "24 أغسطس",
-  },
-  {
-    id: "LEX-1025",
-    title: "استئناف حكم عمالي",
-    client: "أحمد سالم",
-    lawyer: "محامي 1",
-    status: "عاجلة",
-    priority: "عاجلة",
-    deadline: "25 أغسطس",
-  },
-  {
-    id: "LEX-1026",
-    title: "قسمة تركة",
-    client: "عائلة حسن",
-    lawyer: "محامي 2",
-    status: "معلقة",
-    priority: "عادية",
-    deadline: "28 أغسطس",
-  },
-  {
-    id: "LEX-1027",
-    title: "مراجعة اتفاقية شراكة",
-    client: "بيتا للاستثمار",
-    lawyer: "محامي 3",
-    status: "مغلقة",
-    priority: "منخفضة",
-    deadline: "لا يوجد",
-  },
-];
+const documentStatusLabels = {
+  processing: "قيد المعالجة",
+  processed: "جاهز للبحث",
+  failed: "فشلت المعالجة",
+};
+
+const documentActionLabels = {
+  preview: "معاينة محلية",
+  download: "تنزيل من الخادم",
+  retry: "إعادة المحاولة",
+};
 
 function StatusPill({ state, children }) {
   return (
@@ -74,7 +61,7 @@ function ErrorState({ error, onRetry }) {
 function CitationList({ citations }) {
   if (!citations.length) {
     return (
-      <p className="empty-result">
+      <p className="empty-result citation-empty">
         لم تُرجع الخدمة مراجع قابلة للعرض لهذا السؤال.
       </p>
     );
@@ -82,21 +69,27 @@ function CitationList({ citations }) {
 
   return (
     <div className="citation-list">
-      {citations.map((citation) => (
+      {citations.map((citation) => {
+        const evidenceId = citation.evidence_id ?? citation.evidenceId;
+        const documentId = citation.document_id ?? citation.documentId;
+        const fileName = citation.file_name ?? citation.fileName;
+        const chunkId = citation.chunk_id ?? citation.chunkId;
+
+        return (
         <article
           className="citation-card"
-          key={`${citation.evidenceId}-${citation.documentId}-${citation.chunkId}`}
+          key={`${evidenceId}-${documentId}-${chunkId}`}
         >
           <strong>
-            {citation.evidenceId} - {citation.fileName}
+            {evidenceId} - {documentId}
           </strong>
 
           <span>
-            المستند: #{citation.documentId}
+            المستند: {fileName || `#${documentId}`}
           </span>
 
           <span>
-            المقطع: {citation.chunkId}
+            المقطع: {chunkId}
           </span>
 
           {citation.page !== null &&
@@ -111,8 +104,10 @@ function CitationList({ citations }) {
               القسم: {citation.section}
             </span>
           ) : null}
+          <small className="citation-unavailable">معرف المستند: #{documentId}</small>
         </article>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -128,7 +123,9 @@ export function BackendStatusWidget() {
     setResult({ status: "loading", endpoint: path });
 
     try {
-      const payload = await requestApi(path);
+      const payload = path === "/health"
+        ? await checkPackage2Health()
+        : await checkPackage2Readiness();
       setResult(payload);
     } catch (error) {
       setResult({
@@ -196,13 +193,13 @@ export function CaseInsightsWidget() {
   const [selectedLawyer, setSelectedLawyer] = useState("all");
 
   const filteredCases = useMemo(() => {
-    if (selectedLawyer === "all") return cases;
-    return cases.filter((item) => item.lawyer === selectedLawyer);
+    if (selectedLawyer === "all") return demoCases;
+    return demoCases.filter((item) => item.lawyer === selectedLawyer);
   }, [selectedLawyer]);
 
   const urgentCount = filteredCases.filter((item) => item.status === "عاجلة").length;
   const activeCount = filteredCases.filter((item) => item.status === "نشطة").length;
-  const lawyers = ["all", "محامي 1", "محامي 2", "محامي 3"];
+  const lawyers = ["all", ...demoLawyers];
 
   return (
     <section className="api-section react-widget">
@@ -252,6 +249,239 @@ export function CaseInsightsWidget() {
   );
 }
 
+function documentTypeLabel(fileName = "") {
+  const extension = fileName.split(".").pop()?.toUpperCase();
+  return extension || "FILE";
+}
+
+function documentStatusLabel(status) {
+  return documentStatusLabels[status] || status || "غير معروف";
+}
+
+export function DocumentLibraryWidget() {
+  const { documents, selectedIds } = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+  const [previewDocument, setPreviewDocument] = useState(null);
+  const fileInputRef = useRef(null);
+  const previewCloseRef = useRef(null);
+  const previewTriggerRef = useRef(null);
+
+  async function refreshDocuments() {
+    setLoading(true);
+    setError("");
+
+    try {
+      await refreshDocumentStore();
+    } catch {
+      setError("تعذر تحميل قائمة المستندات المحلية.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void refreshDocuments();
+  }, []);
+
+  useEffect(() => {
+    if (!previewDocument) return undefined;
+    previewCloseRef.current?.focus();
+
+    function handlePreviewKeyDown(event) {
+      if (event.key === "Escape") {
+        setPreviewDocument(null);
+        previewTriggerRef.current?.focus();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = Array.from(
+        document.querySelectorAll(".document-preview button:not([disabled])"),
+      );
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handlePreviewKeyDown);
+    return () => document.removeEventListener("keydown", handlePreviewKeyDown);
+  }, [previewDocument]);
+
+  function updateSelection(documentId, checked) {
+    toggleSelectedId(documentId, checked);
+  }
+
+  async function uploadFiles(fileList) {
+    const files = Array.from(fileList || []);
+    if (!files.length) return;
+
+    setUploading(true);
+    setError("");
+
+    for (const file of files) {
+      const processingId = `processing_${file.name}_${file.lastModified}_${file.size}`;
+      addProcessingDocument({
+        id: processingId,
+        fileName: file.name,
+        sizeBytes: file.size,
+        status: "processing",
+        file,
+      });
+
+      try {
+        const uploaded = await uploadDocument(file, "Contract");
+        upsertDocument({ ...uploaded, status: "processed", file });
+      } catch (uploadError) {
+        upsertDocument({
+          id: processingId,
+          fileName: file.name,
+          sizeBytes: file.size,
+          status: "failed",
+          error: uploadError?.message || "تعذرت معالجة المستند.",
+          file,
+        });
+      }
+    }
+
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  async function removeDocument(documentId) {
+    await deleteBackendDocument(documentId);
+    await refreshDocumentStore();
+    removeStoredDocument(documentId);
+  }
+
+  async function downloadDocument(document) {
+    const blob = await downloadBackendDocument(document.id);
+    const url = URL.createObjectURL(blob);
+    const link = window.document.createElement("a");
+    link.href = url;
+    link.download = document.fileName || "document";
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function handleDocumentAction(action, document, trigger = null) {
+    if (action === "preview") {
+      previewTriggerRef.current = trigger;
+      setPreviewDocument(document);
+      return;
+    }
+    if (action === "download") {
+      void downloadDocument(document).catch((downloadError) => {
+        setError(downloadError?.message || "تعذر تنزيل المستند.");
+      });
+      return;
+    }
+    if (action === "delete") {
+      void removeDocument(document.id).catch((deleteError) => {
+        setError(deleteError?.message || "تعذر حذف المستند من الخادم.");
+      });
+      return;
+    }
+    if (action === "link") {
+      setError("ربط المستند بالقضية غير متاح حاليًا، وتم إبقاءه كإجراء تجريبي فقط.");
+    }
+  }
+
+  function retryDocument(document) {
+    if (document.file) void uploadFiles([document.file]);
+    else setError("لا توجد نسخة محلية من الملف لإعادة المحاولة.");
+  }
+
+  return (
+    <div className="document-library" aria-live="polite">
+      <div className="document-toolbar">
+        <div>
+          <strong>مكتبة المستندات</strong>
+          <small>{selectedIds.length} مستند محدد للبحث لاحقًا</small>
+        </div>
+        <div className="document-toolbar-actions">
+          <input
+            ref={fileInputRef}
+            className="visually-hidden"
+            type="file"
+            multiple
+            accept=".pdf,.docx,.txt,.png,.jpg,.jpeg"
+            onChange={(event) => void uploadFiles(event.target.files)}
+          />
+          <button className="primary-btn" type="button" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
+            {uploading ? "جاري المعالجة..." : "رفع مستند"}
+          </button>
+        </div>
+      </div>
+
+      {loading ? <div className="document-state" data-state="loading">جاري تحميل المستندات...</div> : null}
+      {error ? <div className="document-state" data-state="error" role="alert"><strong>{error}</strong><button className="ghost-btn" type="button" onClick={() => void refreshDocuments()}>إعادة المحاولة</button></div> : null}
+      {!loading && !error && !documents.length ? (
+        <div className="document-state" data-state="empty">
+          <strong>لا توجد مستندات في هذه الجلسة.</strong>
+          <span>ارفع ملفًا لبدء المعالجة. لن تظهر نتيجة ناجحة إلا بعد اكتمال الرفع الفعلي.</span>
+        </div>
+      ) : null}
+
+      <div className="document-grid">
+        {documents.map((document) => (
+          <article className={`document-card document-card-${document.status}`} key={document.id}>
+            <div className="document-card-heading">
+              <label className="document-select" title="تحديد المستند للبحث">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(document.id)}
+                  onChange={(event) => updateSelection(document.id, event.target.checked)}
+                  disabled={document.status !== "processed"}
+                />
+                <span>تحديد</span>
+              </label>
+              <span className={`document-status status-${document.status}`}>
+                {documentStatusLabel(document.status)}
+              </span>
+            </div>
+            <strong className="document-name">{document.fileName || "مستند بدون اسم"}</strong>
+            <div className="document-meta">
+              <span>{documentTypeLabel(document.fileName)}</span>
+              <span>{formatFileSize(document.sizeBytes)}</span>
+              {document.document_id || document.id ? <span title="معرف المستند">ID: {document.document_id || document.id}</span> : null}
+            </div>
+            {document.status === "processing" ? <p className="document-detail">يتم رفع الملف وفهرسته الآن.</p> : null}
+            {document.status === "failed" ? <p className="document-detail document-error">{document.error}</p> : null}
+            {document.status === "processed" ? <p className="document-detail">جاهز للبحث والتنزيل من الخادم.</p> : null}
+            <div className="document-actions">
+              {document.status === "failed" ? <button className="ghost-btn" type="button" onClick={() => retryDocument(document)}>{documentActionLabels.retry}</button> : null}
+              {document.status === "processed" ? <>
+                {document.localFileAvailable ? <button className="ghost-btn" type="button" onClick={(event) => handleDocumentAction("preview", document, event.currentTarget)}>{documentActionLabels.preview}</button> : null}
+                <button className="ghost-btn" type="button" onClick={() => handleDocumentAction("download", document)}>{documentActionLabels.download}</button>
+              </> : null}
+              <button className="icon-btn" type="button" aria-label={`إزالة ${document.fileName || "المستند"}`} onClick={() => handleDocumentAction("delete", document)}>×</button>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      {previewDocument ? (
+        <div className="document-preview" role="dialog" aria-modal="true" aria-labelledby="document-preview-title" aria-describedby="document-preview-description">
+          <div className="document-preview-box">
+            <div className="modal-header"><h3 id="document-preview-title">معاينة محلية</h3><button ref={previewCloseRef} className="icon-btn" type="button" aria-label="إغلاق المعاينة" onClick={() => { setPreviewDocument(null); previewTriggerRef.current?.focus(); }}>×</button></div>
+            <strong>{previewDocument.fileName}</strong>
+            <p id="document-preview-description">{previewDocument.file instanceof File ? "هذه معاينة محلية للملف المختار فقط." : "لا توجد نسخة محلية للمعاينة بعد إعادة تحميل الصفحة."}</p>
+            <button className="ghost-btn" type="button" onClick={() => { setPreviewDocument(null); previewTriggerRef.current?.focus(); }}>إغلاق</button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function LegalAssistantWidget({ mode = "ai" }) {
   const [question, setQuestion] = useState("");
   const [attachments, setAttachments] = useState([]);
@@ -259,8 +489,7 @@ export function LegalAssistantWidget({ mode = "ai" }) {
   const [result, setResult] = useState({ status: "waiting" });
   const [loading, setLoading] = useState(false);
   const [lastQuestion, setLastQuestion] = useState("");
-  const [documents, setDocuments] = useState([]);
-  const [selectedDocumentIds, setSelectedDocumentIds] = useState([]);
+  const { documents, selectedIds: selectedDocumentIds } = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [documentsError, setDocumentsError] = useState("");
   const fileInputRef = useRef(null);
@@ -268,27 +497,14 @@ export function LegalAssistantWidget({ mode = "ai" }) {
   const imageInputRef = useRef(null);
   const isFullSearch = mode === "search";
   const attachmentIdsRef = useRef(new Set());
+  const attachmentFilesRef = useRef(new Map());
 
   async function refreshDocuments() {
     setDocumentsLoading(true);
     setDocumentsError("");
 
     try {
-      const loaded = await listDocuments();
-
-      const validDocuments = loaded.filter(
-        (document) => Number.isInteger(document?.id),
-      );
-
-      setDocuments(validDocuments);
-
-      const availableIds = new Set(
-        validDocuments.map((document) => document.id),
-      );
-
-      setSelectedDocumentIds((current) =>
-        current.filter((id) => availableIds.has(id)),
-      );
+      await refreshDocumentStore();
     } catch (error) {
       setDocumentsError(
         error?.status === 401
@@ -322,95 +538,74 @@ export function LegalAssistantWidget({ mode = "ai" }) {
     };
   }, []);
 
+  async function uploadAttachment(file, source, localId) {
+    attachmentFilesRef.current.set(localId, file);
+    setAttachments((current) => {
+      const existing = current.find((item) => item.id === localId);
+      if (existing) {
+        return current.map((item) => item.id === localId ? { ...item, status: "uploading", error: null } : item);
+      }
+      return [...current, {
+        id: localId,
+        name: file.name || "document",
+        type: file.type || "unknown",
+        size: file.size,
+        sizeLabel: formatFileSize(file.size),
+        source,
+        file,
+        status: "uploading",
+        backendDocumentId: null,
+        error: null,
+      }];
+    });
+
+    try {
+      const uploaded = await uploadDocument(file, "Contract");
+      const backendDocumentId = uploaded?.id;
+
+      if (backendDocumentId === undefined || backendDocumentId === null || backendDocumentId === "") {
+        throw new Error("تعذر تأكيد معرف المستند المرفوع.");
+      }
+      setDocumentsError("");
+      setAttachments((current) => current.map((item) => item.id === localId ? {
+        ...item,
+        status: "ready",
+        backendDocumentId,
+        name: uploaded.fileName || item.name,
+        size: uploaded.sizeBytes ?? item.size,
+        sizeLabel: formatFileSize(uploaded.sizeBytes ?? item.size),
+        error: null,
+      } : item));
+      upsertDocument({ ...uploaded, file });
+      setSelectedIds([...selectedDocumentIds, backendDocumentId]);
+      window.dispatchEvent(new CustomEvent("lexora:documents-changed"));
+    } catch (error) {
+      setAttachments((current) => current.map((item) => item.id === localId ? {
+        ...item,
+        status: "error",
+        error: error?.message || "تعذر رفع المستند وفهرسته.",
+      } : item));
+    }
+  }
+
   async function addAttachments(fileList, source) {
     const selectedFiles = Array.from(fileList || []);
-
     if (!selectedFiles.length) return;
 
     setAttachmentMenuOpen(false);
 
     for (const file of selectedFiles) {
-      const localId =
-        `${source}_${file.name}_${file.lastModified}_${file.size}`;
-
-      if (attachmentIdsRef.current.has(localId)) {
-        continue;
-      }
-
+      const localId = `${source}_${file.name}_${file.lastModified}_${file.size}`;
+      if (attachmentIdsRef.current.has(localId)) continue;
       attachmentIdsRef.current.add(localId);
-
-      setAttachments((current) => [
-        ...current,
-        {
-          id: localId,
-          name: file.name || "document",
-          type: file.type || "unknown",
-          size: file.size,
-          sizeLabel: formatFileSize(file.size),
-          source,
-          status: "uploading",
-          backendDocumentId: null,
-          error: null,
-        },
-      ]);
-
-      try {
-        const uploaded = await uploadDocument(file, "Contract");
-        const backendDocumentId = Number(uploaded?.id);
-
-        if (!Number.isInteger(backendDocumentId)) {
-          throw new Error(
-            "تعذر تأكيد معرف المستند المرفوع.",
-          );
-        }
-        setDocumentsError("");
-        setAttachments((current) =>
-          current.map((item) =>
-            item.id === localId
-              ? {
-                  ...item,
-                  status: "ready",
-                  backendDocumentId,
-                  name: uploaded.fileName || item.name,
-                  size: uploaded.sizeBytes ?? item.size,
-                  sizeLabel: formatFileSize(
-                    uploaded.sizeBytes ?? item.size,
-                  ),
-                  error: null,
-                }
-              : item,
-          ),
-        );
-        setDocuments((current) => [
-          uploaded,
-          ...current.filter(
-            (document) =>
-              document.id !== backendDocumentId,
-          ),
-        ]);
-
-        setSelectedDocumentIds((current) =>
-          current.includes(backendDocumentId)
-            ? current
-            : [...current, backendDocumentId],
-        );
-        window.dispatchEvent(new CustomEvent("lexora:documents-changed"));
-      } catch (error) {
-        setAttachments((current) =>
-          current.map((item) =>
-            item.id === localId
-              ? {
-                  ...item,
-                  status: "error",
-                  error:
-                    error?.message ||
-                    "تعذر رفع المستند وفهرسته.",
-                }
-              : item,
-          ),
-        );
-      }
+      await uploadAttachment(file, source, localId);
     }
+  }
+
+  function retryAttachment(attachment) {
+    const file = attachmentFilesRef.current.get(attachment.id);
+    if (attachment.status === "uploading" || !file) return;
+    void uploadAttachment(file, attachment.source, attachment.id);
   }
 
   function removeAttachment(id) {
@@ -419,17 +614,14 @@ export function LegalAssistantWidget({ mode = "ai" }) {
     );
 
     attachmentIdsRef.current.delete(id);
+    attachmentFilesRef.current.delete(id);
 
     if (
-      Number.isInteger(
-        attachment?.backendDocumentId,
-      )
+      typeof attachment?.backendDocumentId === "string"
     ) {
-      setSelectedDocumentIds((current) =>
-        current.filter(
-          (documentId) =>
-            documentId !==
-            attachment.backendDocumentId,
+      setSelectedIds(
+        selectedDocumentIds.filter(
+          (documentId) => documentId !== attachment.backendDocumentId,
         ),
       );
     }
@@ -449,6 +641,8 @@ export function LegalAssistantWidget({ mode = "ai" }) {
   }
 
   async function submitQuestion(trimmedQuestion) {
+    if (loading) return;
+
     if (!trimmedQuestion) {
       setResult({
         status: "error",
@@ -474,12 +668,12 @@ export function LegalAssistantWidget({ mode = "ai" }) {
     const documentIds = [
       ...new Set(
         selectedDocumentIds.filter(
-          Number.isInteger,
+          (documentId) => typeof documentId === "string" && documentId,
         ),
       ),
     ];
 
-    if (!documentIds.length) {
+    if (!documents.length) {
       setResult({
         status: "error",
         error: new Error(
@@ -492,31 +686,43 @@ export function LegalAssistantWidget({ mode = "ai" }) {
     setLastQuestion(trimmedQuestion);
 
     const attachmentSummary = getAttachmentSummary();
-    const endpoint = "/api/search/ask";
 
     setLoading(true);
 
     setResult({
       status: "sending",
-      endpoint,
+      question: trimmedQuestion,
     });
 
     try {
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+      setResult((current) => ({
+        ...current,
+        status: "retrieving",
+      }));
+
       const response = await askDocuments(
         trimmedQuestion,
         documentIds,
       );
 
+      setResult((current) => ({
+        ...current,
+        status: "generating",
+      }));
+
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
       setResult({
         status: "success",
+        question: trimmedQuestion,
         ...response,
         attachments: attachmentSummary,
       });
     } catch (error) {
       setResult({
         status: "error",
+        question: trimmedQuestion,
         error,
-        endpoint,
       });
     } finally {
       setLoading(false);
@@ -533,6 +739,32 @@ export function LegalAssistantWidget({ mode = "ai" }) {
     await submitQuestion(lastQuestion);
   }
 
+  function startNewQuestion() {
+    setQuestion("");
+    setLastQuestion("");
+    setResult({ status: "waiting" });
+  }
+
+  async function copyAnswer() {
+    if (!result.answer || !navigator.clipboard) return;
+
+    try {
+      await navigator.clipboard.writeText(result.answer);
+    } catch {
+      // Clipboard permissions are controlled by the browser.
+    }
+  }
+
+  const confidence = typeof result.confidence === "number"
+    ? Math.round(result.confidence * 100)
+    : null;
+  const isLowConfidence = confidence !== null && confidence < 60;
+  const statusMessage = {
+    sending: "جاري إرسال السؤال...",
+    retrieving: "جاري البحث في المستندات المحددة...",
+    generating: "جاري صياغة الإجابة...",
+  }[result.status];
+
   return (
     <div className="react-widget legal-agent-widget">
       <div className="table-header">
@@ -547,7 +779,7 @@ export function LegalAssistantWidget({ mode = "ai" }) {
         </div>
       </div>
 
-      <form className="assistant-form" onSubmit={handleSubmit}>
+      <form className="assistant-form" onSubmit={handleSubmit} aria-busy={loading}>
         <label className="assistant-composer-label">
           السؤال
           <div className="assistant-composer">
@@ -614,10 +846,10 @@ export function LegalAssistantWidget({ mode = "ai" }) {
               onChange={(event) => {
                 const ids = Array.from(
                   event.currentTarget.selectedOptions,
-                  (option) => Number(option.value),
-                ).filter(Number.isInteger);
+                  (option) => option.value,
+                ).filter(Boolean);
 
-                setSelectedDocumentIds(ids);
+                setSelectedIds(ids);
               }}
             >
               {documents.length ? (
@@ -644,7 +876,7 @@ export function LegalAssistantWidget({ mode = "ai" }) {
                 ? "جاري مزامنة المستندات..."
                 : documents.length === 0
                   ? "لا توجد مستندات متاحة حاليًا."
-                  : `${selectedDocumentIds.length} من ${documents.length} مستند محدد`}
+                  : `${documents.length} مستند متاح لحسابك`}
           </small>
         </div>
 
@@ -652,6 +884,8 @@ export function LegalAssistantWidget({ mode = "ai" }) {
           ref={fileInputRef}
           className="visually-hidden"
           type="file"
+          aria-hidden="true"
+          tabIndex="-1"
           multiple
           accept=".pdf,.docx,.txt,.png,.jpg,.jpeg"
           onChange={async (event) => {
@@ -666,6 +900,8 @@ export function LegalAssistantWidget({ mode = "ai" }) {
           ref={imageInputRef}
           className="visually-hidden"
           type="file"
+          aria-hidden="true"
+          tabIndex="-1"
           multiple
           accept=".png,.jpg,.jpeg,image/png,image/jpeg"
           onChange={async (event) => {
@@ -680,6 +916,8 @@ export function LegalAssistantWidget({ mode = "ai" }) {
           ref={cameraInputRef}
           className="visually-hidden"
           type="file"
+          aria-hidden="true"
+          tabIndex="-1"
           accept="image/jpeg,image/png"
           capture="environment"
           onChange={async (event) => {
@@ -711,6 +949,7 @@ export function LegalAssistantWidget({ mode = "ai" }) {
                           } - جاهز للبحث - ${item.sizeLabel}`}
                   </small>
                 </span>
+                {item.status === "error" ? <button data-attachment-retry type="button" aria-label={`إعادة رفع ${item.name}`} onClick={() => retryAttachment(item)}>إعادة المحاولة</button> : null}
                 <button
                   type="button"
                   aria-label={`حذف ${item.name}`}
@@ -738,17 +977,53 @@ export function LegalAssistantWidget({ mode = "ai" }) {
         </button>
       </form>
 
+      {statusMessage ? (
+        <div className="rag-progress" role="status" aria-live="polite">
+          <span className="status-dot" />
+          <strong>{statusMessage}</strong>
+          <small>هذه حالة واجهة أثناء انتظار الرد وليست نسبة تقدم من الخادم.</small>
+        </div>
+      ) : null}
+
+      {result.status === "success" && !result.answer ? (
+        <div className="rag-empty-state" role="status">
+          <strong>لم تصل إجابة قابلة للعرض.</strong>
+          <span>جرّب صياغة السؤال بطريقة مختلفة أو اختر مستندًا آخر.</span>
+          <button className="ghost-btn" type="button" onClick={startNewQuestion}>سؤال جديد</button>
+        </div>
+      ) : null}
+
       {result.answer ? (
         <article className="answer-card">
-          <strong>الإجابة</strong>
+          <div className="answer-heading">
+            <strong>الإجابة</strong>
+            <span className="answer-state">تم تجهيز الرد</span>
+          </div>
+          {result.question ? <p className="answer-question">السؤال: {result.question}</p> : null}
           <p>{result.answer}</p>
-          <span>درجة الثقة: {Math.round((result.confidence || 0) * 100)}%</span>
+          {result.query_id ? <small className="answer-query-id">رقم الاستعلام: {result.query_id}</small> : null}
+          {confidence !== null ? (
+            <div className={`confidence-indicator${isLowConfidence ? " low" : ""}`}>
+              <span>درجة الثقة</span>
+              <strong>{confidence}%</strong>
+              <span className="confidence-bar"><span style={{ width: `${confidence}%` }} /></span>
+            </div>
+          ) : null}
+          {isLowConfidence ? (
+            <div className="low-confidence-warning" role="status">
+              الثقة منخفضة نسبيًا. راجع المصادر والنص القانوني قبل الاعتماد على الإجابة.
+            </div>
+          ) : null}
           <CitationList citations={result.citations || []} />
+          <div className="answer-actions">
+            <button className="ghost-btn" type="button" onClick={() => void copyAnswer()} disabled={!navigator.clipboard}>نسخ الإجابة</button>
+            <button className="ghost-btn" type="button" onClick={startNewQuestion}>سؤال جديد</button>
+          </div>
         </article>
       ) : null}
 
       {result.status === "error" ? <ErrorState error={result.error} onRetry={retry} /> : null}
-      {result.status === "waiting" ? <p className="empty-result">في انتظار سؤالك القانوني.</p> : null}
+      {result.status === "waiting" ? <p className="empty-result" role="status">في انتظار سؤالك القانوني.</p> : null}
     </div>
   );
 }

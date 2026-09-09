@@ -25,7 +25,7 @@ deliberate deferral.
 | 1 | **Minimum-relevance threshold design** — §10 | Changes the `RetrievedEvidence` contract. My recommendation is a *flag*, not a filter: `low_confidence = (no identifier match in top-k) AND (dense top-1 < 0.52)`. Separates 5/5 negatives from 32/32 positives on current data, but the margin is 0.023 fitted to five negative points — treat 0.52 as the shape, not the value. **Not implemented.** |
 | 2 | **Reranker model** — `bge-reranker-v2-m3` (~2.2 GB) into the local HF cache, or keep the fail-loud posture? | Unchanged from 2026-09-08. Nothing deploys with current defaults until it is cached. Policy call about firm infrastructure. |
 | 3 | **RRF weights** — §3 | Recommendation stands: **do not apply** `0.5/0.1/2.0`. Split disagreement (~0.10 MRR) exceeds the effect size (~0.012 MRR). |
-| ~~4~~ | ~~**`uv.lock` vs `requirements.txt` authority**~~ | **CLOSED 2026-09-09.** `requirements.txt` is authoritative; see §12 and README.md. Both verified in agreement (0 mismatches). |
+| ~~4~~ | ~~**`uv.lock` vs `requirements.txt` authority**~~ | **CLOSED 2026-09-09.** `requirements.txt` is authoritative; see §12 and docs/ENVIRONMENT.md. Both verified in agreement (0 mismatches). |
 
 ### Needs another teammate
 
@@ -430,7 +430,7 @@ and needs agreement first.
 | `docs/KNOWN_ISSUES.md` | **ISSUE-3** — Arabic thousands separator defeats monetary extraction |
 | `docs/M3_SESSION_SUMMARY.md` | OPEN ITEMS; §10–§13; §6/§7 marked superseded |
 | `docs/M3_INTEGRATION_STATUS.json` | `python_version_note` corrected (the "3.12 not installed" claim was wrong) |
-| `README.md` | **new section** — environment and dependency authority |
+| `docs/ENVIRONMENT.md` | **new** — environment and dependency authority (written as a root `README.md` section; moved when main's .NET backend README took that filename) |
 | `pyproject.toml` | `requires-python` 3.12 → 3.14; dev group pinned to validated versions; `[tool.uv]` authority note |
 | `.python-version` | `3.12` → `3.14` |
 | `uv.lock` | regenerated — `requires-python` `==3.14.*`, 3 dev pins realigned |
@@ -690,7 +690,7 @@ is what `rebuild_venv.ps1` installs from and the only file used to build the
 venv the baseline was validated on. `uv.lock` is kept in sync but **nothing runs
 `uv sync`**.
 
-The note lives in `README.md` and `pyproject.toml`, **not** as a comment at the
+The note lives in `docs/ENVIRONMENT.md` and `pyproject.toml`, **not** as a comment at the
 top of `uv.lock`: `uv lock` rewrites that file wholesale and would strip it.
 
 The real chain is

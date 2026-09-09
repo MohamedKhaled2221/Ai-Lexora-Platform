@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import {
   BackendStatusWidget,
   CaseInsightsWidget,
+  DocumentLibraryWidget,
   LegalAssistantWidget,
 } from "./LexoraApp.jsx";
 import { ContractGenerationPage } from "./ContractGeneration.jsx";
@@ -10,6 +11,7 @@ import { ContractGenerationPage } from "./ContractGeneration.jsx";
 const widgets = {
   "backend-status": BackendStatusWidget,
   "case-insights": CaseInsightsWidget,
+  "document-library": DocumentLibraryWidget,
   "legal-assistant": LegalAssistantWidget,
   "contract-generation": ContractGenerationPage,
 };

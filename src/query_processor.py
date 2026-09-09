@@ -1,190 +1,287 @@
 import re
+import unicodedata
 import uuid
+from src.identifier_preserver import (
+    IdentifierPreserver,
+)
 
-from src.schemas import IdentifierSet, ProcessedQuery
+from src.schemas import (
+    IdentifierSet,
+    ProcessedQuery,
+)
+from src.query_variant_builder import (
+    QueryVariantBuilder,
+)
 
 
 class QueryProcessor:
-    """Processes multilingual legal queries before BGE-M3 embedding.
-
-    The implementation is intentionally lightweight. It does not perform
-    machine translation because translation can change legal identifiers or
-    terminology. BGE-M3 is expected to provide the multilingual embedding
-    space.
-    """
-
-    ARABIC_RE = re.compile(r"[\u0600-\u06FF]")
-    LATIN_RE = re.compile(r"[A-Za-z]")
-    ARABIZI_HINTS = {
-        "el", "al", "ana", "enta", "enti", "eh", "eih", "fe", "fi",
-        "law", "contract", "clause", "termination", "article", "case",
-    }
-
-    ARTICLE_RE = re.compile(
-        r"\b(?:article|art\.?|المادة|مادة)\s*[-:#]?\s*([0-9٠-٩]+)\b",
-        re.IGNORECASE,
-    )
-    CASE_RE = re.compile(
-        r"\b(?:case|case\s*no\.?|قضية|دعوى)\s*[-:#]?\s*([A-Za-z0-9٠-٩/-]+)",
-        re.IGNORECASE,
-    )
-    DATE_RE = re.compile(
-        r"\b(?:\d{1,4}[/-]\d{1,2}[/-]\d{1,4}|"
-        r"\d{1,2}\s+(?:Jan|January|Feb|February|Mar|March|Apr|April|"
-        r"May|Jun|June|Jul|July|Aug|August|Sep|September|Oct|October|"
-        r"Nov|November|Dec|December)\s+\d{2,4})\b",
-        re.IGNORECASE,
-    )
-    MONEY_RE = re.compile(
-        r"(?:[$€£]\s?[\d,]+(?:\.\d+)?|"
-        r"[\d,]+(?:\.\d+)?\s?(?:EGP|USD|EUR|GBP|جنيه|دولار|يورو))",
-        re.IGNORECASE,
-    )
-
-    def detect_language(self, text: str) -> str:
-        """Classify a query as Arabic, English, mixed, or unknown.
-
-        Input:
-            text: Original user query.
-
-        Output:
-            One of ar, en, ar-en, unknown.
-
-        Side effects:
-            None.
-
-        Edge cases:
-            Digits-only or punctuation-only input becomes unknown.
-        """
-        has_ar = bool(self.ARABIC_RE.search(text))
-        has_latin = bool(self.LATIN_RE.search(text))
-
-        if has_ar and has_latin:
-            return "ar-en"
-        if has_ar:
-            return "ar"
-        if has_latin:
-            return "en"
-        return "unknown"
-
-    def normalize(self, text: str) -> str:
-        """Apply conservative normalization without translating legal text.
-
-        Input:
-            Original query.
-
-        Output:
-            Whitespace-normalized query with common Arabic presentation
-            variants reduced.
-
-        Side effects:
-            None.
-
-        Important constraint:
-            The method avoids aggressive stemming or deletion because legal
-            terminology and identifiers must remain intact.
-        """
-        text = text.strip()
-        text = text.replace("\u0640", "")
-        text = re.sub(r"\s+", " ", text)
-
-        # Normalize Arabic alef variants conservatively.
-        text = text.replace("أ", "ا").replace("إ", "ا").replace("آ", "ا")
-
-        # Keep Arabic Yeh and Teh Marbuta intact; legal text should not be
-        # aggressively rewritten.
-        return text.strip()
-
-    def extract_identifiers(self, text: str) -> IdentifierSet:
-        """Extract legal identifiers that must survive preprocessing.
-
-        Input:
-            Query text.
-
-        Output:
-            IdentifierSet containing article/case/date/money values.
-
-        Side effects:
-            None.
-
-        Edge cases:
-            Missing categories are returned as empty lists.
-        """
-        articles = [match.group(1) for match in self.ARTICLE_RE.finditer(text)]
-        cases = [match.group(1) for match in self.CASE_RE.finditer(text)]
-        dates = [match.group(0) for match in self.DATE_RE.finditer(text)]
-        money = [match.group(0) for match in self.MONEY_RE.finditer(text)]
-
-        return IdentifierSet(
-            article_numbers=articles,
-            case_numbers=cases,
-            dates=dates,
-            monetary_values=money,
-            party_names=[],
+    def __init__(
+        self,
+        identifier_preserver: (
+            IdentifierPreserver | None
+        ) = None,
+        query_variant_builder: (
+            QueryVariantBuilder | None
+        ) = None,
+    ) -> None:
+        self.identifier_preserver = (
+            identifier_preserver
+            or IdentifierPreserver()
         )
 
-    def detect_arabizi(self, text: str) -> bool:
-        """Provide a lightweight Arabizi coverage signal.
+        self.query_variant_builder = (
+            query_variant_builder
+            or QueryVariantBuilder()
+        )
+    """
+    Processes multilingual legal queries before BGE-M3 embedding.
 
-        This is not a full Arabizi NLP model. It only detects whether the
-        query contains Latin-script words commonly seen in Egyptian Arabic
-        code-switching.
+    Supported query forms:
+    - English;
+    - Arabic;
+    - Egyptian Arabic written in Arabic script;
+    - Arabic-English mixed text.
 
-        Input:
-            Query text.
+    Arabizi processing is intentionally deferred until the team
+    decides whether it belongs in the supported scope.
 
-        Output:
-            Boolean indicator.
+    The processor never translates the user query. Translation or
+    aggressive rewriting can alter legal meaning or damage exact
+    identifiers.
+    """
 
-        Side effects:
-            None.
+    # Arabic Unicode blocks commonly encountered in legal/user text.
+    ARABIC_RE = re.compile(
+        r"["
+        r"\u0600-\u06FF"
+        r"\u0750-\u077F"
+        r"\u08A0-\u08FF"
+        r"\uFB50-\uFDFF"
+        r"\uFE70-\uFEFF"
+        r"]"
+    )
+
+    LATIN_RE = re.compile(
+        r"[A-Za-z]"
+    )
+
+    # Arabic combining marks / diacritics.
+    ARABIC_DIACRITICS_RE = re.compile(
+        r"[\u0610-\u061A"
+        r"\u064B-\u065F"
+        r"\u0670"
+        r"\u06D6-\u06ED]"
+    )
+    def detect_language(
+        self,
+        text: str,
+    ) -> str:
         """
-        tokens = set(re.findall(r"[A-Za-z]+", text.lower()))
-        return bool(tokens & self.ARABIZI_HINTS)
+        Detect the alphabetic script composition of a legal query.
 
-    def build_variants(self, normalized_text: str, language: str) -> list[str]:
-        """Create conservative query variants.
+        Returns:
+            ar:
+                Arabic-script letters with no Latin letters.
 
-        The current MVP returns the normalized query and avoids speculative
-        translations. A future version may add controlled query expansion
-        after evaluation.
+            en:
+                Latin-script letters with no Arabic letters.
 
-        Input:
-            normalized query and language label.
+            ar-en:
+                Query contains both Arabic and Latin letters.
 
-        Output:
-            Ordered list of variants.
+            unknown:
+                No Arabic or Latin alphabetic content.
 
-        Side effects:
-            None.
+        Arabic-Indic digits do not make a query Arabic or mixed.
+        Egyptian Arabic written using Arabic script is classified
+        as ``ar``.
+
+        This is intentionally script-level detection rather than
+        dialect classification.
         """
-        return [normalized_text]
 
-    def process(self, text: str) -> ProcessedQuery:
-        """Run the complete query-processing pipeline.
+        if not text:
+            return "unknown"
 
-        Input:
-            Raw Arabic, English, or mixed legal query.
+        has_arabic = False
+        has_latin = False
 
-        Output:
-            ProcessedQuery ready for BGE-M3 embedding and M3 handoff.
+        for character in text:
+            # Ignore digits, punctuation, whitespace,
+            # currency symbols, and other non-letter characters.
+            if not character.isalpha():
+                continue
 
-        Side effects:
-            None.
+            unicode_name = unicodedata.name(
+                character,
+                "",
+            )
 
-        Edge cases:
-            Empty input raises ValueError.
+            if "ARABIC" in unicode_name:
+                has_arabic = True
+
+            elif "LATIN" in unicode_name:
+                has_latin = True
+
+            if has_arabic and has_latin:
+                return "ar-en"
+
+        if has_arabic:
+            return "ar"
+
+        if has_latin:
+            return "en"
+
+        return "unknown"
+
+    def normalize(
+        self,
+        text: str,
+    ) -> str:
         """
-        if not text or not text.strip():
-            raise ValueError("query must not be empty")
+        Apply conservative multilingual normalization.
 
-        language = self.detect_language(text)
-        normalized = self.normalize(text)
-        identifiers = self.extract_identifiers(text)
-        variants = self.build_variants(normalized, language)
+        The original query is never modified in ProcessedQuery.
+        This method produces a separate normalized representation.
+
+        Normalization intentionally performs only low-risk operations:
+        - Unicode NFC normalization;
+        - trim surrounding whitespace;
+        - collapse repeated whitespace;
+        - remove Arabic tatweel;
+        - remove Arabic diacritics;
+        - normalize common Arabic alef variants.
+
+        It does NOT:
+        - translate;
+        - stem;
+        - lowercase all text;
+        - remove punctuation;
+        - rewrite Arabic/Latin digits;
+        - alter identifiers such as case/article numbers.
+        """
+
+        if not text:
+            return ""
+
+        normalized = unicodedata.normalize(
+            "NFC",
+            text,
+        )
+
+        # Remove Arabic tatweel/kashida.
+        normalized = normalized.replace(
+            "\u0640",
+            "",
+        )
+
+        # Remove optional Arabic vowel/recitation marks.
+        normalized = (
+            self.ARABIC_DIACRITICS_RE.sub(
+                "",
+                normalized,
+            )
+        )
+
+        # Conservative Arabic alef normalization.
+        normalized = (
+            normalized
+            .replace("أ", "ا")
+            .replace("إ", "ا")
+            .replace("آ", "ا")
+        )
+
+        # Do not normalize ي/ى or ة/ه because these may alter
+        # names and legal terminology.
+        normalized = re.sub(
+            r"\s+",
+            " ",
+            normalized,
+        )
+
+        return normalized.strip()
+
+    def extract_identifiers(
+        self,
+        text: str,
+    ) -> IdentifierSet:
+        """
+        Extract exact legal identifiers from the original query.
+
+        Delegated to IdentifierPreserver so extraction logic remains
+        independent from language detection and normalization.
+        """
+
+        return (
+            self.identifier_preserver
+            .extract(text)
+        )
+    def build_variants(
+        self,
+        normalized_text: str,
+        language: str,
+        identifiers: IdentifierSet | None = None,
+    ) -> list[str]:
+        """
+        Build controlled multilingual retrieval variants.
+
+        The original query remains separately preserved in
+        ProcessedQuery.text_original.
+        """
+
+        return (
+            self.query_variant_builder.build(
+                normalized_text=normalized_text,
+                language=language,
+                identifiers=(
+                    identifiers
+                    or IdentifierSet()
+                ),
+            )
+        )
+    def process(
+        self,
+        text: str,
+    ) -> ProcessedQuery:
+        """
+        Run the complete deterministic M2 query-processing stage.
+
+        The query is not embedded here. Embedding remains the
+        responsibility of M2QueryPipeline / EmbeddingService.
+        """
+
+        if (
+            not text
+            or not text.strip()
+        ):
+            raise ValueError(
+                "query must not be empty"
+            )
+
+        language = self.detect_language(
+            text
+        )
+
+        normalized = self.normalize(
+            text
+        )
+
+        identifiers = (
+            self.extract_identifiers(
+                text
+            )
+        )
+
+        variants = self.build_variants(
+            normalized,
+            language,
+            identifiers,
+        )
 
         return ProcessedQuery(
-            query_id=f"q_{uuid.uuid4().hex[:8]}",
+            query_id=(
+                f"q_{uuid.uuid4().hex[:8]}"
+            ),
             text_original=text,
             normalized_text=normalized,
             language=language,

@@ -67,6 +67,12 @@ class _FakeBGEM3:
 def _service(**kwargs):
     fake = _FakeBGEM3(sparse_payload=kwargs.pop("sparse_payload", "default"))
 
+    # The fake emits 3-dimensional vectors. M2's hardened service validates
+    # every vector against expected_dimension (default 1024), so the fake's
+    # width has to be declared or every encode fails the contract check.
+    kwargs.setdefault("expected_dimension", 3)
+    kwargs.setdefault("device", "cpu")
+
     with patch(
         "src.embedding_service.BGEM3FlagModel",
         return_value=fake,
@@ -154,7 +160,7 @@ def test_sparse_can_be_switched_off():
 def test_dense_only_service_produces_no_sparse():
     service, _ = _service(return_sparse=False)
 
-    encoded = service._encode_full(["a", "b"])
+    encoded = service._encode(["a", "b"])
 
     assert encoded.sparse is None
     assert encoded.sparse_at(0) is None
@@ -217,26 +223,26 @@ def test_query_is_encoded_once_not_twice():
     assert fake.calls[0]["texts"] == ["normalized form"]
 
 
-def test_query_falls_back_to_original_text_when_not_normalized():
+def test_empty_normalized_text_is_now_refused_by_the_schema():
+    """M2 moved this invariant out of M3's reach.
+
+    This test used to feed ``normalized_text=""`` and assert that
+    embed_processed_query fell back to ``text_original``. ProcessedQuery now
+    declares ``min_length=1`` and rejects whitespace-only text, so that input
+    can no longer be constructed and the fallback branch is unreachable by
+    contract. The guarantee still holds -- it is just enforced a layer up.
+    """
+    import pytest as _pytest
+    from pydantic import ValidationError
+
     from src.schemas import ProcessedQuery
 
-    service, fake = _service()
-
-    service.embed_processed_query(
+    with _pytest.raises(ValidationError):
         ProcessedQuery(
             query_id="q_001",
             text_original="raw question",
             normalized_text="",
         )
-    )
-
-    assert fake.calls[0]["texts"] == ["raw question"]
-
-
-# ---------------------------------------------------------------------------
-# Document path
-# ---------------------------------------------------------------------------
-
 
 def test_document_chunks_carry_sparse_weights():
     from src.schemas import DocumentChunk
@@ -321,7 +327,7 @@ def test_missing_lexical_weights_degrades_to_dense_only(caplog):
     service, _ = _service(sparse_payload="missing")
 
     with caplog.at_level(logging.WARNING, logger="src.embedding_service"):
-        encoded = service._encode_full(["a"])
+        encoded = service._encode(["a"])
 
     assert encoded.dense
     assert encoded.sparse is None
@@ -336,21 +342,26 @@ def test_length_mismatch_is_refused_rather_than_mispaired():
     A silent zip() would attach one chunk's keywords to another's text.
     """
 
+    from src.embedding_service import EmbeddingContractError
+
     service, _ = _service(sparse_payload="mismatched")
 
-    with pytest.raises(ValueError, match="refusing to pair"):
-        service._encode_full(["a", "b"])
+    with pytest.raises(EmbeddingContractError, match="refusing to pair"):
+        service._encode(["a", "b"])
 
 
 def test_dense_only_encode_helper_still_works():
-    """_encode is used by callers that genuinely only need vectors."""
+    """The dense half of a merged encode is unchanged.
 
-    service, _ = _service()
+    ``_encode`` returns an EncodedTexts rather than a bare list since M2's
+    hardening merged the dense-only helper into it, and normalization is now
+    on by default -- disabled here so the fake's raw values are observable.
+    """
+    service, _ = _service(normalize_embeddings=False)
 
-    assert service._encode(["a", "b"]) == [
+    assert service._encode(["a", "b"]).dense == [
         [pytest.approx(0.1), pytest.approx(0.2), pytest.approx(0.3)]
     ] * 2
-
 
 def test_dimension_is_still_detected():
     service, _ = _service()

@@ -299,18 +299,22 @@ button:disabled { cursor: wait; opacity: .62; }
   margin-top: 22px;
   overflow: visible;
 }
-.sidebar nav a {
+.sidebar nav a, .sidebar nav button {
   min-height: 39px;
   display: flex;
   align-items: center;
   justify-content: flex-start;
   padding: 8px 12px;
   border-radius: var(--radius);
+  border: 0;
+  color: inherit;
+  background: transparent;
+  text-align: right;
   font-weight: 800;
   font-size: 15px;
   line-height: 1.35;
 }
-.sidebar nav a:hover, .sidebar nav a.active { background: rgba(155, 122, 34, .2); color: #fff; transform: translateX(-2px); }
+.sidebar nav a:hover, .sidebar nav a.active, .sidebar nav button:hover { background: rgba(155, 122, 34, .2); color: #fff; transform: translateX(-2px); }
 .theme-toggle {
   min-height: 44px;
   display: inline-flex;
@@ -398,6 +402,7 @@ button:disabled { cursor: wait; opacity: .62; }
 
 .table-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 16px; }
 .responsive-table { overflow: auto; }
+.workspace-grid > *, .responsive-table { min-width: 0; }
 table { width: 100%; min-width: 900px; border-collapse: collapse; }
 th, td { padding: 13px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
 th { color: var(--muted); background: var(--surface-2); }
@@ -538,15 +543,32 @@ tbody tr:hover {
   border-radius: var(--radius);
   background: color-mix(in srgb, var(--accent) 9%, var(--surface));
 }
+.answer-heading, .answer-actions, .confidence-indicator { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.answer-heading { justify-content: space-between; }
+.answer-state { color: var(--success); font-size: 12px; font-weight: 800; }
 .answer-card strong { color: var(--brand); }
 .answer-card p { color: var(--ink); }
-.answer-card span { color: var(--muted); font-weight: 800; }
+.answer-card span, .answer-query-id { color: var(--muted); font-weight: 800; }
+.answer-question { padding: 8px 10px; border-right: 3px solid var(--accent); color: var(--muted) !important; background: var(--surface-2); font-size: 13px; }
+.answer-query-id { font-size: 12px; }
+.confidence-indicator { padding: 9px 11px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2); }
+.confidence-indicator strong { color: var(--brand); }
+.confidence-bar { width: min(180px, 100%); height: 8px; overflow: hidden; border-radius: 999px; background: var(--line); }
+.confidence-bar span { display: block; height: 100%; border-radius: inherit; background: var(--success); }
+.confidence-indicator.low { border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); }
+.confidence-indicator.low .confidence-bar span { background: var(--danger); }
+.low-confidence-warning { padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--line)); border-radius: var(--radius); color: var(--danger); background: color-mix(in srgb, var(--danger) 7%, var(--surface)); font-size: 13px; font-weight: 700; }
+.answer-actions { margin-top: 4px; }
+.answer-actions .ghost-btn { min-height: 36px; padding: 7px 11px; font-size: 12px; }
 .citation-list, .search-filters { display: grid; gap: 10px; }
 .citation-list { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
 .citation-card { display: grid; gap: 4px; padding: 12px; border: 1px solid var(--line); border-right: 3px solid var(--accent); border-radius: var(--radius); background: var(--surface); }
 .citation-card strong { color: var(--brand); }
 .citation-card span, .empty-result, .agent-error p, .agent-error small { color: var(--muted); }
-.search-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.citation-unavailable { color: var(--muted); font-size: 11px; }
+.citation-empty { padding: 10px; border: 1px dashed var(--line); border-radius: var(--radius); }
+.search-filters { min-width: 0; overflow: hidden; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.search-filters select { min-width: 0; max-width: 100%; overflow: hidden; }
 .agent-error { display: grid; gap: 8px; padding: 16px; border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--line)); border-radius: var(--radius); background: color-mix(in srgb, var(--danger) 7%, var(--surface)); }
 .agent-error strong { color: var(--danger); }
 .agent-error .ghost-btn { width: fit-content; }
@@ -563,6 +585,13 @@ tbody tr:hover {
 .service-status-message.ready { border-color: color-mix(in srgb, var(--success) 45%, var(--line)); }
 .service-status-message.error { border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); }
 .service-status-message.error strong { color: var(--danger); }
+.rag-progress, .rag-empty-state { display: grid; gap: 5px; padding: 14px 16px; border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line)); border-radius: var(--radius); color: var(--muted); background: var(--surface-2); }
+.rag-progress { grid-template-columns: auto 1fr; align-items: center; }
+.rag-progress .status-dot { background: var(--accent); animation: pulse 1s infinite; }
+.rag-progress small { grid-column: 2; font-size: 11px; }
+.rag-empty-state { border-style: dashed; }
+.rag-empty-state strong { color: var(--brand); }
+.rag-empty-state .ghost-btn { width: fit-content; margin-top: 4px; }
 .legal-agent-widget {
   position: relative;
 }
@@ -693,6 +722,7 @@ tbody tr:hover {
   min-width: 0;
   display: grid;
   gap: 1px;
+  overflow-wrap: anywhere;
 }
 .attachment-chip small {
   color: var(--muted);
@@ -709,6 +739,14 @@ tbody tr:hover {
   background: var(--danger);
   font-weight: 800;
   line-height: 1;
+}
+.attachment-chip button[data-attachment-retry] {
+  width: auto;
+  padding: 3px 7px;
+  border-radius: var(--radius);
+  color: var(--ink);
+  background: var(--surface-2);
+  white-space: nowrap;
 }
 .visually-hidden {
   position: absolute !important;
@@ -742,7 +780,11 @@ tbody tr:hover {
 }
 .agent-result p {
   color: var(--ink);
+  overflow-wrap: anywhere;
 }
+.agent-result[data-state="searching"] { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.agent-result[data-state="searching"] h3::after { content: ""; display: inline-block; width: 10px; height: 10px; margin-inline-start: 8px; border: 2px solid var(--accent); border-top-color: transparent; border-radius: 50%; animation: pulse 1s infinite; }
+.agent-result[data-state="error"] { border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); }
 .agent-meta {
   display: flex;
   flex-wrap: wrap;
@@ -789,6 +831,7 @@ tbody tr:hover {
 }
 .file-result-card p {
   color: var(--ink);
+  overflow-wrap: anywhere;
 }
 mark.search-highlight {
   padding: 0 3px;
@@ -803,23 +846,32 @@ mark.search-highlight {
 .contract-entry-card p:not(.eyebrow) { margin-top: 4px; color: var(--muted); }
 .contract-entry-card .primary-btn { flex-shrink: 0; }
 .contract-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 22px; }
+.contract-heading-meta { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .contract-heading h1 { margin-top: 4px; color: var(--brand); font-size: clamp(26px, 4vw, 42px); line-height: 1.2; }
 .contract-heading p:not(.eyebrow) { margin-top: 8px; color: var(--muted); }
 .contract-status { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--muted); font-weight: 800; white-space: nowrap; }
 .contract-status .status-dot { background: var(--accent); }
-.contract-workspace { display: grid; grid-template-columns: minmax(300px, .8fr) minmax(0, 1.2fr); gap: 20px; align-items: start; }
-.contract-panel { min-width: 0; padding: 24px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
+.contract-workspace { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: stretch; }
+.contract-panel { min-width: 0; display: flex; flex-direction: column; padding: 24px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
 .panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
 .panel-heading h2 { color: var(--brand); }
 .contract-panel label { margin-top: 14px; }
-.contract-fields { min-height: 520px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); align-content: start; }
+.contract-fields { min-height: 520px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); align-content: start; }
 .contract-fields h3, .review-tools h3 { margin-bottom: 4px; color: var(--brand); }
-.contract-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; }
 .contract-fields h3 { grid-column: 1 / -1; }
+.contract-metadata { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
+.contract-metadata h3, .contract-metadata small { grid-column: 1 / -1; }
+.contract-metadata h3 { color: var(--brand); }
+.contract-metadata small { margin-top: 8px; color: var(--muted); font-size: 12px; }
 .contract-field { min-width: 0; }
 .contract-field-wide { grid-column: 1 / -1; }
 .contract-secondary-action { width: 100%; margin-top: 10px; }
 .contract-disclaimer { margin-top: 14px; color: var(--muted); font-size: 12px; }
+.draft-state { display: inline-flex; align-items: center; gap: 7px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); background: var(--surface); font-size: 12px; font-weight: 800; }
+.draft-state .status-dot { background: var(--accent); }
+.draft-state.draft-saved { color: var(--success); }
+.draft-state.draft-saved .status-dot { background: var(--success); }
+.draft-save-status { display: block; margin-top: 10px; color: var(--muted); font-size: 12px; }
 .contract-alert { margin-top: 14px; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--line)); border-radius: var(--radius); color: var(--danger); background: color-mix(in srgb, var(--danger) 8%, var(--surface)); font-weight: 700; }
 .status-actions { display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-end; }
 .status-actions button { padding: 5px 8px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); background: var(--surface-2); font-size: 11px; font-weight: 800; }
@@ -829,7 +881,7 @@ mark.search-highlight {
 .contract-sections strong { margin-right: 4px; color: var(--brand); font-size: 12px; }
 .contract-sections button { padding: 4px 8px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); background: var(--surface); font-size: 11px; font-weight: 700; }
 .contract-sections button:hover { color: var(--brand); border-color: var(--accent); }
-.contract-editor { display: block; width: 100%; min-height: 660px; padding: 44px 48px; resize: vertical; border: 1px solid var(--line); border-radius: 2px; color: #1c2635; background: #fff; font-family: Georgia, "Times New Roman", serif; font-size: 16px; line-height: 1.9; direction: ltr; }
+.contract-editor { display: block; width: 100%; min-height: 660px; padding: 44px 48px; resize: vertical; border: 1px solid var(--line); border-radius: 2px; color: #1c2635; background: #fff; font-family: Georgia, "Times New Roman", serif; font-size: 16px; line-height: 1.9; }
 .contract-empty { min-height: 280px; display: grid; place-content: center; padding: 28px; border: 1px dashed var(--line); color: var(--muted); text-align: center; }
 .contract-empty h3 { color: var(--brand); }
 .review-tools { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); }
@@ -844,16 +896,18 @@ mark.search-highlight {
 .review-notes { display: grid; gap: 8px; margin-top: 14px; padding: 14px; border: 1px solid var(--line); background: var(--surface-2); }
 .review-notes strong { color: var(--brand); }
 .review-notes textarea { width: 100%; padding: 10px; border: 1px solid var(--line); color: var(--ink); background: var(--surface); resize: vertical; }
+.review-state { margin-top: 10px; padding: 9px 11px; border-radius: var(--radius); font-size: 13px; font-weight: 700; }
+.review-accepted { color: var(--success); background: color-mix(in srgb, var(--success) 8%, var(--surface)); }
+.review-rejected { color: var(--muted); background: var(--surface-2); }
+.suggestion-accepted { border-color: var(--success); }
+.suggestion-rejected { opacity: .78; }
+.contract-approval-modal { position: fixed; inset: 0; z-index: 12; display: grid; place-items: center; padding: 18px; background: rgba(0, 0, 0, .58); }
+.contract-approval-box { width: min(520px, 100%); padding: 24px; border: 1px solid var(--line); border-radius: var(--radius); color: var(--ink); background: var(--surface); box-shadow: var(--shadow); }
+.contract-approval-box h2 { color: var(--brand); }
+.contract-approval-box p { margin-top: 8px; color: var(--muted); }
+.contract-approval-box .contract-actions { margin-top: 18px; }
 .contract-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
 .contract-actions button { min-width: 130px; }
-.contract-workspace {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: stretch;
-}
-.contract-panel {
-  display: flex;
-  flex-direction: column;
-}
 .contract-panel .contract-form-panel,
 .contract-panel .review-panel {
   min-width: 0;
@@ -949,18 +1003,38 @@ textarea { min-height: 132px; resize: vertical; }
 .endpoint-card h3 { margin-bottom: 8px; }
 .endpoint-card code { min-height: auto; margin: 10px 0; }
 
-.document-grid { grid-template-columns: repeat(3, 1fr); }
-.document-card { padding: 18px; }
+.document-grid { width: 100%; min-width: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.document-card { min-width: 0; padding: 18px; }
 .document-card strong { display: block; margin-bottom: 8px; }
-.document-card span {
-  display: inline-flex;
-  padding: 5px 10px;
-  border-radius: 999px;
-  color: #946200;
-  background: #fff4cf;
-  font-weight: 800;
-  font-size: 13px;
-}
+.document-card-heading, .document-toolbar, .document-toolbar-actions, .document-actions, .document-meta, .document-select { display: flex; align-items: center; gap: 8px; }
+.document-card-heading, .document-toolbar { justify-content: space-between; }
+.document-toolbar { margin-bottom: 16px; }
+.document-toolbar > div:first-child { display: grid; gap: 2px; }
+.document-library { min-width: 0; overflow: hidden; }
+.document-toolbar small, .document-detail, .document-meta { color: var(--muted); }
+.document-status { display: inline-flex; padding: 5px 9px; border-radius: 999px; font-size: 12px; font-weight: 800; }
+.document-status.status-processing { color: #946200; background: #fff4cf; }
+.document-status.status-processed { color: #087045; background: #e6f7ee; }
+.document-status.status-failed { color: #a82922; background: #ffe8e6; }
+.document-name { min-width: 0; overflow-wrap: anywhere; word-break: break-word; }
+.document-meta { flex-wrap: wrap; margin: 5px 0 8px; font-size: 12px; font-weight: 700; }
+.document-meta span { min-width: 0; max-width: 100%; overflow-wrap: anywhere; padding: 3px 7px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2); }
+.document-detail { min-height: 44px; margin: 8px 0; font-size: 13px; }
+.document-error { color: var(--danger); }
+.document-local-unavailable { color: var(--accent); }
+.document-select { color: var(--muted); font-size: 12px; font-weight: 800; }
+.document-select input { width: auto; margin: 0; }
+.document-actions { flex-wrap: wrap; margin-top: 8px; }
+.document-actions .ghost-btn { min-height: 34px; padding: 6px 10px; font-size: 12px; }
+.document-actions .icon-btn { width: 34px; min-height: 34px; padding: 5px; margin-inline-start: auto; }
+.document-card-processing { border-color: var(--accent); }
+.document-card-failed { border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); }
+.document-state { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; border: 1px dashed var(--line); border-radius: var(--radius); color: var(--muted); background: var(--surface-2); }
+.document-state[data-state="error"] { border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); color: var(--danger); }
+.document-state[data-state="loading"] { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.document-preview { position: fixed; inset: 0; z-index: 12; display: grid; place-items: center; padding: 18px; background: rgba(0, 0, 0, .58); }
+.document-preview-box { width: min(520px, 100%); display: grid; gap: 14px; padding: 24px; border: 1px solid var(--line); border-radius: var(--radius); color: var(--ink); background: var(--surface); box-shadow: var(--shadow); }
+.document-preview-box p { color: var(--muted); }
 .document-card p { margin-top: 8px; color: var(--muted); }
 
 .auth-copy { padding: 24px 0; }
@@ -993,14 +1067,19 @@ textarea { min-height: 132px; resize: vertical; }
   animation: fadeIn .18s ease both;
 }
 .modal[hidden] { display: none; }
+.modal [hidden] { display: none !important; }
 .modal-box {
   width: min(540px, 100%);
+  max-height: calc(100vh - 36px);
+  overflow-y: auto;
   padding: 24px;
   border-radius: var(--radius);
   background: var(--surface);
   box-shadow: 0 22px 70px rgba(0,0,0,.32);
   animation: scaleIn .18s ease both;
 }
+.auth-status-section { width: 100%; margin: 22px 0 0; }
+.consultation-preview-grid { width: 100%; margin: 0; }
 .modal-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .modal-header button {
   width: 36px;
@@ -1145,6 +1224,7 @@ textarea { min-height: 132px; resize: vertical; }
   .contract-workspace { grid-template-columns: 1fr; }
   .contract-panel { border-right: 0; border-left: 0; border-radius: 0; padding: 20px 4%; }
   .contract-fields { grid-template-columns: 1fr; }
+  .contract-metadata { grid-template-columns: 1fr; }
   .contract-fields { min-height: 0; }
   .contract-editor { min-height: 520px; padding: 26px 22px; }
   .panel-heading { flex-direction: column; }
@@ -1313,6 +1393,8 @@ textarea {
   .file-search-actions {
     grid-template-columns: 1fr;
   }
+  .document-toolbar, .document-state { align-items: stretch; flex-direction: column; }
+  .document-toolbar-actions, .document-toolbar-actions .primary-btn { width: 100%; }
   .contract-actions {
     flex-direction: column;
   }

@@ -1,8 +1,20 @@
-import logging
+from __future__ import annotations
+
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from importlib.metadata import (
+    PackageNotFoundError,
+    version,
+)
+import logging
+import math
+import os
+from time import perf_counter
+from typing import Any
 
 from FlagEmbedding import BGEM3FlagModel
+import psutil
+import torch
 
 from src.config import settings
 from src.schemas import (
@@ -12,6 +24,61 @@ from src.schemas import (
     ProcessedQuery,
 )
 
+
+_BYTES_PER_MIB = 1024 * 1024
+
+
+class EmbeddingServiceError(RuntimeError):
+    """
+    Base error for M2 embedding failures.
+    """
+
+
+class EmbeddingModelLoadError(
+    EmbeddingServiceError
+):
+    """
+    Raised when BGE-M3 cannot be initialized safely.
+    """
+
+
+class EmbeddingRuntimeError(
+    EmbeddingServiceError
+):
+    """
+    Raised when model inference fails.
+    """
+
+
+class EmbeddingContractError(
+    EmbeddingServiceError
+):
+    """
+    Raised when model output violates the M2 embedding contract.
+    """
+
+
+@dataclass(
+    frozen=True,
+    slots=True,
+)
+class EmbeddingRunMetrics:
+    """
+    Operational metrics for the latest successful embedding call.
+    """
+
+    text_count: int
+    dimension: int
+    latency_ms: float
+    device: str
+
+    rss_before_mib: float
+    rss_after_mib: float
+    rss_delta_mib: float
+
+    cuda_peak_allocated_mib: (
+        float | None
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -64,20 +131,26 @@ class EncodedTexts:
 
 
 class EmbeddingService:
-    """BGE-M3 embedding service owned by M2.
+    """
+    Hardened BGE-M3 embedding service owned by M2.
 
     Responsibilities:
-        - Load BGE-M3.
-        - Embed legal document chunks received from M1.
-        - Embed legal user queries.
-        - Produce both the dense vector and the lexical (sparse) weights.
-        - Keep model and dimension information explicit.
+        - load the configured BGE-M3 model;
+        - select the local CPU/GPU runtime;
+        - embed queries and trusted document chunks;
+        - validate embedding count and dimensions;
+        - reject invalid/non-finite vectors;
+        - optionally enforce L2 normalization;
+        - expose model/runtime metadata;
+        - record latency and memory metrics.
 
     Non-responsibilities:
-        - Qdrant indexing.
-        - Retrieval.
-        - Reranking.
-        - RAG generation.
+        - Qdrant indexing;
+        - retrieval;
+        - reranking;
+        - query interpretation;
+        - LLM generation.
+
 
     On sparse
     ---------
@@ -95,90 +168,530 @@ class EmbeddingService:
         use_fp16: bool = settings.use_fp16,
         batch_size: int = settings.batch_size,
         max_length: int = settings.max_length,
+        normalize_embeddings: bool = (
+            settings.normalize_embeddings
+        ),
+        expected_dimension: int = (
+            settings.embedding_dimension
+        ),
+        device: str = (
+            settings.embedding_device
+        ),
+        model: Any | None = None,
         return_sparse: bool = settings.return_sparse,
         warn_on_truncation: bool = settings.warn_on_truncation,
     ) -> None:
-        """Load BGE-M3 and store inference configuration."""
+        if not model_name.strip():
+            raise ValueError(
+                "model_name must not be empty"
+            )
+
+        if batch_size < 1:
+            raise ValueError(
+                "batch_size must be at least 1"
+            )
+
+        if max_length < 1:
+            raise ValueError(
+                "max_length must be at least 1"
+            )
+
+        if expected_dimension < 1:
+            raise ValueError(
+                "expected_dimension must be "
+                "at least 1"
+            )
+
         self.model_name = model_name
         self.batch_size = batch_size
         self.max_length = max_length
 
-        self.return_sparse = return_sparse
-        self.warn_on_truncation = warn_on_truncation
+        self.normalize_embeddings = (
+            normalize_embeddings
+        )
 
-        self.model = BGEM3FlagModel(
-            model_name,
-            use_fp16=use_fp16,
+        self.expected_dimension = (
+            expected_dimension
+        )
+
+        self.device = self._resolve_device(
+            device
+        )
+        self._cuda_peak_metrics_available = (
+            self.device.startswith("cuda")
+        )
+
+        # FP16 should only be enabled for CUDA inference.
+        self.use_fp16 = bool(
+            use_fp16
+            and self.device.startswith(
+                "cuda"
+            )
+        )
+
+        self.return_sparse = return_sparse
+        self.warn_on_truncation = (
+            warn_on_truncation
         )
 
         self._dimension: int | None = None
 
+        self.last_metrics: (
+            EmbeddingRunMetrics | None
+        ) = None
+
+        self.model_load_ms = 0.0
+        self.model_load_rss_delta_mib = 0.0
+
+        if model is not None:
+            # Test/injected runtime. Do not load another model.
+            self.model = model
+        else:
+            before_rss = self._rss_mib()
+
+            started = perf_counter()
+
+            self.model = self._load_model()
+
+            self.model_load_ms = (
+                perf_counter() - started
+            ) * 1000.0
+
+            self.model_load_rss_delta_mib = (
+                self._rss_mib()
+                - before_rss
+            )
+
+    # ---------------------------------------------------------
+    # Runtime metadata
+    # ---------------------------------------------------------
+    def _cuda_device_index(
+        self,
+    ) -> int | None:
+        """
+        Return the integer CUDA device index used by PyTorch's
+        memory-stat APIs.
+
+        Some PyTorch/CUDA combinations are less reliable when a
+        torch.device object is supplied to these APIs.
+        """
+
+        if not self.device.startswith(
+            "cuda"
+        ):
+            return None
+
+        if self.device == "cuda":
+            return 0
+
+        try:
+            return int(
+                self.device.split(
+                    ":",
+                    maxsplit=1,
+                )[1]
+            )
+        except (
+            ValueError,
+            IndexError,
+        ):
+            return None
     @property
-    def dimension(self) -> int | None:
-        """Return the detected embedding dimension, if available."""
+    def dimension(
+        self,
+    ) -> int | None:
+        """
+        Return the detected dimension after successful inference.
+        """
+
         return self._dimension
 
-    def _encode_full(self, texts: Sequence[str]) -> EncodedTexts:
+    @property
+    def runtime_metadata(
+        self,
+    ) -> dict[str, Any]:
         """
-        Encode a non-empty sequence with BGE-M3, dense plus optional sparse.
+        Return non-sensitive model/runtime metadata.
 
-        ``return_dense`` is passed explicitly rather than relying on the
-        default: this call now names what it wants, and a future FlagEmbedding
-        whose defaults shift cannot quietly stop returning the dense vectors
-        that everything downstream depends on.
+        No query/document content is included.
         """
-        if not texts:
-            raise ValueError("texts must not be empty")
 
-        if any(not text or not text.strip() for text in texts):
-            raise ValueError("texts must not contain empty strings")
+        return {
+            "model_name": self.model_name,
+            "expected_dimension": (
+                self.expected_dimension
+            ),
+            "detected_dimension": (
+                self._dimension
+            ),
+            "device": self.device,
+            "use_fp16": self.use_fp16,
+            "batch_size": self.batch_size,
+            "max_length": self.max_length,
+            "normalize_embeddings": (
+                self.normalize_embeddings
+            ),
+            "flagembedding_version": (
+                self._package_version(
+                    "FlagEmbedding"
+                )
+            ),
+            "torch_version": (
+                torch.__version__
+            ),
+            "cuda_available": (
+                torch.cuda.is_available()
+            ),
+            "cuda_device_name": (
+                self._cuda_device_name()
+            ),
+            "model_load_ms": (
+                self.model_load_ms
+            ),
+            "model_load_rss_delta_mib": (
+                self.model_load_rss_delta_mib
+            ),
+        }
 
-        self._warn_if_truncated(texts)
+    # ---------------------------------------------------------
+    # Model loading
+    # ---------------------------------------------------------
 
-        result = self.model.encode(
-            list(texts),
-            batch_size=self.batch_size,
-            max_length=self.max_length,
-            return_dense=True,
-            return_sparse=self.return_sparse,
+    def _load_model(
+        self,
+    ) -> BGEM3FlagModel:
+        try:
+            return BGEM3FlagModel(
+                self.model_name,
+                use_fp16=self.use_fp16,
+                devices=[
+                    self.device
+                ],
+            )
+
+        except Exception as exc:
+            raise EmbeddingModelLoadError(
+                "Unable to load the configured "
+                f"BGE-M3 model: {self.model_name}"
+            ) from exc
+
+    @staticmethod
+    def _resolve_device(
+        requested: str,
+    ) -> str:
+        value = (
+            requested.strip().lower()
+            if requested
+            else "auto"
         )
 
-        vectors = result["dense_vecs"]
+        if value == "auto":
+            if torch.cuda.is_available():
+                return "cuda:0"
 
-        dense = [vector.tolist() for vector in vectors]
+            return "cpu"
 
-        if dense:
-            self._dimension = len(dense[0])
+        if value == "cpu":
+            return "cpu"
 
-        sparse: list[SparseWeights] | None = None
+        if value == "cuda":
+            value = "cuda:0"
 
-        if self.return_sparse:
-            raw_sparse = result.get("lexical_weights")
-
-            if raw_sparse is None:
-                # Asked for sparse and did not get it. Degrade to dense-only
-                # rather than failing the request: retrieval still works
-                # without sparse, and a hard failure here would take down
-                # ingestion and search over a secondary signal.
-                logger.warning(
-                    "BGE-M3 returned no lexical_weights despite "
-                    "return_sparse=True; continuing dense-only."
+        if value.startswith("cuda:"):
+            if not torch.cuda.is_available():
+                raise EmbeddingModelLoadError(
+                    "CUDA embedding device was "
+                    "requested but CUDA is not available."
                 )
 
+            try:
+                index = int(
+                    value.split(
+                        ":",
+                        maxsplit=1,
+                    )[1]
+                )
+            except (
+                ValueError,
+                IndexError,
+            ) as exc:
+                raise ValueError(
+                    "CUDA device must use the "
+                    "format cuda:<index>."
+                ) from exc
+
+            if (
+                index < 0
+                or index
+                >= torch.cuda.device_count()
+            ):
+                raise EmbeddingModelLoadError(
+                    "Requested CUDA embedding device "
+                    "does not exist."
+                )
+
+            return value
+
+        raise ValueError(
+            "embedding_device must be one of: "
+            "auto, cpu, cuda, or cuda:<index>"
+        )
+
+    # ---------------------------------------------------------
+    # Core encoding
+    # ---------------------------------------------------------
+
+    def _encode(
+        self,
+        texts: Sequence[str],
+    ) -> EncodedTexts:
+        text_batch = list(
+            texts
+        )
+
+        if not text_batch:
+            raise ValueError(
+                "texts must not be empty"
+            )
+
+        if any(
+            not text
+            or not text.strip()
+            for text in text_batch
+        ):
+            raise ValueError(
+                "texts must not contain "
+                "empty strings"
+            )
+
+        self._warn_if_truncated(text_batch)
+
+        rss_before = self._rss_mib()
+
+        self._prepare_cuda_metrics()
+        self._synchronize_cuda()
+
+        started = perf_counter()
+
+        try:
+            result = self.model.encode(
+                text_batch,
+                batch_size=self.batch_size,
+                max_length=self.max_length,
+
+                # Dense is always required. Sparse rides along on the same
+                # forward pass when enabled -- see EmbeddingService docstring.
+                return_dense=True,
+                return_sparse=self.return_sparse,
+                return_colbert_vecs=False,
+            )
+
+            self._synchronize_cuda()
+
+            latency_ms = (
+                perf_counter() - started
+            ) * 1000.0
+
+            vectors = self._extract_dense_vectors(
+                result=result,
+                expected_count=len(
+                    text_batch
+                ),
+            )
+
+            # Lexical weights are deliberately NOT normalized: L2 scaling is
+            # a dense-vector invariant, and applying it to term weights would
+            # destroy the magnitudes a sparse dot product depends on.
+            sparse = self._extract_sparse_weights(
+                result=result,
+                expected_count=len(
+                    text_batch
+                ),
+            )
+
+        except EmbeddingContractError:
+            raise
+
+        except Exception as exc:
+            raise EmbeddingRuntimeError(
+                "BGE-M3 embedding inference failed."
+            ) from exc
+
+        rss_after = self._rss_mib()
+
+        self._dimension = len(
+            vectors[0]
+        )
+
+        self.last_metrics = (
+            EmbeddingRunMetrics(
+                text_count=len(
+                    text_batch
+                ),
+                dimension=self._dimension,
+                latency_ms=latency_ms,
+                device=self.device,
+                rss_before_mib=rss_before,
+                rss_after_mib=rss_after,
+                rss_delta_mib=(
+                    rss_after
+                    - rss_before
+                ),
+                cuda_peak_allocated_mib=(
+                    self._cuda_peak_memory_mib()
+                ),
+            )
+        )
+
+        return EncodedTexts(
+            dense=vectors,
+            sparse=sparse,
+        )
+
+    def _extract_sparse_weights(
+        self,
+        *,
+        result: Any,
+        expected_count: int,
+    ) -> list[SparseWeights] | None:
+        """
+        Pull the lexical half out of the same forward pass.
+
+        Returns None when sparse was not requested -- which is what keeps a
+        chunk embedded before sparse was enabled dense-searchable rather
+        than invalid.
+
+        A missing ``lexical_weights`` degrades to dense-only with a warning
+        rather than raising. Retrieval still works without sparse, and a hard
+        failure here would take down ingestion and search over a secondary
+        signal. A *mismatched* count is different: pairing sparse to dense by
+        position is only valid if the counts agree, so that is refused.
+        """
+        if not self.return_sparse:
+            return None
+
+        raw_sparse = result.get("lexical_weights")
+
+        if raw_sparse is None:
+            logger.warning(
+                "BGE-M3 returned no lexical_weights despite "
+                "return_sparse=True; continuing dense-only."
+            )
+
+            return None
+
+        sparse = [
+            normalize_lexical_weights(entry)
+            for entry in raw_sparse
+        ]
+
+        if len(sparse) != expected_count:
+            # EmbeddingContractError, not ValueError: _encode re-raises this
+            # type unwrapped while folding everything else into
+            # EmbeddingRuntimeError. A mispairing is a contract violation and
+            # the caller needs to see it as one.
+            raise EmbeddingContractError(
+                "BGE-M3 returned "
+                f"{len(sparse)} sparse vectors for {expected_count} "
+                "texts; refusing to pair them by position."
+            )
+
+        return sparse
+
+    def _extract_dense_vectors(
+        self,
+        *,
+        result: Any,
+        expected_count: int,
+    ) -> list[list[float]]:
+        if not isinstance(
+            result,
+            dict,
+        ):
+            raise EmbeddingContractError(
+                "BGE-M3 returned an unexpected "
+                "result type."
+            )
+
+        if "dense_vecs" not in result:
+            raise EmbeddingContractError(
+                "BGE-M3 output does not contain "
+                "dense_vecs."
+            )
+
+        raw_vectors = result[
+            "dense_vecs"
+        ]
+
+        try:
+            raw_count = len(
+                raw_vectors
+            )
+        except TypeError as exc:
+            raise EmbeddingContractError(
+                "BGE-M3 dense_vecs is not a "
+                "vector sequence."
+            ) from exc
+
+        if raw_count != expected_count:
+            raise EmbeddingContractError(
+                "BGE-M3 returned a different "
+                "number of vectors than input texts."
+            )
+
+        output: list[
+            list[float]
+        ] = []
+
+        for raw_vector in raw_vectors:
+            if hasattr(
+                raw_vector,
+                "tolist",
+            ):
+                raw_values = (
+                    raw_vector.tolist()
+                )
             else:
-                sparse = [
-                    normalize_lexical_weights(entry)
-                    for entry in raw_sparse
+                raw_values = list(
+                    raw_vector
+                )
+
+            try:
+                vector = [
+                    float(value)
+                    for value
+                    in raw_values
                 ]
+            except (
+                TypeError,
+                ValueError,
+            ) as exc:
+                raise EmbeddingContractError(
+                    "BGE-M3 returned a "
+                    "non-numeric dense vector."
+                ) from exc
 
-                if len(sparse) != len(dense):
-                    raise ValueError(
-                        "BGE-M3 returned "
-                        f"{len(sparse)} sparse vectors for {len(dense)} "
-                        "texts; refusing to pair them by position."
+            self._validate_vector(
+                vector
+            )
+
+            if self.normalize_embeddings:
+                vector = (
+                    self._normalize_vector(
+                        vector
                     )
+                )
 
-        return EncodedTexts(dense=dense, sparse=sparse)
+            output.append(
+                vector
+            )
+
+        if not output:
+            raise EmbeddingContractError(
+                "BGE-M3 returned no dense vectors."
+            )
+
+        return output
 
     def _warn_if_truncated(self, texts: Sequence[str]) -> None:
         """Report any text the encoder is about to cut short.
@@ -221,34 +734,112 @@ class EmbeddingService:
                     100.0 * (n_tokens - self.max_length) / n_tokens,
                 )
 
-    def _encode(self, texts: Sequence[str]) -> list[list[float]]:
-        """Dense-only view of :meth:`_encode_full`, kept for callers that
-        genuinely only need vectors."""
-        return self._encode_full(texts).dense
+    def _validate_vector(
+        self,
+        vector: list[float],
+    ) -> None:
+        if not vector:
+            raise EmbeddingContractError(
+                "BGE-M3 returned an empty "
+                "dense vector."
+            )
 
-    def embed_text(self, text: str) -> list[float]:
-        """Embed one legal text."""
-        return self._encode([text])[0]
+        if (
+            len(vector)
+            != self.expected_dimension
+        ):
+            raise EmbeddingContractError(
+                "BGE-M3 embedding dimension "
+                f"mismatch: expected "
+                f"{self.expected_dimension}, "
+                f"received {len(vector)}."
+            )
+
+        if not all(
+            math.isfinite(value)
+            for value in vector
+        ):
+            raise EmbeddingContractError(
+                "BGE-M3 returned NaN or "
+                "infinite embedding values."
+            )
+
+    @staticmethod
+    def _normalize_vector(
+        vector: list[float],
+    ) -> list[float]:
+        norm = math.sqrt(
+            sum(
+                value * value
+                for value in vector
+            )
+        )
+
+        if (
+            not math.isfinite(norm)
+            or norm <= 0.0
+        ):
+            raise EmbeddingContractError(
+                "BGE-M3 returned a zero or "
+                "invalid embedding vector."
+            )
+
+        return [
+            value / norm
+            for value in vector
+        ]
+
+    # ---------------------------------------------------------
+    # Public embedding API
+    # ---------------------------------------------------------
+
+    def embed_text(
+        self,
+        text: str,
+    ) -> list[float]:
+        """
+        Embed one legal text.
+        """
+
+        return self._encode(
+            [text]
+        ).dense[0]
 
     def embed_documents(
         self,
         texts: Sequence[str],
     ) -> list[list[float]]:
-        """Embed multiple legal texts using batching."""
-        return self._encode(texts)
+        """
+        Embed multiple legal passages in one batch.
+        """
+
+        return self._encode(
+            texts
+        ).dense
 
     def embed_query(
         self,
         query: str | ProcessedQuery,
     ) -> list[float]:
-        """Embed a raw query or an already processed query."""
+        """
+        Embed a raw query or an already processed query.
+
+        Processed queries use normalized_text rather than
+        replacing the user's original query.
+        """
+
         text = (
             query.normalized_text
-            if isinstance(query, ProcessedQuery)
+            if isinstance(
+                query,
+                ProcessedQuery,
+            )
             else query
         )
 
-        return self.embed_text(text)
+        return self.embed_text(
+            text
+        )
 
     def embed_processed_query(
         self,
@@ -269,7 +860,7 @@ class EmbeddingService:
             else query.text_original
         )
 
-        encoded = self._encode_full([text])
+        encoded = self._encode([text])
 
         vector = encoded.dense[0]
         sparse = encoded.sparse_at(0)
@@ -290,8 +881,13 @@ class EmbeddingService:
         chunk_id: str,
         text: str,
     ) -> EmbeddedDocumentChunk:
-        """Embed one document chunk received from M1."""
-        encoded = self._encode_full([text])
+        """
+        Embed one document chunk.
+        """
+
+        encoded = self._encode(
+            [text]
+        )
 
         vector = encoded.dense[0]
 
@@ -302,43 +898,64 @@ class EmbeddingService:
             embedding=vector,
             sparse_embedding=encoded.sparse_at(0),
             model=self.model_name,
-            dimension=len(vector),
+            dimension=len(
+                vector
+            ),
         )
 
     def embed_document_chunks(
         self,
-        chunks: Sequence[DocumentChunk],
-    ) -> list[EmbeddedDocumentChunk]:
-        """Embed document chunks received from M1.
-
-        M1 provides DocumentChunk objects.
-        M2 embeds their text using BGE-M3 while preserving
-        all source information required by downstream consumers.
+        chunks: Sequence[
+            DocumentChunk
+        ],
+    ) -> list[
+        EmbeddedDocumentChunk
+    ]:
         """
+        Embed trusted document chunks received from M1.
+
+        All M1 source/provenance metadata is preserved.
+        """
+
         if not chunks:
-            raise ValueError("chunks must not be empty")
+            raise ValueError(
+                "chunks must not be empty"
+            )
 
-        texts = [chunk.text for chunk in chunks]
+        texts = [
+            chunk.text
+            for chunk in chunks
+        ]
 
-        encoded = self._encode_full(texts)
+        encoded = self._encode(
+            texts
+        )
 
         vectors = encoded.dense
 
-        results: list[EmbeddedDocumentChunk] = []
+        results: list[
+            EmbeddedDocumentChunk
+        ] = []
 
         for index, (chunk, vector) in enumerate(
             zip(chunks, vectors)
         ):
             results.append(
                 EmbeddedDocumentChunk(
-                    document_id=chunk.document_id,
-                    chunk_id=chunk.chunk_id,
+                    document_id=(
+                        chunk.document_id
+                    ),
+                    chunk_id=(
+                        chunk.chunk_id
+                    ),
                     text=chunk.text,
                     page=chunk.page,
                     section=chunk.section,
                     clause=chunk.clause,
                     language=chunk.language,
-                    document_type=chunk.document_type,
+                    document_type=(
+                        chunk.document_type
+                    ),
                     metadata=chunk.metadata,
                     client_id=chunk.client_id,
                     matter_id=chunk.matter_id,
@@ -350,8 +967,116 @@ class EmbeddingService:
                         encoded.sparse_at(index)
                     ),
                     model=self.model_name,
-                    dimension=len(vector),
+                    dimension=len(
+                        vector
+                    ),
                 )
             )
 
         return results
+
+    # ---------------------------------------------------------
+    # Metrics helpers
+    # ---------------------------------------------------------
+
+    @staticmethod
+    def _rss_mib(
+        ) -> float:
+        process = psutil.Process(
+            os.getpid()
+        )
+
+        return (
+            process
+            .memory_info()
+            .rss
+            / _BYTES_PER_MIB
+        )
+
+    def _prepare_cuda_metrics(
+    self,
+) -> None:
+        index = self._cuda_device_index()
+
+        if index is None:
+            return
+
+        try:
+            torch.cuda.reset_peak_memory_stats(
+                index
+            )
+        except RuntimeError:
+            # Metrics are observability only.
+            # A metrics API incompatibility must not prevent
+            # otherwise-valid BGE-M3 inference.
+            self._cuda_peak_metrics_available = False
+    def _synchronize_cuda(
+        self,
+    ) -> None:
+        index = self._cuda_device_index()
+
+        if index is None:
+            return
+
+        try:
+            torch.cuda.synchronize(
+                index
+            )
+        except RuntimeError:
+            # If synchronization is unavailable for metrics/timing,
+            # let model inference determine whether CUDA itself works.
+            return
+    def _cuda_peak_memory_mib(
+        self,
+    ) -> float | None:
+        index = self._cuda_device_index()
+
+        if (
+            index is None
+            or not self._cuda_peak_metrics_available
+        ):
+            return None
+
+        try:
+            value = (
+                torch.cuda
+                .max_memory_allocated(
+                    index
+                )
+            )
+        except RuntimeError:
+            self._cuda_peak_metrics_available = False
+            return None
+
+        return (
+            value
+            / _BYTES_PER_MIB
+        )
+
+    def _cuda_device_name(
+        self,
+    ) -> str | None:
+        index = self._cuda_device_index()
+
+        if index is None:
+            return None
+
+        try:
+            return (
+                torch.cuda.get_device_name(
+                    index
+                )
+            )
+        except RuntimeError:
+            return None
+
+    @staticmethod
+    def _package_version(
+        package_name: str,
+    ) -> str:
+        try:
+            return version(
+                package_name
+            )
+        except PackageNotFoundError:
+            return "unknown"

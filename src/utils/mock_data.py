@@ -40,7 +40,7 @@ def generate_mock_sparse_weights(
     This is still not BGE-M3: there is no learned term importance, only
     frequency and length. It exists so ``run_demo.py`` exercises the real
     native-sparse code path without the model weights installed. Real weights
-    come from :meth:`EmbeddingService._encode_full`.
+    come from :meth:`EmbeddingService._encode`.
     """
 
     words = [

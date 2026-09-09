@@ -1,4 +1,13 @@
-const API_BASE = window.AI_LEXORA_API_BASE || "http://localhost:8000";
+import { demoCases, demoLawyers } from "./frontend/demoData.js";
+import {
+  API_BASE,
+  getUserErrorMessage,
+  login,
+  logout,
+  register,
+  requestApi as requestBackendApi,
+} from "./frontend/react/apiClient.js";
+
 let documentParserPromise;
 
 function loadDocumentParser() {
@@ -39,31 +48,7 @@ themeToggles.forEach((toggle) => {
   });
 });
 
-async function requestApi(path, options = {}) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-    ...options,
-  });
-
-  const text = await response.text();
-  let payload = {};
-
-  try {
-    payload = text ? JSON.parse(text) : {};
-  } catch {
-    payload = { detail: "استجاب الخادم بتنسيق غير صالح." };
-  }
-
-  if (!response.ok) {
-    const message = payload.error?.message || payload.detail || `Request failed with status ${response.status}`;
-    throw new Error(Array.isArray(message) ? message.map((item) => item.msg).join("، ") : message);
-  }
-
-  return payload;
-}
+const requestApi = requestBackendApi;
 
 function renderJson(target, payload) {
   if (!target) return;
@@ -78,35 +63,6 @@ function escapeHtml(value) {
     "\"": "&quot;",
     "'": "&#039;",
   }[char]));
-}
-
-function renderAgentResult(target, payload) {
-  if (!target) return;
-
-  const state = payload.status === "error" ? "error" : "success";
-  target.dataset.state = state;
-
-  const meta = [];
-  if (payload.endpoint) meta.push(payload.endpoint);
-  if (payload.attachments?.length) meta.push(`${payload.attachments.length} مرفقات`);
-  if (payload.confidence !== undefined) meta.push(`ثقة ${Math.round(payload.confidence * 100)}%`);
-
-  target.innerHTML = `
-    <h3>${escapeHtml(payload.title || "نتيجة المساعد")}</h3>
-    <p>${escapeHtml(payload.answer || payload.message || "تم تجهيز السؤال للربط مع خدمة الذكاء الاصطناعي.")}</p>
-    ${meta.length ? `<div class="agent-meta">${meta.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>` : ""}
-  `;
-}
-
-function renderApiResult(target, endpoint, result) {
-  renderJson(target, {
-    status: "success",
-    endpoint,
-    answer: result.answer,
-    confidence: result.confidence,
-    citations: result.citations || [],
-    query_id: result.query_id,
-  });
 }
 
 function setStatusCard(target, state, label, detail) {
@@ -167,51 +123,86 @@ document.querySelectorAll("[data-check-ready]").forEach((button) => {
 });
 
 
-document
-  .querySelectorAll("[data-ai-form], [data-rag-form]")
-  .forEach((form) => {
-    form.addEventListener("submit", (event) => {
-      event.preventDefault();
-
-      showToast(
-        "هذه الواجهة القديمة غير مفعلة. استخدم واجهة المساعد القانوني المتصلة بالنظام.",
-        "error"
-      );
-    });
+document.querySelectorAll("form:not([data-file-search-form]):not([data-auth-panel])").forEach((form) => {
+  form.addEventListener("invalid", (event) => {
+    form.classList.add("was-validated");
+    event.target.setAttribute("aria-invalid", "true");
+  }, true);
+  form.querySelectorAll("input, select, textarea").forEach((control) => {
+    control.addEventListener("input", () => control.setAttribute("aria-invalid", control.validity.valid ? "false" : "true"));
+    control.addEventListener("change", () => control.setAttribute("aria-invalid", control.validity.valid ? "false" : "true"));
   });
-
-
-document.querySelectorAll("form:not([data-ai-form]):not([data-rag-form]):not([data-file-search-form]):not([data-agent-form])").forEach((form) => {
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     form.classList.add("was-validated");
+    form.querySelectorAll("input, select, textarea").forEach((control) => {
+      control.setAttribute("aria-invalid", control.validity.valid ? "false" : "true");
+    });
     if (form.checkValidity()) {
       const message = form.dataset.success || "تم تنفيذ العملية بنجاح.";
       showToast(message, "success");
       form.reset();
       form.classList.remove("was-validated");
+      form.querySelectorAll("input, select, textarea").forEach((control) => control.setAttribute("aria-invalid", "false"));
     }
   });
 });
 
-const modal = document.querySelector("[data-modal]");
+document.querySelectorAll("form[data-auth-panel]").forEach((form) => {
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!form.checkValidity()) {
+      form.classList.add("was-validated");
+      return;
+    }
 
-document.querySelectorAll("[data-open-modal]").forEach((button) => {
-  button.addEventListener("click", () => {
-    if (modal) modal.hidden = false;
+    const submitButton = form.querySelector("button[type=submit]");
+    submitButton.disabled = true;
+    const panel = form.dataset.authPanel;
+
+    try {
+      if (panel === "login") {
+        await login(
+          form.querySelector("#login-email").value.trim(),
+          form.querySelector("#login-password").value,
+        );
+        showToast("تم تسجيل الدخول بنجاح.", "success");
+        window.setTimeout(() => window.location.assign("/dashboard.html"), 350);
+      } else if (panel === "register") {
+        await register(
+          form.querySelector("#register-name").value.trim(),
+          form.querySelector("#register-email").value.trim(),
+          form.querySelector("#register-password").value,
+        );
+        showToast("تم إنشاء الحساب وتسجيل الدخول.", "success");
+        window.setTimeout(() => window.location.assign("/dashboard.html"), 350);
+      } else if (panel === "forgot") {
+        await requestApi("/api/auth/forgot-password", {
+          method: "POST",
+          body: JSON.stringify({ email: form.querySelector("#forgot-email").value.trim() }),
+        });
+        showToast("تم إرسال طلب استعادة كلمة المرور.", "success");
+        form.reset();
+      }
+    } catch (error) {
+      showToast(getUserErrorMessage(error), "error");
+    } finally {
+      submitButton.disabled = false;
+    }
   });
 });
 
-document.querySelectorAll("[data-close-modal]").forEach((button) => {
-  button.addEventListener("click", () => {
-    if (modal) modal.hidden = true;
-  });
-});
-
-document.querySelectorAll("[data-save-modal]").forEach((button) => {
-  button.addEventListener("click", () => {
-    if (modal) modal.hidden = true;
-    showToast("تم حفظ بيانات القضية محليا.", "success");
+document.querySelectorAll("[data-logout]").forEach((button) => {
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    try {
+      await logout();
+      showToast("تم تسجيل الخروج.", "success");
+      window.location.assign("/auth.html");
+    } catch (error) {
+      showToast(getUserErrorMessage(error), "error");
+      button.disabled = false;
+    }
   });
 });
 
@@ -220,6 +211,200 @@ const filterSelect = document.querySelector("[data-filter]");
 const tableBody = document.querySelector("[data-cases-table]");
 const emptyState = document.querySelector("[data-empty]");
 const roleSwitch = document.querySelector("[data-role-switch]");
+const modal = document.querySelector("[data-modal]");
+const modalTitle = modal?.querySelector("[data-modal-title]");
+const modalContext = modal?.querySelector("[data-modal-context]");
+const modalSave = modal?.querySelector("[data-save-modal]");
+const modalSecondary = modal?.querySelector("[data-modal-secondary]");
+const modalFields = {
+  id: modal?.querySelector("[data-modal-case-id]"),
+  title: modal?.querySelector("[data-modal-case-title]"),
+  client: modal?.querySelector("[data-modal-case-client]"),
+  lawyer: modal?.querySelector("[data-modal-case-lawyer]"),
+  status: modal?.querySelector("[data-modal-case-status]"),
+};
+const dashboardCases = [...demoCases];
+let modalMode = "create";
+let modalCaseId = "";
+let lastModalTrigger = null;
+
+function statusClass(status) {
+  return {
+    نشطة: "active-case",
+    عاجلة: "urgent",
+    معلقة: "review",
+    مغلقة: "closed",
+  }[status] || "review";
+}
+
+function renderCaseRows() {
+  if (!tableBody) return;
+
+  tableBody.innerHTML = dashboardCases.map((item) => `
+    <tr data-row-case-id="${escapeHtml(item.id)}" data-status="${escapeHtml(item.status)}" data-scope="${item.lawyer === "محامي 1" ? "lawyer" : "manager"}">
+      <td>${escapeHtml(item.id)}</td>
+      <td>${escapeHtml(item.title)}</td>
+      <td>${escapeHtml(item.client)}</td>
+      <td>${escapeHtml(item.lawyer)}</td>
+      <td>${escapeHtml(item.category || "غير محدد")}</td>
+      <td>${escapeHtml(item.priority || "عادية")}</td>
+      <td><span class="badge ${statusClass(item.status)}">${escapeHtml(item.status)}</span></td>
+      <td>${escapeHtml(item.deadline || "لا يوجد")}</td>
+      <td class="actions">
+        <button type="button" data-case-action="view" data-case-id="${escapeHtml(item.id)}">عرض</button>
+        <button type="button" data-case-action="edit" data-case-id="${escapeHtml(item.id)}">تعديل</button>
+        <button type="button" data-case-action="assign" data-case-id="${escapeHtml(item.id)}">تعيين</button>
+      </td>
+    </tr>
+  `).join("");
+
+  tableBody.querySelectorAll("[data-case-action]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const item = dashboardCases.find((candidate) => candidate.id === button.dataset.caseId);
+      if (!item) return;
+      openCaseModal(button.dataset.caseAction, item, button);
+    });
+  });
+}
+
+function setModalFieldValues(item = {}) {
+  Object.entries(modalFields).forEach(([field, input]) => {
+    if (input) input.value = item[field] || "";
+  });
+}
+
+function setModalMode(mode, item = null, trigger = null) {
+  modalMode = mode;
+  modalCaseId = item?.id || "";
+  lastModalTrigger = trigger;
+  setModalFieldValues(item || {});
+
+  const isView = mode === "view";
+  const isAssign = mode === "assign";
+  const labels = {
+    create: "إضافة قضية تجريبية",
+    view: "عرض بيانات القضية",
+    edit: "تعديل قضية تجريبية",
+    assign: "تعيين محامٍ تجريبي",
+  };
+  const contexts = {
+    create: "هذه البيانات تجريبية وتظهر في الجدول الحالي فقط.",
+    view: "عرض محلي فقط. لا توجد عملية Backend لتفاصيل القضية حاليًا.",
+    edit: "التعديل محلي ويستمر أثناء فتح الصفحة فقط.",
+    assign: "التعيين محلي فقط. لن يتم تحديث نظام الصلاحيات حاليًا.",
+  };
+
+  if (modalTitle) modalTitle.textContent = labels[mode];
+  if (modalContext) modalContext.textContent = contexts[mode];
+  if (modalSave) {
+    modalSave.hidden = isView;
+    modalSave.textContent = mode === "assign" ? "حفظ التعيين محليًا" : mode === "create" ? "إضافة للعرض التجريبي" : "حفظ التعديل المحلي";
+  }
+  if (modalSecondary) {
+    modalSecondary.toggleAttribute("hidden", !isView);
+    modalSecondary.textContent = "إغلاق القضية (Demo)";
+  }
+  Object.entries(modalFields).forEach(([field, input]) => {
+    if (!input) return;
+    input.disabled = isView || (isAssign && !["lawyer"].includes(field));
+  });
+  if (modal) {
+    modal.hidden = false;
+    window.setTimeout(() => (isView ? modalFields.title : modalFields.id)?.focus(), 0);
+  }
+}
+
+function openCaseModal(mode, item = null, trigger = null) {
+  setModalMode(mode, item, trigger);
+}
+
+function closeCaseModal() {
+  if (!modal) return;
+  modal.hidden = true;
+  lastModalTrigger?.focus();
+  lastModalTrigger = null;
+}
+
+function saveCaseModal() {
+  const values = Object.fromEntries(
+    Object.entries(modalFields).map(([field, input]) => [field, input?.value.trim() || ""]),
+  );
+
+  if (modalMode === "create") {
+    if (!values.id || !values.title || !values.client) {
+      showToast("أكمل رقم القضية والعنوان والعميل قبل الإضافة.", "error");
+      return;
+    }
+    if (dashboardCases.some((item) => item.id === values.id)) {
+      showToast("رقم القضية مستخدم بالفعل في البيانات التجريبية.", "error");
+      return;
+    }
+    dashboardCases.push({
+      ...values,
+      category: "غير محدد",
+      priority: "عادية",
+      deadline: "لا يوجد",
+    });
+    renderCaseRows();
+    applyTableFilters();
+    closeCaseModal();
+    showToast("تمت إضافة القضية للعرض التجريبي فقط.", "info");
+    return;
+  }
+
+  const item = dashboardCases.find((candidate) => candidate.id === modalCaseId);
+  if (!item) return;
+  Object.assign(item, values);
+  renderCaseRows();
+  applyTableFilters();
+  closeCaseModal();
+  showToast(modalMode === "assign" ? "تم تحديث المحامي في العرض التجريبي فقط." : "تم تحديث القضية في العرض التجريبي فقط.", "info");
+}
+
+renderCaseRows();
+
+document.querySelector("[data-open-modal]")?.addEventListener("click", (event) => {
+  openCaseModal("create", null, event.currentTarget);
+});
+
+document.querySelectorAll("[data-close-modal]").forEach((button) => {
+  button.addEventListener("click", closeCaseModal);
+});
+
+modalSave?.addEventListener("click", saveCaseModal);
+modalSecondary?.addEventListener("click", () => {
+  const item = dashboardCases.find((candidate) => candidate.id === modalCaseId);
+  if (!item) return;
+  item.status = "مغلقة";
+  renderCaseRows();
+  applyTableFilters();
+  closeCaseModal();
+  showToast("تم إغلاق القضية في العرض التجريبي فقط.", "info");
+});
+
+modal?.addEventListener("click", (event) => {
+  if (event.target === modal) closeCaseModal();
+});
+
+modal?.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeCaseModal();
+
+  if (event.key !== "Tab") return;
+  const focusable = Array.from(
+    modal.querySelectorAll("button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])"),
+  );
+  if (!focusable.length) return;
+
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+});
 
 function getSelectedRole() {
   return roleSwitch?.value || "lawyer";
@@ -317,119 +502,14 @@ function formatAttachmentSize(size) {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-document.querySelectorAll("[data-agent-form]").forEach((form) => {
-  const attachmentToggle = form.querySelector("[data-attachment-toggle]");
-  const attachmentMenu = form.querySelector("[data-attachment-menu]");
-  const fileInput = form.querySelector("[data-file-input]");
-  const imageInput = form.querySelector("[data-image-input]");
-  const cameraInput = form.querySelector("[data-camera-input]");
-  const filePicker = form.querySelector("[data-pick-files]");
-  const cameraPicker = form.querySelector("[data-pick-camera]");
-  const imagePicker = form.querySelector("[data-pick-image]");
-  const attachmentList = form.querySelector("[data-attachment-list]");
-  const output = form.parentElement?.querySelector("[data-agent-output]");
-  const attachments = [];
-
-  function closeAttachmentMenu() {
-    if (!attachmentMenu || !attachmentToggle) return;
-    attachmentMenu.hidden = true;
-    attachmentToggle.setAttribute("aria-expanded", "false");
-  }
-
-  function renderAttachments() {
-    if (!attachmentList) return;
-    attachmentList.innerHTML = "";
-
-    attachments.forEach((attachment) => {
-      const chip = document.createElement("span");
-      chip.className = "attachment-chip";
-
-      const text = document.createElement("span");
-      text.textContent = attachment.name;
-
-      const meta = document.createElement("small");
-      meta.textContent = `${attachment.source === "camera" ? "كاميرا" : attachment.source === "image" ? "صورة" : "ملف"} - ${attachment.sizeLabel}`;
-      text.appendChild(meta);
-
-      const removeButton = document.createElement("button");
-      removeButton.type = "button";
-      removeButton.textContent = "x";
-      removeButton.setAttribute("aria-label", `حذف ${attachment.name}`);
-      removeButton.addEventListener("click", () => {
-        const index = attachments.findIndex((item) => item.id === attachment.id);
-        if (index >= 0) attachments.splice(index, 1);
-        renderAttachments();
-      });
-
-      chip.append(text, removeButton);
-      attachmentList.appendChild(chip);
-    });
-  }
-
-  function addAttachments(fileList, source) {
-    Array.from(fileList || []).forEach((file) => {
-      const attachment = {
-        id: `${source}_${file.name}_${file.lastModified}_${file.size}`,
-        name: file.name || "camera-image",
-        type: file.type || "unknown",
-        size: file.size,
-        sizeLabel: formatAttachmentSize(file.size),
-        source,
-      };
-
-      if (!attachments.some((item) => item.id === attachment.id)) {
-        attachments.push(attachment);
-      }
-    });
-
-    renderAttachments();
-    closeAttachmentMenu();
-  }
-
-  attachmentToggle?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (!attachmentMenu || !attachmentToggle) return;
-    const shouldOpen = attachmentMenu.hidden;
-    attachmentMenu.hidden = !shouldOpen;
-    attachmentToggle.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
-  });
-
-  filePicker?.addEventListener("click", () => fileInput?.click());
-  imagePicker?.addEventListener("click", () => imageInput?.click());
-  cameraPicker?.addEventListener("click", () => cameraInput?.click());
-
-  fileInput?.addEventListener("change", (event) => {
-    addAttachments(event.target.files, "local_file");
-    event.target.value = "";
-  });
-
-  cameraInput?.addEventListener("change", (event) => {
-    addAttachments(event.target.files, "camera");
-    event.target.value = "";
-  });
-
-  imageInput?.addEventListener("change", (event) => {
-    addAttachments(event.target.files, "image");
-    event.target.value = "";
-  });
-
-  form.addEventListener("submit", (event) => {
-    event.preventDefault();
-
-    showToast(
-      "واجهة React غير متاحة حالياً. أعد تحميل الصفحة ثم حاول مرة أخرى.",
-      "error"
-    );
-  });
-});
-
 document.querySelectorAll("[data-file-search-form]").forEach((form) => {
   const fileInput = form.querySelector("[data-search-files]");
   const clearButton = form.querySelector("[data-clear-search-files]");
   const fileList = form.querySelector("[data-search-file-list]");
   const output = form.parentElement?.querySelector("[data-file-search-output]");
+  const submitButton = form.querySelector("button[type=submit]");
   let selectedFiles = [];
+  let searchLoading = false;
 
   function renderSearchFiles() {
     if (!fileList) return;
@@ -603,6 +683,7 @@ document.querySelectorAll("[data-file-search-form]").forEach((form) => {
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (searchLoading) return;
     const term = new FormData(form).get("searchTerm")?.toString().trim();
 
     if (!term) {
@@ -620,11 +701,36 @@ document.querySelectorAll("[data-file-search-form]").forEach((form) => {
       return;
     }
 
-    const results = findFileSearchResults(term);
+    searchLoading = true;
     activeSearchTerm = term;
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = "جاري البحث...";
+    }
+    if (output) {
+      output.dataset.state = "searching";
+      output.innerHTML = "<h3>جاري البحث...</h3><p>يتم فحص المستندات المحددة الآن.</p>";
+    }
 
-    renderFileSearchResults(results, term);
-    showToast(results.length ? "تم العثور على نتائج داخل الملفات." : "لا توجد نتيجة مطابقة.", results.length ? "success" : "error");
+    try {
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+      const results = findFileSearchResults(term);
+      renderFileSearchResults(results, term);
+      showToast(results.length ? "تم العثور على نتائج داخل الملفات." : "لا توجد نتيجة مطابقة.", results.length ? "success" : "error");
+    } catch {
+      if (output) {
+        output.dataset.state = "error";
+        output.innerHTML = "<h3>تعذر تنفيذ البحث</h3><p>حدث خطأ أثناء فحص الملفات. حاول مرة أخرى.</p><button class=\"ghost-btn\" type=\"button\" data-search-retry>إعادة المحاولة</button>";
+        output.querySelector("[data-search-retry]")?.addEventListener("click", () => form.requestSubmit());
+      }
+      showToast("تعذر تنفيذ البحث. حاول مرة أخرى.", "error");
+    } finally {
+      searchLoading = false;
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = "بحث داخل الملفات";
+      }
+    }
   });
 });
 

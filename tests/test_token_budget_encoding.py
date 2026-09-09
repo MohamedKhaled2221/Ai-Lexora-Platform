@@ -62,6 +62,11 @@ class _FakeBGEM3:
 def _service(tokenizer=None, **kwargs):
     fake = _FakeBGEM3(tokenizer=tokenizer)
 
+    # See test_sparse_embedding._service: the fake's vector width must be
+    # declared against M2's expected_dimension contract check.
+    kwargs.setdefault("expected_dimension", 3)
+    kwargs.setdefault("device", "cpu")
+
     with patch(
         "src.embedding_service.BGEM3FlagModel",
         return_value=fake,

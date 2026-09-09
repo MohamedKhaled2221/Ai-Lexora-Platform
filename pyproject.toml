@@ -63,4 +63,4 @@ package = false
 #
 # The chain is  pyproject.toml --uv lock--> uv.lock --uv export--> requirements.txt,
 # so this file is the only one of the three to edit by hand. See the
-# "Environment and dependency authority" section of README.md.
+# "Environment and dependency authority" section of docs/ENVIRONMENT.md.

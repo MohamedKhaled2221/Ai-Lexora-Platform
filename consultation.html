@@ -118,15 +118,11 @@
       <div class="table-header">
         <div>
           <h2>مستندات مرتبطة</h2>
-          <p>رفع المستند حاليا واجهة فقط، والباك اند الحالي لا يحتوي endpoint upload مباشر.</p>
+          <p>إدارة المستندات المرفوعة والمفهرسة، مع توضيح حالة كل ملف وإجراءات العرض المحلية.</p>
         </div>
-        <button class="ghost-btn" type="button" data-show-toast="رفع المستندات يحتاج Endpoint لاحق للـ ingestion والفهرسة.">رفع مستند</button>
+        <span class="demo-label">إدارة العرض محلية</span>
       </div>
-      <div class="document-grid">
-        <article class="document-card"><strong>عقد التوريد.pdf</strong><span>قيد المراجعة</span><p>مرتبط بالقضية LEX-1024</p></article>
-        <article class="document-card"><strong>مذكرة دفاع.docx</strong><span>جاهز</span><p>آخر تعديل: 18 أغسطس</p></article>
-        <article class="document-card"><strong>محضر جلسة.pdf</strong><span>أرشيف</span><p>تمت مراجعته بواسطة المدير</p></article>
-      </div>
+      <div data-react-widget="document-library"></div>
     </section>
 
     <section class="case-detail-section api-section">
@@ -134,84 +130,16 @@
         <div>
           <p class="eyebrow">Legal AI</p>
           <h2>تجربة المساعد القانوني والبحث بالمصادر</h2>
-            <p>المساعد القانوني يجيب بالاعتماد على المستندات المرفوعة والمفهرسة والمحددة للبحث.</p>
+            <p>Legal AI يجيب عن سؤال قانوني ويعرض citations عند توفرها. استخدم File Search أدناه للعثور على كلمة أو جملة حرفيًا داخل الملفات.</p>
         </div>
         <div class="quick-actions">
           <button class="ghost-btn" type="button" data-copy-endpoint="/api/search/ask">نسخ رابط البحث</button>
         </div>
       </div>
 
-      <div class="form-layout react-preview-grid" style="width:100%;margin:0">
-        <div class="consultation-form" data-react-widget="legal-assistant" data-mode="ai">
-          <div class="react-widget legal-agent-widget">
-            <div class="table-header">
-              <div>
-                <p class="eyebrow">AI Agent Workspace</p>
-                <h2>اسأل المساعد القانوني</h2>
-                <p>اكتب السؤال واضف مستندات أو صور من جهازك أو من الكاميرا.</p>
-              </div>
-            </div>
-            <form class="assistant-form" data-agent-form>
-              <label class="assistant-composer-label">السؤال
-                <div class="assistant-composer">
-                  <div class="attachment-menu-wrap">
-                    <button class="attach-button" type="button" data-attachment-toggle aria-label="إضافة ملف أو صورة" aria-expanded="false">+</button>
-                    <div class="attachment-menu" data-attachment-menu hidden>
-                      <button type="button" data-pick-camera aria-label="فتح الكاميرا" title="فتح الكاميرا"><img src="assets/icons/camera.png" alt="" aria-hidden="true">الكاميرا</button>
-                      <button type="button" data-pick-image aria-label="اختيار صورة" title="اختيار صورة"><img src="assets/icons/image.png" alt="" aria-hidden="true">صورة</button>
-                      <button type="button" data-pick-files aria-label="اختيار ملف" title="اختيار ملف"><img src="assets/icons/file.png" alt="" aria-hidden="true">ملف</button>
-                    </div>
-                  </div>
-                  <textarea name="question" placeholder="اكتب سؤالك القانوني هنا..." required></textarea>
-                </div>
-              </label>
-              <input class="visually-hidden" type="file" multiple accept=".pdf,.docx,.txt,.png,.jpg,.jpeg" data-file-input>
-              <input class="visually-hidden" type="file" accept="image/*" capture="environment" data-camera-input>
-              <input class="visually-hidden" type="file" multiple accept=".png,.jpg,.jpeg,image/png,image/jpeg" data-image-input>
-              <div class="attachment-list" data-attachment-list aria-label="المرفقات المختارة"></div>
-              <button class="submit-btn" type="submit">إرسال السؤال</button>
-            </form>
-            <div class="agent-result" data-agent-output data-state="waiting">
-              <h3>في انتظار السؤال</h3>
-              <p>الإجابة هتظهر هنا بشكل واضح .</p>
-            </div>
-          </div>
-        </div>
-        <div class="consultation-form" data-react-widget="legal-assistant" data-mode="search">
-          <div class="react-widget legal-agent-widget">
-            <div class="table-header">
-              <div>
-                <p class="eyebrow">AI Agent Workspace</p>
-                <h2>البحث القانوني بالمصادر</h2>
-                <p>اختر المستندات المفهرسة ثم اطرح سؤالك للبحث القانوني بالمصادر.</p>
-              </div>
-            </div>
-            <form class="assistant-form" data-agent-form data-agent-mode="search">
-              <label class="assistant-composer-label">سؤال البحث
-                <div class="assistant-composer">
-                  <div class="attachment-menu-wrap">
-                    <button class="attach-button" type="button" data-attachment-toggle aria-label="إضافة ملف أو صورة" aria-expanded="false">+</button>
-                    <div class="attachment-menu" data-attachment-menu hidden>
-                      <button type="button" data-pick-camera aria-label="فتح الكاميرا" title="فتح الكاميرا"><img src="assets/icons/camera.png" alt="" aria-hidden="true">الكاميرا</button>
-                      <button type="button" data-pick-image aria-label="اختيار صورة" title="اختيار صورة"><img src="assets/icons/image.png" alt="" aria-hidden="true">صورة</button>
-                      <button type="button" data-pick-files aria-label="اختيار ملف" title="اختيار ملف"><img src="assets/icons/file.png" alt="" aria-hidden="true">ملف</button>
-                    </div>
-                  </div>
-                  <textarea name="question" placeholder="اكتب سؤال البحث هنا..." required></textarea>
-                </div>
-              </label>
-              <input class="visually-hidden" type="file" multiple accept=".pdf,.docx,.txt,.png,.jpg,.jpeg" data-file-input>
-              <input class="visually-hidden" type="file" accept="image/*" capture="environment" data-camera-input>
-              <input class="visually-hidden" type="file" multiple accept=".png,.jpg,.jpeg,image/png,image/jpeg" data-image-input>
-              <div class="attachment-list" data-attachment-list aria-label="المرفقات المختارة"></div>
-              <button class="submit-btn" type="submit">تشغيل البحث بالمصادر</button>
-            </form>
-            <div class="agent-result" data-agent-output data-state="waiting">
-              <h3>في انتظار البحث</h3>
-              <p>نتيجة البحث هتظهر هنا بشكل منظم عند الربط الكامل بالباك.</p>
-            </div>
-          </div>
-        </div>
+      <div class="form-layout react-preview-grid consultation-preview-grid">
+        <div class="consultation-form" data-react-widget="legal-assistant" data-mode="ai"></div>
+        <div class="consultation-form" data-react-widget="legal-assistant" data-mode="search"></div>
       </div>
     </section>
 
@@ -221,14 +149,14 @@
           <div>
             <p class="eyebrow">البحث داخل المستندات</p>
             <h2>البحث داخل ملفات المحامي</h2>
-            <p>ارفع ملفات القضية وابحث داخلها. النص المطابق يظهر بعلامة هايلايت لتسهيل المراجعة.</p>
+            <p>File Search للعثور على كلمة أو جملة داخل ملفاتك محليًا، مع تمييز النص المطابق. لا يولّد إجابة تحليلية ولا يرسل البحث إلى Legal AI.</p>
           </div>
         </div>
 
         <form class="assistant-form" data-file-search-form>
           <label class="assistant-composer-label">ملفات البحث
             <div class="assistant-composer file-search-actions">
-              <input type="file" multiple accept=".txt,.md,.csv,.json,.pdf,.doc,.docx" data-search-files>
+              <input type="file" aria-label="اختيار ملفات للبحث المحلي" multiple accept=".txt,.md,.csv,.json,.pdf,.doc,.docx" data-search-files>
               <button class="ghost-btn" type="button" data-clear-search-files>مسح الملفات</button>
             </div>
           </label>
@@ -241,7 +169,7 @@
           <button class="submit-btn" type="submit">بحث داخل الملفات</button>
         </form>
 
-        <div class="agent-result file-search-results" data-file-search-output data-state="waiting">
+        <div class="agent-result file-search-results" data-file-search-output data-state="waiting" role="status" aria-live="polite">
           <h3>ارفع ملف وابدأ البحث</h3>
           <p>يدعم البحث داخل TXT وMD وCSV وJSON وPDF وDOCX. ملفات DOC القديمة غير قابلة للقراءة الموثوقة داخل المتصفح.</p>
         </div>
