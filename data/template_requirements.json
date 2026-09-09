@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated_at": "2026-09-06T10:00:00Z",
+  "updated_at": "2026-09-09T10:00:00Z",
   "templates": [
     {
       "template_id": "TMPL-EMP-EG-001",
@@ -24,7 +24,15 @@
           "condition": "has_trade_secrets",
           "description": "Non-compete required when employee has access to trade secrets"
         }
-      ]
+      ],
+      "section_placeholders": {
+        "section_termination": "{{TERMINATION_CLAUSE}}",
+        "section_governing_law": "{{GOVERNING_LAW_CLAUSE}}",
+        "section_dispute_resolution": "{{DISPUTE_RESOLUTION_CLAUSE}}",
+        "section_confidentiality": "{{CONFIDENTIALITY_CLAUSE}}",
+        "section_non_compete": "{{NON_COMPETE_CLAUSE}}"
+      },
+      "template_structure": "عقد عمل فردي - جمهورية مصر العربية\n\n1. إنهاء العقد وتصفية المستحقات:\n{{TERMINATION_CLAUSE}}\n\n2. السرية وإفشاء المعلومات:\n{{CONFIDENTIALITY_CLAUSE}}\n\n3. عدم المنافسة:\n{{NON_COMPETE_CLAUSE}}\n\n4. القانون الواجب التطبيق:\n{{GOVERNING_LAW_CLAUSE}}\n\n5. تسوية المنازعات:\n{{DISPUTE_RESOLUTION_CLAUSE}}"
     },
     {
       "template_id": "TMPL-EMP-KSA-001",
@@ -37,7 +45,11 @@
       "prohibited_clauses": [
         "CLZ-TERM-EG-001"
       ],
-      "conditional_clauses": []
+      "conditional_clauses": [],
+      "section_placeholders": {
+        "section_termination": "{{TERMINATION_CLAUSE}}"
+      },
+      "template_structure": "عقد عمل - المملكة العربية السعودية\n\n1. إنهاء العقد وفق نظام العمل السعودي:\n{{TERMINATION_CLAUSE}}"
     },
     {
       "template_id": "TMPL-SVC-EG-001",
@@ -60,7 +72,16 @@
           "condition": "involves_confidential_data",
           "description": "Confidentiality clause required when handling confidential data"
         }
-      ]
+      ],
+      "section_placeholders": {
+        "section_payment_terms": "{{PAYMENT_TERMS_CLAUSE}}",
+        "section_confidentiality": "{{CONFIDENTIALITY_CLAUSE}}",
+        "section_penalty": "{{PENALTY_CLAUSE}}",
+        "section_force_majeure": "{{FORCE_MAJEURE_CLAUSE}}",
+        "section_governing_law": "{{GOVERNING_LAW_CLAUSE}}",
+        "section_dispute_resolution": "{{DISPUTE_RESOLUTION_CLAUSE}}"
+      },
+      "template_structure": "عقد تقديم خدمات - جمهورية مصر العربية\n\n1. شروط وقواعد الدفع والسداد:\n{{PAYMENT_TERMS_CLAUSE}}\n\n2. التزامات السرية:\n{{CONFIDENTIALITY_CLAUSE}}\n\n3. الشرط الجزائي والغرامات:\n{{PENALTY_CLAUSE}}\n\n4. القوة القاهرة:\n{{FORCE_MAJEURE_CLAUSE}}\n\n5. القانون الواجب التطبيق:\n{{GOVERNING_LAW_CLAUSE}}\n\n6. تسوية المنازعات:\n{{DISPUTE_RESOLUTION_CLAUSE}}"
     },
     {
       "template_id": "TMPL-NDA-EG-001",
@@ -75,7 +96,14 @@
         "CLZ-PNLT-EG-001"
       ],
       "prohibited_clauses": [],
-      "conditional_clauses": []
+      "conditional_clauses": [],
+      "section_placeholders": {
+        "section_confidentiality": "{{CONFIDENTIALITY_CLAUSE}}",
+        "section_penalty": "{{PENALTY_CLAUSE}}",
+        "section_governing_law": "{{GOVERNING_LAW_CLAUSE}}",
+        "section_dispute_resolution": "{{DISPUTE_RESOLUTION_CLAUSE}}"
+      },
+      "template_structure": "اتفاقية عدم إفصاح (NDA) - جمهورية مصر العربية\n\n1. التزامات سرية المعلومات:\n{{CONFIDENTIALITY_CLAUSE}}\n\n2. الشرط الجزائي للإخلال:\n{{PENALTY_CLAUSE}}\n\n3. القانون الواجب التطبيق:\n{{GOVERNING_LAW_CLAUSE}}\n\n4. الاختصاص القضائي وتوافق النزاعات:\n{{DISPUTE_RESOLUTION_CLAUSE}}"
     },
     {
       "template_id": "TMPL-SVC-INT-001",
@@ -95,7 +123,13 @@
           "condition": "cross_border_service",
           "description": "Force majeure recommended for cross-border service agreements"
         }
-      ]
+      ],
+      "section_placeholders": {
+        "section_confidentiality": "{{CONFIDENTIALITY_CLAUSE}}",
+        "section_liability_limitation": "{{LIABILITY_LIMITATION_CLAUSE}}",
+        "section_force_majeure": "{{FORCE_MAJEURE_CLAUSE}}"
+      },
+      "template_structure": "International Service Agreement\n\n1. Confidentiality Obligations:\n{{CONFIDENTIALITY_CLAUSE}}\n\n2. Limitation of Liability:\n{{LIABILITY_LIMITATION_CLAUSE}}\n\n3. Force Majeure:\n{{FORCE_MAJEURE_CLAUSE}}"
     },
     {
       "template_id": "TMPL-SVC-UAE-001",
@@ -116,7 +150,14 @@
           "condition": "processes_personal_data",
           "description": "Data protection clause mandatory when processing personal data under UAE PDPL"
         }
-      ]
+      ],
+      "section_placeholders": {
+        "section_data_protection": "{{DATA_PROTECTION_CLAUSE}}",
+        "section_confidentiality": "{{CONFIDENTIALITY_CLAUSE}}",
+        "section_liability_limitation": "{{LIABILITY_LIMITATION_CLAUSE}}",
+        "section_force_majeure": "{{FORCE_MAJEURE_CLAUSE}}"
+      },
+      "template_structure": "Service Agreement - United Arab Emirates\n\n1. Personal Data Protection:\n{{DATA_PROTECTION_CLAUSE}}\n\n2. Confidentiality:\n{{CONFIDENTIALITY_CLAUSE}}\n\n3. Limitation of Liability:\n{{LIABILITY_LIMITATION_CLAUSE}}\n\n4. Force Majeure:\n{{FORCE_MAJEURE_CLAUSE}}"
     }
   ]
 }

@@ -153,6 +153,19 @@ class M5ClauseService:
             usable_clauses
         )
 
+        # Build insertion map and retrieve template structure
+        insertion_map = {
+            c.clause_id: c.metadata.insertion_key
+            for c in usable_clauses
+            if c.metadata and c.metadata.insertion_key
+        }
+        template_structure = self.required_clause_engine.get_template_structure(
+            document_type, jurisdiction
+        )
+        section_placeholders = self.required_clause_engine.get_section_placeholders(
+            document_type, jurisdiction
+        )
+
         # Build source metadata
         source_metadata = {
             "document_type": document_type.value,
@@ -164,6 +177,9 @@ class M5ClauseService:
             "optional_count": len(
                 [c for c in optional if c.is_usable()]
             ),
+            "insertion_map": insertion_map,
+            "template_structure": template_structure,
+            "section_placeholders": section_placeholders,
         }
 
         return M5ToM1Handoff(

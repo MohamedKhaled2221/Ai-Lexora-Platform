@@ -113,6 +113,24 @@ class RequiredClauseEngine:
 
         return None
 
+    def get_template_structure(
+        self,
+        document_type: DocumentType,
+        jurisdiction: Jurisdiction,
+    ) -> str:
+        """استرجاع الهيكل النصي المرجعي للنموذج بالـ placeholders."""
+        template = self.find_template(document_type, jurisdiction)
+        return template.template_structure if template else ""
+
+    def get_section_placeholders(
+        self,
+        document_type: DocumentType,
+        jurisdiction: Jurisdiction,
+    ) -> dict[str, str]:
+        """استرجاع خريطة مواضع الإدراج والـ placeholders المتاحة في النموذج."""
+        template = self.find_template(document_type, jurisdiction)
+        return dict(template.section_placeholders) if template else {}
+
     def get_required_clauses(
         self,
         document_type: DocumentType,

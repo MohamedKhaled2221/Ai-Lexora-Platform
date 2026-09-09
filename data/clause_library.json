@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated_at": "2026-09-06T10:00:00Z",
+  "updated_at": "2026-09-09T10:00:00Z",
   "clause_count": 12,
   "clauses": [
     {
@@ -21,7 +21,8 @@
         "category": "employment",
         "notes": "Applies to Egyptian employment contracts under Labor Law No. 12 of 2003",
         "keywords_ar": ["فصل", "إنهاء", "عامل", "خطأ جسيم"],
-        "keywords_en": ["termination", "dismissal", "gross error", "employment"]
+        "keywords_en": ["termination", "dismissal", "gross error", "employment"],
+        "insertion_key": "section_termination"
       },
       "superseded_by": null,
       "supersedes": null,
@@ -49,7 +50,8 @@
         "category": "employment",
         "notes": "Applies under Saudi Labor Law",
         "keywords_ar": ["فسخ", "إنهاء", "عمل", "سعودي"],
-        "keywords_en": ["termination", "saudi", "labor", "dismissal"]
+        "keywords_en": ["termination", "saudi", "labor", "dismissal"],
+        "insertion_key": "section_termination"
       },
       "superseded_by": null,
       "supersedes": null,
@@ -77,7 +79,8 @@
         "category": "confidentiality",
         "notes": "Standard 5-year confidentiality period",
         "keywords_ar": ["سرية", "معلومات", "إفصاح", "حفاظ"],
-        "keywords_en": ["confidentiality", "confidential", "disclosure", "nda"]
+        "keywords_en": ["confidentiality", "confidential", "disclosure", "nda"],
+        "insertion_key": "section_confidentiality"
       },
       "superseded_by": null,
       "supersedes": null,
@@ -105,7 +108,8 @@
         "category": "confidentiality",
         "notes": "Mutual confidentiality clause for international agreements",
         "keywords_ar": ["سرية", "متبادلة", "إفشاء"],
-        "keywords_en": ["confidentiality", "mutual", "disclosure", "international"]
+        "keywords_en": ["confidentiality", "mutual", "disclosure", "international"],
+        "insertion_key": "section_confidentiality"
       },
       "superseded_by": null,
       "supersedes": null,
@@ -133,7 +137,8 @@
         "category": "general",
         "notes": "Standard governing law clause for Egyptian contracts",
         "keywords_ar": ["قانون", "مصري", "محاكم", "اختصاص"],
-        "keywords_en": ["governing law", "egypt", "jurisdiction", "courts"]
+        "keywords_en": ["governing law", "egypt", "jurisdiction", "courts"],
+        "insertion_key": "section_governing_law"
       },
       "superseded_by": null,
       "supersedes": null,
@@ -147,7 +152,7 @@
       "clause_id": "CLZ-DISP-EG-001",
       "type": "dispute_resolution",
       "jurisdiction": "EG",
-      "document_types": ["employment_contract", "service_agreement", "lease_agreement"],
+      "document_types": ["employment_contract", "service_agreement", "nda", "lease_agreement"],
       "version": "1.0.0",
       "approval_status": "approved",
       "effective_date": "2026-01-01T00:00:00Z",
@@ -161,7 +166,8 @@
         "category": "dispute",
         "notes": "Two-step: amicable settlement then litigation",
         "keywords_ar": ["نزاع", "تسوية", "محاكم", "ودي"],
-        "keywords_en": ["dispute", "resolution", "amicable", "litigation"]
+        "keywords_en": ["dispute", "resolution", "amicable", "litigation"],
+        "insertion_key": "section_dispute_resolution"
       },
       "superseded_by": null,
       "supersedes": null,
@@ -189,7 +195,8 @@
         "category": "force_majeure",
         "notes": "Based on ICC Force Majeure Clause",
         "keywords_ar": ["قوة قاهرة", "عائق", "مسؤولية"],
-        "keywords_en": ["force majeure", "impediment", "liability", "icc"]
+        "keywords_en": ["force majeure", "impediment", "liability", "icc"],
+        "insertion_key": "section_force_majeure"
       },
       "superseded_by": null,
       "supersedes": null,
@@ -217,7 +224,8 @@
         "category": "liability",
         "notes": "12-month cap on liability",
         "keywords_ar": ["مسؤولية", "تحديد", "تعويض", "حد أقصى"],
-        "keywords_en": ["liability", "limitation", "cap", "damages"]
+        "keywords_en": ["liability", "limitation", "cap", "damages"],
+        "insertion_key": "section_liability_limitation"
       },
       "superseded_by": null,
       "supersedes": null,
@@ -245,7 +253,8 @@
         "category": "payment",
         "notes": "Net 30 with 1% monthly late penalty",
         "keywords_ar": ["دفع", "سداد", "فاتورة", "غرامة"],
-        "keywords_en": ["payment", "invoice", "penalty", "net 30"]
+        "keywords_en": ["payment", "invoice", "penalty", "net 30"],
+        "insertion_key": "section_payment_terms"
       },
       "superseded_by": null,
       "supersedes": null,
@@ -273,7 +282,8 @@
         "category": "employment",
         "notes": "1-year non-compete, geographically limited",
         "keywords_ar": ["منافسة", "عدم منافسة", "عامل", "منافس"],
-        "keywords_en": ["non-compete", "competition", "employee", "restriction"]
+        "keywords_en": ["non-compete", "competition", "employee", "restriction"],
+        "insertion_key": "section_non_compete"
       },
       "superseded_by": null,
       "supersedes": null,
@@ -287,7 +297,7 @@
       "clause_id": "CLZ-PNLT-EG-001",
       "type": "penalty",
       "jurisdiction": "EG",
-      "document_types": ["service_agreement", "lease_agreement"],
+      "document_types": ["service_agreement", "nda", "lease_agreement"],
       "version": "1.0.0",
       "approval_status": "approved",
       "effective_date": "2026-01-01T00:00:00Z",
@@ -301,7 +311,8 @@
         "category": "penalty",
         "notes": "Standard penalty clause under Egyptian Civil Code",
         "keywords_ar": ["شرط جزائي", "إخلال", "تعويض", "غرامة"],
-        "keywords_en": ["penalty", "breach", "damages", "liquidated"]
+        "keywords_en": ["penalty", "breach", "damages", "liquidated"],
+        "insertion_key": "section_penalty"
       },
       "superseded_by": null,
       "supersedes": null,
@@ -329,7 +340,8 @@
         "category": "data_protection",
         "notes": "Based on UAE PDPL (2021)",
         "keywords_ar": ["بيانات", "حماية", "شخصية", "إمارات"],
-        "keywords_en": ["data protection", "personal data", "uae", "pdpl", "privacy"]
+        "keywords_en": ["data protection", "personal data", "uae", "pdpl", "privacy"],
+        "insertion_key": "section_data_protection"
       },
       "superseded_by": null,
       "supersedes": null,

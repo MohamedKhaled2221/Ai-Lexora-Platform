@@ -733,3 +733,32 @@ class TestSeedDataLoading:
         lib = ClauseLibrary(library_path=seed_path)
         engine = RequiredClauseEngine(lib, requirements_path=req_path)
         assert engine.template_count > 0
+
+    def test_nda_eg_discrepancy_resolution_and_handoff(self):
+        """Test that NDA-EG optional clauses are compatible with NDA document type and handoff includes insertion_map."""
+        seed_path = Path(__file__).parent.parent / "data" / "clause_library.json"
+        req_path = Path(__file__).parent.parent / "data" / "template_requirements.json"
+        if not seed_path.exists() or not req_path.exists():
+            pytest.skip("Seed data not found")
+
+        service = M5ClauseService(library_path=seed_path, requirements_path=req_path)
+        handoff = service.get_clauses_for_document(DocumentType.NDA, Jurisdiction.EG)
+
+        clause_ids = [c.clause_id for c in handoff.clauses]
+        assert "CLZ-CONF-EG-001" in clause_ids
+        assert "CLZ-GLAW-EG-001" in clause_ids
+        assert "CLZ-DISP-EG-001" in clause_ids
+        assert "CLZ-PNLT-EG-001" in clause_ids
+
+        # Validate completeness check
+        report = service.validate_clause_set(clause_ids, DocumentType.NDA, Jurisdiction.EG)
+        assert report.valid is True
+
+        # Validate insertion map and template structure metadata
+        source_meta = handoff.source_metadata
+        assert "insertion_map" in source_meta
+        assert source_meta["insertion_map"].get("CLZ-CONF-EG-001") == "section_confidentiality"
+        assert "template_structure" in source_meta
+        assert "{{CONFIDENTIALITY_CLAUSE}}" in source_meta["template_structure"]
+        assert "section_placeholders" in source_meta
+        assert source_meta["section_placeholders"].get("section_confidentiality") == "{{CONFIDENTIALITY_CLAUSE}}"

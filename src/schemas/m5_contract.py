@@ -128,6 +128,10 @@ class ClauseMetadata(BaseModel):
         default_factory=list,
         description="كلمات مفتاحية بالإنجليزي للبحث",
     )
+    insertion_key: Optional[str] = Field(
+        default=None,
+        description="مفتاح/موقع إدراج البند في النموذج (e.g. 'section_termination' or '{{TERMINATION_CLAUSE}}')",
+    )
 
 
 class ApprovedClause(BaseModel):
@@ -349,6 +353,14 @@ class TemplateClauseRequirement(BaseModel):
     conditional_clauses: list[ConditionalClause] = Field(
         default_factory=list,
         description="قائمة البنود المشروطة",
+    )
+    section_placeholders: dict[str, str] = Field(
+        default_factory=dict,
+        description="خريطة مواضع الإدراج والـ placeholders المتاحة في النموذج",
+    )
+    template_structure: str = Field(
+        default="",
+        description="الهيكل النصي المرجعي للنموذج بالـ placeholders",
     )
 
 

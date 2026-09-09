@@ -144,9 +144,20 @@ class TestTemplateClauseRequirement:
             jurisdiction=Jurisdiction.EG,
             required_clauses=["CLZ-001"],
             optional_clauses=["CLZ-002"],
+            section_placeholders={"section_termination": "{{TERMINATION_CLAUSE}}"},
+            template_structure="Sample Structure {{TERMINATION_CLAUSE}}",
         )
         assert template.template_id == "TMPL-001"
         assert len(template.required_clauses) == 1
+        assert template.section_placeholders["section_termination"] == "{{TERMINATION_CLAUSE}}"
+        assert "Sample Structure" in template.template_structure
+
+    def test_clause_metadata_insertion_key(self):
+        metadata = ClauseMetadata(
+            risk_level="medium",
+            insertion_key="section_termination",
+        )
+        assert metadata.insertion_key == "section_termination"
 
 
 class TestSpecialConditionResult:
