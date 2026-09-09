@@ -12,6 +12,10 @@ from src.schemas import (
 from src.vector_store.qdrant_manager import (
     QdrantVectorStore,
 )
+from tests.access_helpers import (
+    acl_payload,
+    scoped_filters,
+)
 
 
 def make_store():
@@ -46,6 +50,7 @@ def make_store():
                     "document_type": (
                         "contract"
                     ),
+                    **acl_payload(),
                 },
             ),
             PointStruct(
@@ -68,6 +73,7 @@ def make_store():
                     "document_type": (
                         "contract"
                     ),
+                    **acl_payload(),
                 },
             ),
             PointStruct(
@@ -90,6 +96,7 @@ def make_store():
                     "document_type": (
                         "contract"
                     ),
+                    **acl_payload(),
                 },
             ),
         ]
@@ -115,7 +122,7 @@ def make_query(
             0.0,
             0.0,
         ],
-        filters=QueryFilters(
+        filters=scoped_filters(
             document_ids=document_ids,
         ),
     )

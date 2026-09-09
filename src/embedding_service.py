@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from importlib.metadata import (
     PackageNotFoundError,
     version,
 )
+import logging
 import math
 import os
 from time import perf_counter
@@ -79,6 +80,55 @@ class EmbeddingRunMetrics:
         float | None
     )
 
+logger = logging.getLogger(__name__)
+
+
+SparseWeights = dict[str, float]
+"""BGE-M3 lexical weights: token id (as a string) -> learned term weight."""
+
+
+def normalize_lexical_weights(
+    raw_weights: Mapping,
+) -> SparseWeights:
+    """
+    Turn one BGE-M3 ``lexical_weights`` entry into a plain JSON-safe dict.
+
+    FlagEmbedding returns a ``defaultdict`` keyed by token id -- sometimes as
+    a string, sometimes as a numpy integer -- with numpy float weights. None
+    of that survives a Pydantic round-trip or a JSON boundary intact, so it
+    is normalized once, here, rather than at each consumer.
+
+    Zero and negative weights are dropped. BGE-M3 emits a weight for every
+    token it saw, and a zero-weight term contributes nothing to a sparse dot
+    product while still costing index space in every stored vector.
+    """
+
+    normalized: SparseWeights = {}
+
+    for token_id, weight in dict(raw_weights).items():
+        value = float(weight)
+
+        if value <= 0.0:
+            continue
+
+        normalized[str(int(token_id))] = value
+
+    return normalized
+
+
+@dataclass(frozen=True)
+class EncodedTexts:
+    """One BGE-M3 forward pass: dense always, sparse when requested."""
+
+    dense: list[list[float]]
+    sparse: list[SparseWeights] | None = None
+
+    def sparse_at(self, index: int) -> SparseWeights | None:
+        if self.sparse is None:
+            return None
+
+        return self.sparse[index]
+
 
 class EmbeddingService:
     """
@@ -100,6 +150,16 @@ class EmbeddingService:
         - reranking;
         - query interpretation;
         - LLM generation.
+
+
+    On sparse
+    ---------
+    BGE-M3 computes dense and lexical representations in the same forward
+    pass. This service previously asked for the dense output only, so the
+    lexical weights were computed and thrown away on every call while
+    keyword search was served by a separate Python BM25 index built from a
+    full-collection scroll. Requesting ``return_sparse`` recovers work that
+    was already being done.
     """
 
     def __init__(
@@ -118,6 +178,8 @@ class EmbeddingService:
             settings.embedding_device
         ),
         model: Any | None = None,
+        return_sparse: bool = settings.return_sparse,
+        warn_on_truncation: bool = settings.warn_on_truncation,
     ) -> None:
         if not model_name.strip():
             raise ValueError(
@@ -165,6 +227,11 @@ class EmbeddingService:
             and self.device.startswith(
                 "cuda"
             )
+        )
+
+        self.return_sparse = return_sparse
+        self.warn_on_truncation = (
+            warn_on_truncation
         )
 
         self._dimension: int | None = None
@@ -377,7 +444,7 @@ class EmbeddingService:
     def _encode(
         self,
         texts: Sequence[str],
-    ) -> list[list[float]]:
+    ) -> EncodedTexts:
         text_batch = list(
             texts
         )
@@ -397,6 +464,8 @@ class EmbeddingService:
                 "empty strings"
             )
 
+        self._warn_if_truncated(text_batch)
+
         rss_before = self._rss_mib()
 
         self._prepare_cuda_metrics()
@@ -410,10 +479,10 @@ class EmbeddingService:
                 batch_size=self.batch_size,
                 max_length=self.max_length,
 
-                # M2 currently requires dense vectors only.
-                # Avoid unnecessary sparse/ColBERT computation.
+                # Dense is always required. Sparse rides along on the same
+                # forward pass when enabled -- see EmbeddingService docstring.
                 return_dense=True,
-                return_sparse=False,
+                return_sparse=self.return_sparse,
                 return_colbert_vecs=False,
             )
 
@@ -424,6 +493,16 @@ class EmbeddingService:
             ) * 1000.0
 
             vectors = self._extract_dense_vectors(
+                result=result,
+                expected_count=len(
+                    text_batch
+                ),
+            )
+
+            # Lexical weights are deliberately NOT normalized: L2 scaling is
+            # a dense-vector invariant, and applying it to term weights would
+            # destroy the magnitudes a sparse dot product depends on.
+            sparse = self._extract_sparse_weights(
                 result=result,
                 expected_count=len(
                     text_batch
@@ -464,7 +543,60 @@ class EmbeddingService:
             )
         )
 
-        return vectors
+        return EncodedTexts(
+            dense=vectors,
+            sparse=sparse,
+        )
+
+    def _extract_sparse_weights(
+        self,
+        *,
+        result: Any,
+        expected_count: int,
+    ) -> list[SparseWeights] | None:
+        """
+        Pull the lexical half out of the same forward pass.
+
+        Returns None when sparse was not requested -- which is what keeps a
+        chunk embedded before sparse was enabled dense-searchable rather
+        than invalid.
+
+        A missing ``lexical_weights`` degrades to dense-only with a warning
+        rather than raising. Retrieval still works without sparse, and a hard
+        failure here would take down ingestion and search over a secondary
+        signal. A *mismatched* count is different: pairing sparse to dense by
+        position is only valid if the counts agree, so that is refused.
+        """
+        if not self.return_sparse:
+            return None
+
+        raw_sparse = result.get("lexical_weights")
+
+        if raw_sparse is None:
+            logger.warning(
+                "BGE-M3 returned no lexical_weights despite "
+                "return_sparse=True; continuing dense-only."
+            )
+
+            return None
+
+        sparse = [
+            normalize_lexical_weights(entry)
+            for entry in raw_sparse
+        ]
+
+        if len(sparse) != expected_count:
+            # EmbeddingContractError, not ValueError: _encode re-raises this
+            # type unwrapped while folding everything else into
+            # EmbeddingRuntimeError. A mispairing is a contract violation and
+            # the caller needs to see it as one.
+            raise EmbeddingContractError(
+                "BGE-M3 returned "
+                f"{len(sparse)} sparse vectors for {expected_count} "
+                "texts; refusing to pair them by position."
+            )
+
+        return sparse
 
     def _extract_dense_vectors(
         self,
@@ -561,6 +693,47 @@ class EmbeddingService:
 
         return output
 
+    def _warn_if_truncated(self, texts: Sequence[str]) -> None:
+        """Report any text the encoder is about to cut short.
+
+        ``max_length`` truncation is silent: the model returns a perfectly
+        normal-looking vector built from only the first ``max_length`` tokens.
+        Since M1 now sizes chunks against this same tokenizer, reaching this
+        point means something upstream is out of step -- an older M1, a
+        mismatched tokenizer, or text assembled after chunking -- and the
+        symptom otherwise is only that retrieval quietly stops finding the
+        ends of long passages.
+        """
+        if not self.warn_on_truncation:
+            return
+
+        tokenizer = getattr(self.model, "tokenizer", None)
+
+        if tokenizer is None:
+            return
+
+        for text in texts:
+            try:
+                n_tokens = len(
+                    tokenizer.encode(text, add_special_tokens=True)
+                )
+
+            except Exception:  # noqa: BLE001 -- diagnostics must never fail ingest
+                return
+
+            if n_tokens > self.max_length:
+                logger.warning(
+                    "text of %d tokens exceeds the %d-token encoder window "
+                    "and will be truncated: %d tokens (%.0f%%) will not be "
+                    "embedded, dense or sparse, though the full text remains "
+                    "searchable by keyword. Chunking should have prevented "
+                    "this.",
+                    n_tokens,
+                    self.max_length,
+                    n_tokens - self.max_length,
+                    100.0 * (n_tokens - self.max_length) / n_tokens,
+                )
+
     def _validate_vector(
         self,
         vector: list[float],
@@ -630,7 +803,7 @@ class EmbeddingService:
 
         return self._encode(
             [text]
-        )[0]
+        ).dense[0]
 
     def embed_documents(
         self,
@@ -642,7 +815,7 @@ class EmbeddingService:
 
         return self._encode(
             texts
-        )
+        ).dense
 
     def embed_query(
         self,
@@ -673,20 +846,33 @@ class EmbeddingService:
         query: ProcessedQuery,
     ) -> EmbeddedQuery:
         """
-        Produce the complete M2 query embedding handoff.
-        """
+        Produce the complete M2 query handoff object.
 
-        vector = self.embed_query(
-            query
+        The sparse weights are written onto the returned ProcessedQuery as
+        well as the envelope. ProcessedQuery.sparse_embedding has been
+        declared since the original M2 contract but was never populated, so
+        M3 had no sparse query vector to search with even though the model
+        had computed one.
+        """
+        text = (
+            query.normalized_text
+            if query.normalized_text
+            else query.text_original
         )
 
+        encoded = self._encode([text])
+
+        vector = encoded.dense[0]
+        sparse = encoded.sparse_at(0)
+
         return EmbeddedQuery(
-            processed_query=query,
+            processed_query=query.model_copy(
+                update={"sparse_embedding": sparse},
+            ),
             embedding=vector,
             model=self.model_name,
-            dimension=len(
-                vector
-            ),
+            dimension=len(vector),
+            sparse_embedding=sparse,
         )
 
     def embed_document_chunk(
@@ -699,15 +885,18 @@ class EmbeddingService:
         Embed one document chunk.
         """
 
-        vector = self.embed_text(
-            text
+        encoded = self._encode(
+            [text]
         )
+
+        vector = encoded.dense[0]
 
         return EmbeddedDocumentChunk(
             document_id=document_id,
             chunk_id=chunk_id,
             text=text,
             embedding=vector,
+            sparse_embedding=encoded.sparse_at(0),
             model=self.model_name,
             dimension=len(
                 vector
@@ -738,20 +927,18 @@ class EmbeddingService:
             for chunk in chunks
         ]
 
-        vectors = self._encode(
+        encoded = self._encode(
             texts
         )
+
+        vectors = encoded.dense
 
         results: list[
             EmbeddedDocumentChunk
         ] = []
 
-        for (
-            chunk,
-            vector,
-        ) in zip(
-            chunks,
-            vectors,
+        for index, (chunk, vector) in enumerate(
+            zip(chunks, vectors)
         ):
             results.append(
                 EmbeddedDocumentChunk(
@@ -770,7 +957,15 @@ class EmbeddingService:
                         chunk.document_type
                     ),
                     metadata=chunk.metadata,
+                    client_id=chunk.client_id,
+                    matter_id=chunk.matter_id,
+                    confidentiality_level=(
+                        chunk.confidentiality_level
+                    ),
                     embedding=vector,
+                    sparse_embedding=(
+                        encoded.sparse_at(index)
+                    ),
                     model=self.model_name,
                     dimension=len(
                         vector

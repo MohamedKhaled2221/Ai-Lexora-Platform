@@ -7,7 +7,8 @@ from pydantic import (
     field_validator,
 )
 
-from .m1_contract import DocumentType, Language
+from .access_control import AccessScope
+from .m1_contract import ConfidentialityLevel, DocumentType, Language
 
 
 _MIXED_LANGUAGE_ALIASES = {
@@ -46,6 +47,14 @@ def _normalize_language_value(
 class QueryFilters(BaseModel):
     """
     Metadata filtering parameters passed from M2 to M3.
+
+    Every field here except ``access`` is a relevance filter: a caller may
+    set, omit, or widen them freely, and the worst outcome is a bad result
+    set. ``access`` is not like the others -- it decides what the caller is
+    allowed to see at all, and it is set by the server from an authenticated
+    identity. A request that arrives carrying its own ``access`` is refused
+    at the API boundary rather than silently overwritten, because a client
+    populating this field is probing, not misconfigured.
     """
 
     model_config = ConfigDict(
@@ -91,6 +100,16 @@ class QueryFilters(BaseModel):
             "retrieval scope for this query"
         ),
     )
+    access: AccessScope | None = Field(
+        default=None,
+        description=(
+            "Server-derived access scope. Optional in the schema so "
+            "non-retrieval callers can build QueryFilters without one, but "
+            "the retrieval path refuses to run without it -- see "
+            "HybridSearcher.search."
+        ),
+    )
+
 
     @field_validator(
         "language",
@@ -392,11 +411,51 @@ class EmbeddedDocumentChunk(BaseModel):
         ),
     )
 
+    # ------------------------------------------------------------------
+    # Access control carried through M2.
+    #
+    # This model is extra="forbid" and M2 copies field by field, so without
+    # these declarations the ACL is silently dropped between M1 and the
+    # Qdrant payload: the chunk indexes with no owner and becomes invisible
+    # to every scoped query.
+    #
+    # Still optional here. The authoritative stamp is applied at the ingest
+    # boundary, and DocumentIndexingService refuses anything still unstamped
+    # by the time it builds points.
+    # ------------------------------------------------------------------
+
+    client_id: str | None = Field(
+        default=None,
+        description="Owning tenant; _shared for the cross-tenant corpus",
+    )
+
+    matter_id: str | None = Field(
+        default=None,
+        description="Owning matter; _none for client-level documents",
+    )
+
+    confidentiality_level: ConfidentialityLevel | None = Field(
+        default=None,
+        description="Access ladder: public < internal < privileged",
+    )
+
     embedding: list[float] = Field(
         ...,
         min_length=1,
         description=(
             "Dense BGE-M3 embedding vector"
+        ),
+    )
+
+    sparse_embedding: dict[str, float] | None = Field(
+        default=None,
+        description=(
+            "BGE-M3 lexical weights: {token_id: weight}. Token ids are kept "
+            "as strings to match ProcessedQuery.sparse_embedding and because "
+            "JSON object keys are strings; the vector store converts them to "
+            "integer indices at the Qdrant boundary. None means this chunk "
+            "was embedded before sparse was enabled -- it stays dense-"
+            "searchable and is simply invisible to sparse search."
         ),
     )
 
@@ -454,5 +513,12 @@ class EmbeddedQuery(BaseModel):
         ge=1,
         description=(
             "Embedding vector dimension"
+        ),
+    )
+    sparse_embedding: dict[str, float] | None = Field(
+        default=None,
+        description=(
+            "BGE-M3 lexical weights for the query, mirrored onto "
+            "processed_query.sparse_embedding"
         ),
     )

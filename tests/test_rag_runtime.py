@@ -19,7 +19,7 @@ def test_rag_runtime_defaults():
 
     assert (
         settings.qdrant_collection_name
-        == "legal_documents"
+        == "legal_documents_v2"
     )
 
     assert settings.qdrant_vector_size == 1024

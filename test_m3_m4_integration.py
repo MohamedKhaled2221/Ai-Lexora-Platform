@@ -43,7 +43,7 @@ def main():
     print("\n[M3] Initializing Qdrant Vector Store...")
     vector_store = QdrantVectorStore(
         location=":memory:",
-        collection_name="legal_documents",
+        collection_name="legal_documents_v2",
         vector_size=embedding_service.dimension or 1024
     )
 

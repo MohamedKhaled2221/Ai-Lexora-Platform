@@ -368,6 +368,22 @@ class DocumentChunk(BaseModel):
         See :class:`DocumentType`.
     metadata
         Open dict. Shape documented by :class:`ChunkMetadata`.
+
+    client_id, matter_id, confidentiality_level
+        Access-control provenance, added 2026-09-05 for M3 tenancy filtering.
+        **Optional here on purpose.** M1 is not an authority on who may read a
+        document -- it only sees the file. These fields exist so a producer
+        that *does* know the answer can carry it through unchanged; a producer
+        that does not leaves them ``None`` and nothing breaks.
+
+        The authoritative stamp happens at the M3 ingest boundary, from the
+        authenticated caller, and overwrites whatever arrives here. Downstream
+        indexing refuses any chunk still unstamped at that point, so ``None``
+        can never reach the vector store as "unrestricted".
+
+        Reserved sentinel values used downstream: ``client_id="_shared"`` for
+        the cross-tenant legal corpus (statutes, rulings, templates) and
+        ``matter_id="_none"`` for client-level documents not tied to a matter.
     """
 
     model_config = ConfigDict(
@@ -397,6 +413,13 @@ class DocumentChunk(BaseModel):
     document_type: DocumentType = Field(default=DocumentType.UNKNOWN, examples=["contract"])
     metadata: dict[str, Any] = Field(
         default_factory=dict, examples=[{"jurisdiction": "Egypt"}]
+    )
+
+    # --- access control (additive; authoritative value is stamped at ingest) --
+    client_id: str | None = Field(default=None, examples=["client_042"])
+    matter_id: str | None = Field(default=None, examples=["matter_2026_017"])
+    confidentiality_level: Literal["public", "internal", "privileged"] | None = Field(
+        default=None, examples=["privileged"]
     )
 
     @field_validator("text")

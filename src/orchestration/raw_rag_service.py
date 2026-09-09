@@ -5,6 +5,7 @@ from src.orchestration.rag_service import (
     M3M4RAGService,
     RAGExecutionResult,
 )
+from src.schemas.access_control import AccessScopeRequired
 from src.schemas.m2_contract import (
     EmbeddedQuery,
     ProcessedQuery,
@@ -214,6 +215,17 @@ class M2M3M4RAGService:
         question: str,
         filters: QueryFilters | None,
     ) -> ProcessedQuery:
+        # Checked first, before any embedding work: an unscoped request can
+        # never succeed, so paying for an embedding to discover that wastes
+        # the local model's time and reports the failure several layers away
+        # from the caller who can fix it.
+        if filters is None or filters.access is None:
+            raise AccessScopeRequired(
+                "answer()/aanswer() require QueryFilters carrying an access "
+                "scope. The API layer sets it from the authenticated caller; "
+                "a direct caller must supply one explicitly."
+            )
+
         try:
             embedded_query = (
                 self.query_pipeline.process(
@@ -235,11 +247,7 @@ class M2M3M4RAGService:
             embedded_query
         )
 
-        effective_filters = (
-            filters
-            if filters is not None
-            else QueryFilters()
-        )
+        effective_filters = filters
 
         return (
             embedded_query

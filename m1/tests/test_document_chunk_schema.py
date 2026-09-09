@@ -27,6 +27,31 @@ from src.document_chunk_schema import (
     make_document_id,
 )
 
+SPEC_FIELDS = {
+    "document_id",
+    "chunk_id",
+    "text",
+    "page",
+    "section",
+    "language",
+    "document_type",
+    "metadata",
+}
+"""The eight fields frozen by the team spec."""
+
+ACCESS_CONTROL_FIELDS = {
+    "client_id",
+    "matter_id",
+    "confidentiality_level",
+}
+"""Added 2026-09-05 for M3 tenancy filtering.
+
+Additive and optional: every one defaults to ``None``, so a producer that
+predates them keeps working unchanged. They are named separately from
+``SPEC_FIELDS`` so this test still fails on an *unplanned* field -- the point
+of the lock is to catch fields nobody decided on, not to forbid growth.
+"""
+
 SPEC_EXAMPLE = {
     "document_id": "doc_001",
     "chunk_id": "chunk_017",
@@ -50,19 +75,54 @@ class TestSpecCompliance:
     def test_spec_example_round_trips_exactly(self):
         """The serialized shape must match the spec's JSON, field for field.
 
-        ``clause`` is the one addition to the spec's original eight -- see
+        ``clause`` is the first addition to the spec's original eight -- see
         ``TestClauseSurfacing`` -- and it is ``None`` on a chunk that carries
         no clause, exactly as M2's copy of the contract defaults it.
+
+        The access-control triple is the second, and defaults the same way:
+        M1 is not an authority on who may read a document, so it emits
+        ``None`` and the M3 ingest boundary stamps the real values from the
+        authenticated caller.
         """
         dumped = DocumentChunk(**SPEC_EXAMPLE).model_dump(mode="json")
-        assert dumped == {**SPEC_EXAMPLE, "clause": None}
+        assert dumped == {
+            **SPEC_EXAMPLE,
+            "clause": None,
+            **{name: None for name in ACCESS_CONTROL_FIELDS},
+        }
 
     def test_exact_field_set(self):
         """Extra top-level fields are forbidden: consumers destructure this."""
-        assert set(DocumentChunk.model_fields) == {
-            "document_id", "chunk_id", "text", "page",
-            "section", "clause", "language", "document_type", "metadata",
-        }
+        assert set(DocumentChunk.model_fields) == (
+            SPEC_FIELDS | {"clause"} | ACCESS_CONTROL_FIELDS
+        )
+
+    def test_access_control_fields_default_to_none(self):
+        """
+        Absent, not permissive.
+
+        A null ``client_id`` matches no allowed-client set downstream, so an
+        unstamped chunk is unreadable rather than public -- and M3's indexing
+        layer refuses it outright rather than storing it that way.
+        """
+        chunk = DocumentChunk(**SPEC_EXAMPLE)
+
+        for name in ACCESS_CONTROL_FIELDS:
+            assert getattr(chunk, name) is None
+
+    def test_confidentiality_level_is_a_closed_vocabulary(self):
+        """
+        A typo must fail here, not silently match nothing at query time.
+        """
+        with pytest.raises(ValidationError):
+            DocumentChunk(
+                **{**SPEC_EXAMPLE, "confidentiality_level": "secret"}
+            )
+
+        for level in ("public", "internal", "privileged"):
+            assert DocumentChunk(
+                **{**SPEC_EXAMPLE, "confidentiality_level": level}
+            ).confidentiality_level == level
 
     def test_extra_top_level_field_rejected(self):
         with pytest.raises(ValidationError):

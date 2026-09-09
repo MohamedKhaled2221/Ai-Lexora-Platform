@@ -51,7 +51,7 @@
       "structure": "decimal outline 1.1 / 2.3 style; bilingual headings",
       "quirks": [
         "clause numbering is decimal (1.1, 2.3) not المادة -- exercises the English CLAUSE marker pattern and auto-granularity at CLAUSE level",
-        "Arabic and English clauses alternate inside the same section, so chunk-level language should come out 'mixed' for several chunks",
+        "Arabic and English clauses alternate inside the same section, so chunk-level language should come out 'ar-en' for several chunks",
         "bilingual headings contain both scripts on one line -- an rtl_fix mixed_direction flag is expected here"
       ],
       "exercises": [
@@ -94,7 +94,7 @@
       "exercises": [
         "plaintext path",
         "rtl_fix flagging",
-        "language detection: mixed",
+        "language detection: ar-en",
         "digit normalization"
       ]
     },

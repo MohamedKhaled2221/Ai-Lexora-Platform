@@ -1,0 +1,20 @@
+# Development and test dependencies.
+#
+# Kept separate from requirements.txt because they are not needed to serve the
+# API -- only to run the test suite and the evaluation harness.
+#
+# These were missing from requirements.txt entirely, which made the environment
+# non-reproducible: rebuilding from requirements.txt alone produced a venv that
+# could not run `pytest tests/`, and the gap only surfaced when the original
+# venv was lost. Discovered 2026-09-09 during a rebuild.
+#
+# Install with:
+#   uv pip install -r requirements.txt -r requirements-dev.txt
+
+pytest==8.4.2
+pytest-asyncio==1.2.0
+
+# Required by FastAPI at import time for any route declaring Form(...) data --
+# the document-ingestion upload endpoint does. Without it, eight API test
+# modules fail at collection with a RuntimeError rather than a clear message.
+python-multipart==0.0.20

@@ -3,7 +3,16 @@ name = "ai-lexora"
 version = "0.1.0"
 description = "Local multilingual Legal Intelligence Assistant"
 readme = "README.md"
-requires-python = ">=3.12,<3.13"
+# 3.14 is the validated runtime, not an aspiration: the retrieval baseline in
+# docs/M3_SESSION_SUMMARY.md (MRR 0.671) and the test suite were both measured
+# on it, and qdrant_data/rebuild_venv.ps1 builds the venv with --python 3.14.
+#
+# This previously read ">=3.12,<3.13", which excluded the interpreter the
+# project actually runs on. Together with .python-version (also 3.12) it made
+# `uv venv` here resolve to 3.12.10 -- which IS installed on this host, so the
+# mismatch produced a silently different environment rather than a loud
+# failure. Reconciled 2026-09-09; nothing needed 3.12.
+requires-python = ">=3.14,<3.15"
 
 dependencies = [
     # Shared / M2
@@ -27,13 +36,18 @@ dependencies = [
     "fastapi",
     "uvicorn[standard]",
     "python-dotenv>=1.2.3",
-    "python-multipart==0.0.32",
+    "python-multipart==0.0.20",
 ]
 
 [dependency-groups]
+# Pinned to the versions the 436-test suite was validated against, mirroring
+# requirements-dev.txt. These were previously "pytest>=7.0.0" and
+# "pytest-asyncio>=1.4.0" -- the second of which *excluded* the installed
+# 1.2.0, and the first of which resolved uv.lock to pytest 9.1.1, a major
+# version ahead of what anyone has actually run this suite on.
 dev = [
-    "pytest>=7.0.0",
-    "pytest-asyncio>=1.4.0",
+    "pytest==8.4.2",
+    "pytest-asyncio==1.2.0",
 ]
 
 [tool.pytest.ini_options]
@@ -42,3 +56,11 @@ testpaths = ["tests"]
 
 [tool.uv]
 package = false
+
+# Dependency authority: requirements.txt (+ requirements-dev.txt) is the source
+# of truth for the runtime environment -- it is what qdrant_data\rebuild_venv.ps1
+# installs from. uv.lock is kept in sync but nothing runs `uv sync`.
+#
+# The chain is  pyproject.toml --uv lock--> uv.lock --uv export--> requirements.txt,
+# so this file is the only one of the three to edit by hand. See the
+# "Environment and dependency authority" section of docs/ENVIRONMENT.md.

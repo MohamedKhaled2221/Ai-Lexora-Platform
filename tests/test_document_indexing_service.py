@@ -9,6 +9,11 @@ from src.schemas import (
 from src.vector_store.qdrant_manager import (
     QdrantVectorStore,
 )
+from tests.access_helpers import (
+    TEST_CLIENT_ID,
+    TEST_MATTER_ID,
+    access_scope,
+)
 
 
 class FakeEmbeddingService:
@@ -49,6 +54,11 @@ class FakeEmbeddingService:
                         chunk.document_type
                     ),
                     metadata=chunk.metadata,
+                    client_id=chunk.client_id,
+                    matter_id=chunk.matter_id,
+                    confidentiality_level=(
+                        chunk.confidentiality_level
+                    ),
                     embedding=vector,
                     model=self.model_name,
                     dimension=self.dimension,
@@ -78,6 +88,11 @@ def make_chunks():
                     "contract.pdf"
                 ),
             },
+            client_id=TEST_CLIENT_ID,
+            matter_id=TEST_MATTER_ID,
+            confidentiality_level=(
+                "internal"
+            ),
         ),
         DocumentChunk(
             document_id="doc_001",
@@ -97,6 +112,11 @@ def make_chunks():
                     "contract.pdf"
                 ),
             },
+            client_id=TEST_CLIENT_ID,
+            matter_id=TEST_MATTER_ID,
+            confidentiality_level=(
+                "internal"
+            ),
         ),
     ]
 
@@ -137,7 +157,13 @@ def test_indexes_document_chunks_into_qdrant():
     )
     assert result.embedding_dimension == 3
 
-    stored = vector_store.get_all_chunks()
+    stored = vector_store.get_all_chunks(
+        query_filter=(
+            vector_store.build_qdrant_filter(
+                access=access_scope()
+            )
+        )
+    )
 
     assert len(stored) == 2
 
@@ -170,7 +196,13 @@ def test_reindexing_same_chunks_does_not_duplicate_points():
     service.index_document(chunks)
     service.index_document(chunks)
 
-    stored = vector_store.get_all_chunks()
+    stored = vector_store.get_all_chunks(
+        query_filter=(
+            vector_store.build_qdrant_filter(
+                access=access_scope()
+            )
+        )
+    )
 
     assert len(stored) == 2
 

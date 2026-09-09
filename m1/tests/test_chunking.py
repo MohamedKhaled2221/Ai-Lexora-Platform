@@ -278,18 +278,203 @@ class TestTables:
         assert tables[0].metadata["chunk_strategy"] == "table"
         assert tables[0].metadata["table_shape"] == [2, 2]
 
-    def test_table_is_never_split(self, make_doc):
+    def _big_table_doc(self, make_doc, rows=60):
         from src.structure_preservation import ExtractedTable
 
-        big = [[f"cell {r}-{c} with padding text" for c in range(6)] for r in range(60)]
+        big = [[f"cell {r}-{c} with padding text" for c in range(6)] for r in range(rows)]
         doc = make_doc([(1, ["المادة (1)", "نص تمهيدي للجدول التالي وهو طويل بما يكفي."])])
         doc.pages[0].tables.append(ExtractedTable(rows=big, page=1))
         annotate_structure(doc)
+        return doc
+
+    def test_character_limits_never_split_a_table(self, make_doc):
+        """The original guarantee, unchanged.
+
+        ``keep_tables_whole`` exists so an arbitrary character count cannot
+        mangle a grid, and it still does exactly that. Only the encoder's
+        token window may split a table, and only row-wise.
+        """
+        doc = self._big_table_doc(make_doc)
         cfg = PipelineConfig()
         cfg.chunking.max_chunk_chars = 500
+        cfg.chunking.table_token_strategy = "never"
+
         tables = [c for c in chunk_document(doc, cfg) if c.metadata["is_table"]]
-        assert len(tables) == 1, "an oversized table must stay whole, not be cut"
+
+        assert len(tables) == 1, "a character limit must not cut a table"
         assert len(tables[0].text) > 500
+
+    def test_oversized_table_is_split_row_wise_on_the_token_budget(self, make_doc):
+        """
+        Tables were exempt from every limit, which made them the *worst*
+        affected by the 512-token encoder window rather than the safest: a
+        long schedule was emitted whole and then silently truncated at encode
+        time, with the untruncated text still matchable by keyword search.
+        """
+        doc = self._big_table_doc(make_doc)
+        cfg = PipelineConfig()
+
+        tables = [c for c in chunk_document(doc, cfg) if c.metadata["is_table"]]
+
+        assert len(tables) > 1
+
+        for chunk in tables:
+            part = chunk.metadata["table_part"]
+            assert part[1] == len(tables)
+
+        assert [c.metadata["table_part"][0] for c in tables] == list(
+            range(1, len(tables) + 1)
+        )
+
+    def test_every_piece_is_a_valid_self_describing_table(self, make_doc):
+        """
+        The header is repeated on every piece. A bare grid of numbers
+        retrieved without its column names is not evidence anyone can act on.
+        """
+        doc = self._big_table_doc(make_doc)
+
+        tables = [
+            c for c in chunk_document(doc, PipelineConfig())
+            if c.metadata["is_table"]
+        ]
+
+        assert len(tables) > 1
+
+        for chunk in tables:
+            lines = [l for l in chunk.text.splitlines() if l.startswith("|")]
+            assert lines, "piece has no table rows at all"
+            assert "cell 0-0" in lines[0], "header row missing from this piece"
+            assert set(lines[1].replace("|", "").split()) == {"---"}
+
+    def test_rows_are_atomic_across_the_split(self, make_doc):
+        """No row may be cut in half: a torn row loses its column alignment."""
+        doc = self._big_table_doc(make_doc)
+
+        tables = [
+            c for c in chunk_document(doc, PipelineConfig())
+            if c.metadata["is_table"]
+        ]
+
+        seen = set()
+        for chunk in tables:
+            for line in chunk.text.splitlines():
+                if not line.startswith("|") or set(
+                    line.replace("|", "").split()
+                ) == {"---"}:
+                    continue
+                assert line.count("|") == 7, f"torn row: {line!r}"
+                seen.add(line)
+
+        # Every source row survives somewhere, header aside.
+        assert len(seen) >= 60
+
+    def test_token_budget_is_respected_by_every_piece(self, make_doc):
+        from src.token_budget import get_token_counter
+
+        doc = self._big_table_doc(make_doc)
+        cfg = PipelineConfig()
+        count = get_token_counter(cfg.chunking.token_budget_model)
+
+        tables = [
+            c for c in chunk_document(doc, cfg) if c.metadata["is_table"]
+        ]
+
+        for chunk in tables:
+            if chunk.metadata.get("embedding_incomplete"):
+                continue
+            assert count(chunk.text) <= 512
+
+    def test_full_table_markdown_is_kept_on_the_first_piece(self, make_doc):
+        """
+        M5 reads the table programmatically from metadata rather than from
+        chunk text, so one intact copy serves it. Repeating a large grid on
+        every piece would bloat each payload for no gain -- metadata is never
+        embedded.
+        """
+        doc = self._big_table_doc(make_doc)
+
+        tables = [
+            c for c in chunk_document(doc, PipelineConfig())
+            if c.metadata["is_table"]
+        ]
+
+        assert tables[0].metadata["table_markdown"]
+        assert all(
+            c.metadata["table_markdown"] is None for c in tables[1:]
+        )
+
+    def test_shape_always_describes_the_whole_table(self, make_doc):
+        """A consumer asking how big the table is means the table, not a slice."""
+        doc = self._big_table_doc(make_doc)
+
+        tables = [
+            c for c in chunk_document(doc, PipelineConfig())
+            if c.metadata["is_table"]
+        ]
+
+        for chunk in tables:
+            assert chunk.metadata["table_shape"] == [60, 6]
+
+    def test_a_row_too_large_to_split_is_flagged_not_truncated(self, make_doc):
+        """
+        The pathological case. A single row over budget cannot be split
+        without destroying the grid, so it is emitted whole and recorded as
+        embedding-incomplete -- silently truncating it is the exact failure
+        this work removes.
+        """
+        from src.structure_preservation import ExtractedTable
+
+        giant = " ".join(f"كلمة{i}" for i in range(900))
+        rows = [
+            ["البند", "الوصف"],
+            ["1", "وصف قصير"],
+            ["2", giant],
+            ["3", "وصف قصير آخر"],
+        ]
+        doc = make_doc([(1, ["المادة (1)", "نص تمهيدي للجدول التالي وهو طويل بما يكفي."])])
+        doc.pages[0].tables.append(ExtractedTable(rows=rows, page=1))
+        annotate_structure(doc)
+
+        tables = [
+            c for c in chunk_document(doc, PipelineConfig())
+            if c.metadata["is_table"]
+        ]
+
+        flagged = [
+            c for c in tables if c.metadata.get("embedding_incomplete")
+        ]
+
+        assert len(flagged) == 1
+        assert "كلمة1 " in flagged[0].text
+        assert flagged[0].metadata["embedded_tokens"] == 480
+
+    def test_small_table_is_untouched_and_unflagged(self, make_doc):
+        from src.structure_preservation import ExtractedTable
+
+        doc = make_doc([(1, ["نص تمهيدي طويل بما يكفي لتجاوز الحد الأدنى للجزء."])])
+        doc.pages[0].tables.append(
+            ExtractedTable(rows=[["الدفعة", "القيمة"], ["الأولى", "612,500"]], page=1)
+        )
+        annotate_structure(doc)
+
+        tables = [
+            c for c in chunk_document(doc, PipelineConfig())
+            if c.metadata["is_table"]
+        ]
+
+        assert len(tables) == 1
+        assert tables[0].metadata.get("table_part") is None
+        assert not tables[0].metadata.get("embedding_incomplete")
+
+    def test_flag_strategy_emits_whole_and_records_incompleteness(self, make_doc):
+        doc = self._big_table_doc(make_doc)
+        cfg = PipelineConfig()
+        cfg.chunking.table_token_strategy = "flag"
+
+        tables = [c for c in chunk_document(doc, cfg) if c.metadata["is_table"]]
+
+        assert len(tables) == 1
+        assert tables[0].metadata["embedding_incomplete"] is True
 
     def test_table_markdown_preserved(self, make_doc):
         from src.structure_preservation import ExtractedTable
@@ -410,3 +595,68 @@ class TestSchemaContractRegressions:
         for doc in (statute_doc, contract_doc):
             for c in chunk_document(doc, PipelineConfig()):
                 assert isinstance(c.page, int) and c.page >= 1
+
+
+class TestPathologicalTokenDensity:
+    """Text that defeats a chars-per-token estimate.
+
+    Found in the real corpus: two chunks out of 1,919 came back at 516 and 519
+    tokens against a 512-token encoder window, because table-of-contents dot
+    leaders tokenize at about one token per character and the overlap tail --
+    prepended *after* the split -- cost half again what was reserved for it.
+    """
+
+    def test_dot_leaders_do_not_overshoot_the_budget(self):
+        from src.chunking import split_oversized, split_to_token_budget
+        from src.config import ChunkingConfig
+        from src.token_budget import get_token_counter
+
+        cfg = ChunkingConfig()
+        count = get_token_counter(cfg.token_budget_model)
+
+        # A contents page: dot leaders around real headings.
+        leader = ". " * 90
+        text = "\n\n".join(
+            f"المادة {n} {leader} {n * 3}" for n in range(1, 40)
+        )
+
+        pieces, _ = split_to_token_budget(
+            split_oversized(text, cfg), cfg
+        )
+
+        assert pieces
+        over = [p for p in pieces if count(p) > cfg.max_chunk_tokens]
+        assert not over, (
+            f"{len(over)} piece(s) exceed the budget, worst "
+            f"{max(count(p) for p in over)} tokens"
+        )
+
+    def test_pure_punctuation_run_is_bounded(self):
+        from src.chunking import split_oversized, split_to_token_budget
+        from src.config import ChunkingConfig
+        from src.token_budget import get_token_counter
+
+        cfg = ChunkingConfig()
+        count = get_token_counter(cfg.token_budget_model)
+
+        pieces, _ = split_to_token_budget(
+            split_oversized(". " * 4000, cfg), cfg
+        )
+
+        assert all(count(p) <= cfg.max_chunk_tokens for p in pieces)
+
+    def test_normal_text_still_keeps_its_overlap(self):
+        """The estimate is distrusted, not abandoned: ordinary prose is
+        unaffected and still gets its overlap tail."""
+        from src.chunking import split_oversized, split_to_token_budget
+        from src.config import ChunkingConfig
+
+        cfg = ChunkingConfig()
+        sentence = "تنص هذه المادة على أحكام تنظيمية مفصلة وواضحة. "
+        pieces, _ = split_to_token_budget(
+            split_oversized(sentence * 200, cfg), cfg
+        )
+
+        assert len(pieces) > 1
+        tail = pieces[0][-40:].strip()
+        assert any(tail[:20] in p for p in pieces[1:2]) or len(pieces) > 2

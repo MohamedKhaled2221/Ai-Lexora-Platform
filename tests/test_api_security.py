@@ -341,6 +341,10 @@ def test_production_disables_docs_by_default():
             trusted_hosts=[
                 "localhost",
             ],
+            # Header identity is refused in production; "disabled" is the
+            # only currently valid production posture (fail closed until a
+            # verified identity provider exists).
+            identity_mode="disabled",
         )
     )
 

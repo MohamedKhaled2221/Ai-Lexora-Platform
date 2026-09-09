@@ -1,0 +1,688 @@
+{
+  "report": "M3 integration status - backfill, reranker fail-loud, tuning harness, eval set v2",
+  "generated": "2026-09-08 (session 4)",
+  "supersedes": "the 2026-09-08 static-only version of this file",
+  "honesty_note": "All numbers below were read from a running Qdrant server in this session. The RetrievedEvidence sample is real pipeline output, not hand-written. Where a component could not run (the cross-encoder reranker), the section says so and labels the output accordingly rather than presenting it as full-pipeline.",
+  "stage_1_live_instance": {
+    "status": "RESTORED - original live instance, not a rebuild",
+    "correction_to_previous_report": "The previous report concluded the collection was unreachable because it lived in an external Docker volume and Docker was absent. That was wrong about the hosting model. The instance was never containerised on this host: it runs as a native qdrant.exe binary with on-disk storage. infrastructure/qdrant/compose.yml describes an intended deployment that was never used here.",
+    "docker": {
+      "available": false,
+      "docker_desktop_installed": false,
+      "podman": false,
+      "wsl_installed": false,
+      "windows_edition": "Windows 11 Home (no Hyper-V)",
+      "running_as_administrator": false,
+      "elevation_probe": "DISM error 740; Get-WindowsOptionalFeature -> 'The requested operation requires elevation'",
+      "cpu_VirtualizationFirmwareEnabled": false,
+      "install_attempt": "winget install Docker.DockerDesktop ran and began downloading, then was stopped; the install itself needs elevation plus WSL2/VirtualMachinePlatform, both of which need admin",
+      "ai_lexora_qdrant_storage_volume": "NEVER EXISTED ON THIS HOST - exhaustive search of C: and E: found no docker volume data and no docker data roots"
+    },
+    "actual_hosting": {
+      "binary": "E:/Trend Egypt/Law firm 34/qdrant_data/bin/qdrant.exe (also moved off %TEMP%)",
+      "storage_path": "E:/Trend Egypt/Law firm 34/qdrant_data/storage  (MOVED 2026-09-09 off %TEMP%)",
+      "storage_size": "1.3 GB",
+      "last_written_before_restart": "2026-09-06T20:13:51 - matches the final reindex log and predates the handoff doc, confirming this is the state the handoff numbers were taken from",
+      "note": "A second, abandoned storage dir from an earlier run (18:03, 265 MB) also exists under the previous session scratchpad; it was NOT used."
+    },
+    "verified_state": {
+      "collection": "legal_documents_v2",
+      "status": "green",
+      "points_count": 1945,
+      "indexed_vectors_count": 1945,
+      "distinct_documents": 19,
+      "sparse_vector_configured": true,
+      "dense_dim": 1024,
+      "handoff_doc_claim": "1,945 points / 19 documents",
+      "matches_handoff_doc": true
+    }
+  },
+  "stage_2_live_retrieved_evidence": {
+    "status": "COMPLETE, WITH ONE LABELLED DEGRADATION (reranking)",
+    "reranker": {
+      "real_cross_encoder_loaded": false,
+      "error": "OSError: We couldn't connect to 'https://huggingface.co' to load the files, and couldn't find them in the cached files.\nCheck your internet connection or see how to run the library in offline mode at 'https://huggingface.co/docs/transformers/installation#offline-mode'.",
+      "stage_used": "HEURISTIC FALLBACK (_fallback_rerank) - NOT the real cross-encoder",
+      "pipeline_model_is_none": true,
+      "blocker_for_this_stage": true,
+      "meaning": "Scores in the sample below come from BGEReranker._fallback_rerank (0.5*rrf_score + 0.5*token-overlap, clamped to [0,0.99]), NOT from bge-reranker-v2-m3. Retrieval, fusion and ACL filtering are real and unaffected; only the final re-scoring is degraded. Do not quote these score VALUES as production relevance.",
+      "note_on_production_config": "src/api/runtime.py sets reranker_use_mock_fallback=False, so the real API would RAISE on init here rather than degrade. The fallback was enabled explicitly for this sample run only."
+    },
+    "pipeline_stages_actually_executed": {
+      "dense_search": "REAL - BGE-M3 1024-dim against live Qdrant",
+      "sparse_search": "REAL - text_sparse native Qdrant sparse retrieval",
+      "rrf_fusion": "REAL - weighted RRF, rrf_k=60",
+      "reranking": "DEGRADED - heuristic fallback, see above",
+      "acl_filtering": "REAL - Qdrant-side filter + post-rerank _assert_within_scope"
+    },
+    "access_scope_used": {
+      "client_id": "firm_demo",
+      "max_confidentiality": "public",
+      "include_shared_corpus": true
+    },
+    "queries": [
+      {
+        "language_detected": "ar",
+        "query_text": "ما هي الحقوق والحريات العامة المكفولة للمواطن في الدستور المصري؟",
+        "query_id": "q_1f68cd37",
+        "normalized_text": "ما هي الحقوق والحريات العامة المكفولة للمواطن في الدستور المصري؟",
+        "identifiers_extracted_by_m2": {
+          "article_numbers": [],
+          "case_numbers": [],
+          "dates": [],
+          "monetary_values": [],
+          "party_names": []
+        },
+        "dense_dim": 1024,
+        "sparse_terms": 15,
+        "retrieval_latency_ms": 95.73,
+        "retrieved_evidence": {
+          "query_id": "q_1f68cd37",
+          "retrieved_evidence": [
+            {
+              "document_id": "doc_0422a112599d",
+              "chunk_id": "chunk_087",
+              "text": "المقيمين المصريين مصالح برعاية الدولة تلتزم\nالدولة نحو العامة واجباتهم اداء من وتمكينهم ،وحرياتهم حقوقهم وكفالة\nالوطن تنمية في واسهامهم والمجتمع. واالوضاع يتفق بما ،و الستفتاءات النتخابات في مشاركتهم القانون وينظم\nالنتائج واعالن والفرز القتراع باحكام ذلك في التقيد دون ،بهم الخاصة\nنزاهة تكفل التي الضمانات توفير مع كله وذلك ،الدستور بهذا المقررة\nوحيادها الستفتاء او النتخاب عملية.\n\nالرق حظر\n\n89 المادة.\n\nوتجارة ،لالنسان القسري و الستغالل والقهر و السترقاق العبودية صور كل تحظر\nذلك كل القانون ويجرم ،البشر في التجار اشكال من وغيرها ،الجنس.\n\nالعلوم الي االشارة\n\n90 المادة.\n\n،العلمية المؤسسات ورعاية القامة الخيري الوقف نظام بتشجيع الدولة تلتزم\nشئونه وتدار ،استقالله وتضمن ،وغيرها و الجتماعية ،والصحية ،والثقافية\nذلك القانون وينظم ،الواقف لشروط وفقا.\n\nالمجنسين غير االشخاص حماية\n\n91 المادة.\n\nمصالح عن الدفاع بسبب اضطهد اجنبي لكل السياسي اللجوء حق تمنح ان للدولة\nالعدالة او السالم او االنسان حقوق او الشعوب.\n\nللخارج المطلوبين تسليم اجراءات\n\nللقانون وف قا كله وذلك ،محظور السياسيين الالجئين وتسليم.\n\n92 المادة.\n\nانتقا صا وال تعطي تقبل ال المواطن بشخص اللصيقة والحريات الحقوق.\n\nاصلها يمس بما يقيدها ان والحريات الحقوق ممارسة ينظم قانون الي يجوز وال\nوجوهرها.\n\n93 المادة.\n\nللمعاهدات القانونية الوضعية\nالدولي القانون\n\nالتي االنسان لحقوق الدولية والمواثيق والعهود ب التفاقيات الدولة تلتزم\nالمقررة لالوضاع وفق نشرها بعد القانون قوة لها وتصبح ،مصر عليها تصدق.",
+              "page": 13,
+              "section": "والواجبات والحريات الحقوق .الثالث الباب",
+              "language": "ar",
+              "score": 0.2071
+            },
+            {
+              "document_id": "doc_0422a112599d",
+              "chunk_id": "chunk_051",
+              "text": "لكتابة الدافع\n\nلحقوق العالمي العالن مع ويتسق ،المستقبل طريق امامنا يفتح دستور نكتب\nعليه ووافقنا صياغته في شاركنا التي االنسان.\n\nالدستور لكتابة الدافع وحدتنا يهدد او يهدده ما كل من الوطن ويحمي ،حرياتنا يصون دستور نكتب\nالوطنية.\n\nتمييز اي دون والواجبات الحقوق في بيننا المساواة يحقق دستور نكتب.\n\nللمساواة عام ضمان\nالدستور لكتابة الدافع\n\nالدستورية السلطة مصدر\n\nهذه ،السيد الوطن في السيد ،المصري الشعب نحن ،والمواطنين المواطنات نحن\nارادتنا،\n\nثورتنا دستور وهذا.",
+              "page": 4,
+              "section": "الديباجة",
+              "language": "ar",
+              "score": 0.2067
+            },
+            {
+              "document_id": "doc_22afd9d663b8",
+              "chunk_id": "chunk_091",
+              "text": "المادة 14.\n\nالوظ ائ ف العامة حق للمواطن ي ن علي اساس الكف اءة، ودون محاباة او وساطة، وت كلي ف للق ائ مي ن بها لخ دمة\nالش عب ، وت كف ل الدولة حق وق هم وحماي ت هم، وق ي امهم باداء واج بات هم في رعاي ة مصالح الش عب ، ولا يجوز فصلهم\n\nغي ر الطري ق الت ا دي بي، الا في الاحوال الت ي يحددها الق ان ون .\n\nالحق في الاض راب",
+              "page": 7,
+              "section": ". المق ومات الاجتماعي ة",
+              "language": "ar",
+              "score": 0.1569
+            },
+            {
+              "document_id": "doc_0422a112599d",
+              "chunk_id": "chunk_146",
+              "text": "Clause 9\n،النواب مجلس ورئيس ،الوزراء\nالمخابرات ورئيس ،والتعليم ،و التص الت ،والصحة ،والعدل ،والمالية\nالنواب بمجلس القومي واالمن الدفاع لجنة ورئيس ،العامة. ،الكوارث ح الت ومواجهة ،البالد امن تحقيق استراتيجيات باقرار ويختص\nاالخطار مصادر وتحديد ،الحتوائها يلزم ما واتخاذ ،انواعها بشتي واالزمات\nللتصدي الالزمة واالجراءات ،والخارج ،الداخل في المصري القومي االمن علي\nوالشعبي الرسمي المستويين علي لها.\n\nان دون ،اجتماعه لحضور واالختصاص الخبرة ذوي من يري من يدعو ان وللمجلس\nمعدود صوت لهم يكون.\n\nعمله ونظام ،االخري اختصاصاته القانون ويحدد.\n\nالشرطة .الخامس الفرع\n\nللمواطنين وتكفل ،له ووالؤها ،الشعب خدمة في ،نظامية مدنية هيئة الشرطة\nوتلتزم ،العامة واالداب ،العام النظام حفظ علي وتسهر ،واالمن الطمانينة\nاالنسان حقوق واحترام ،واجبات من والقانون الدستور عليها يفرضه بما\n،لواجباتهم الشرطة هيئة اعضاء اداء الدولة وتكفل ،االساسية وحرياته\nبذلك الكفيلة الضمانات القانون وينظم.\n\n207 المادة.\n\nالفتوي ادارة ورئيس ،الشرطة هيئة ضباط اقدم بين من للشرطة اعلي مجلس يشكل\nتنظيم في الداخلية وزير بمعاونة المجلس ويختص ، الدولة بمجلس المختص\n،االخري اختصاصاته القانون ويحدد ،اعضائها شئون وتسيير الشرطة هيئة\nبها تتعلق قوانين اية في رايه ويؤخذ.\n\nالنتخابات مفوضية\n\nلالنتخابات الوطنية الهيئة .التاسع الفصل\n\n208 المادة.",
+              "page": 31,
+              "section": "القوانين تنفيذ.",
+              "language": "ar",
+              "score": 0.1568
+            },
+            {
+              "document_id": "doc_0422a112599d",
+              "chunk_id": "chunk_085",
+              "text": "رعاية الدولة تكفل\nعلي وتشجيعهم ،واالبداعي والبدنية والنفسية والعلمية الثقافية قدراتهم\nالعامة الحياة في المشاركة من وتمكينهم ،والتطوعي الجماعي العمل. للمسنين الدولة دعم\n\n83 المادة.\n\nالثقافة في الحق\nمالئم معيشي مستوي في الحق\n\n،واجتماعي ،واقتصاديا ،صحي المسنين حقوق بضمان الدولة تلتزم\nمن وتمكينهم ،كريمة حياة لهم يكفل مناسب معاش وتوفير وترفيهي ،وثقافي\nالعامة للمرافق تخطيطها في الدولة وتراعي .العامة الحياة في المشاركة\nفي المشاركة علي المدني المجتمع منظمات تشجع كما ،المسنين احتياجات\nالمسنين رعاية.\n\nالقانون ينظمه الذي النحو علي كله وذلك.\n\n84 المادة.\n\nاكتشاف والمجتمع الدولة مؤسسات وعلي ،للجميع حق الرياضة ممارسة\nممارسة لتشجيع تدابير من يلزم ما واتخاذ ،ورعايتهم رياضي الموهوبين\nالرياضة.\n\nللمعايير وفقا االهلية الرياضية والهيئات الرياضة شئون القانون وينظم\nالرياضية المنازعات في الفصل وكيفية ،الدولية.\n\nالتماس تقديم حق\n\n85 المادة.\n\nمخاطبتها تكون وال ،وبتوقيعه كتابة العامة السلطات مخاطبة حق فرد لكل\nالعتبارية لالشخاص اال الجماعات باسم.\n\nالمسلحة القوات في الخدمة واجب\n\n86 المادة.\n\n،وطنية مسئولية بمراعاته الكافة والتزام ،واجب القومي االمن علي الحفاظ\n،مقدس وواجب شرف ارضه وحماية ،الوطن عن والدفاع .القانون يكفلها\nللقانون وف قا اجباري والتجنيد.\n\nالستفتاءات\n\nالعام القتراع حق اعالن\nااللزامي التصويت\nالتصويت علي قيود",
+              "page": 13,
+              "section": "والواجبات والحريات الحقوق .الثالث الباب",
+              "language": "ar",
+              "score": 0.1561
+            }
+          ]
+        }
+      },
+      {
+        "language_detected": "en",
+        "query_text": "What constitutional protections exist for freedom of expression and the press?",
+        "query_id": "q_7ff5c884",
+        "normalized_text": "What constitutional protections exist for freedom of expression and the press?",
+        "identifiers_extracted_by_m2": {
+          "article_numbers": [],
+          "case_numbers": [],
+          "dates": [],
+          "monetary_values": [],
+          "party_names": []
+        },
+        "dense_dim": 1024,
+        "sparse_terms": 11,
+        "retrieval_latency_ms": 47.83,
+        "retrieved_evidence": {
+          "query_id": "q_7ff5c884",
+          "retrieved_evidence": [
+            {
+              "document_id": "doc_641a63c3a69e",
+              "chunk_id": "chunk_214",
+              "text": "Article 211\n\nThe Supreme Council of the Press shall deal with matters concerning the press.\n\nThe law shall define its composition, competencies and its relationship with the State\nauthorities. The Supreme Press Council shall exercise its competencies with a view to\nconsolidate the freedom of the press and its independence, to uphold the basic foundations of\nsociety, and to guarantee the strength of national unity and social peace as defined by the\nConstitution and the law.\n\nNOTES\n\n[1] As amended by constitutional reform of March 26, 2007. Prior to the reform, the provision\nhad the following wording:\n\n\"The Arab Republic of Egypt is a democratic, socialist state based on the alliance of the\nworking forces of the people.\n\nThe Egyptian people are part of the Arab nation and work for the realization of its\ncomprehensive unity.\"\n\n[2] As amended by constitutional reform of March 26, 2007. Prior to the reform, the provision\nwas worded as follows:\n\n\"The economic foundation of the Arab Republic of Egypt is a socialist democratic system\nbased on sufficiency and justice in a manner preventing exploitation, conducive to liquidation\nof income differences, protecting legitimate earnings, and guaranteeing the equity of the\ndistribution of public duties and responsibilities.\"\n\n[3] Second paragraph added by constitutional reform of March 26, 2007.\n\n[4] As amended by constitutional reform of March 26, 2007. Prior to the reform, the first\nparagraph had this wording:\n\n\"The society shall be committed to safeguarding and protecting morals, promoting the\ngenuine Egyptian traditions and abiding by the high standards of religious education, moral\nand national values, historical heritage of the people, scientific facts, socialist conduct and\npublic morality within the limits of the law.\"",
+              "page": 40,
+              "section": "Article 211",
+              "language": "en",
+              "score": 0.2807
+            },
+            {
+              "document_id": "doc_641a63c3a69e",
+              "chunk_id": "chunk_210",
+              "text": "Article 207\n\nThe Press shall exercise its mission freely and independently in the service of society through\nall means of expression in order to interpret the trends of public opinion and contribute to\ntheir formation and orientation within the framework of the basic foundations of society, the\nprotection of the liberties, rights and public duties and the respect for the private life of\ncitizens in accordance with the Constitution and the law.",
+              "page": 40,
+              "section": "Article 207",
+              "language": "en",
+              "score": 0.2346
+            },
+            {
+              "document_id": "doc_6450dfd093f8",
+              "chunk_id": "chunk_140",
+              "text": "Article 65. Freedom of thought\n\nFreedom of opinion/thought/conscience\n\nFreedom of thought and opinion is guaranteed.\n\nFreedom of expression\n\nAll individuals have the right to express their opinion through speech, writing, imagery,\nor any other means of expression and publication.",
+              "page": 16,
+              "section": "Freedom of thought",
+              "language": "en",
+              "score": 0.2345
+            },
+            {
+              "document_id": "doc_6450dfd093f8",
+              "chunk_id": "chunk_145",
+              "text": "Article 70. Freedom of the press\n\nFreedom of press and printing, along with paper, visual, audio and digital distribution is\nguaranteed. Egyptians -- whether natural or legal persons, public or private -- have the\nright to own and issue newspapers and establish visual, audio and digital media outlets.\n\nRadio\n\nNewspapers may be issued once notification is given as regulated by law. The law shall\nregulate ownership and establishment procedures for visual and radio broadcast\nstations in addition to online newspapers.\n\nFreedom of press",
+              "page": 17,
+              "section": "Freedom of the press",
+              "language": "en",
+              "score": 0.2343
+            },
+            {
+              "document_id": "doc_6450dfd093f8",
+              "chunk_id": "chunk_295",
+              "text": "Article 211. Mandate, composition\n\nThe National Media Council is an independent entity that has a legal personality, enjoys\ntechnical, financial and administrative independence, and has an independent budget.\n\nThe Council is regulates the affairs of radio, television, and printed and digital press,\namong others.\n\nTelecommunications\nTelevision\nRadio\n\nThe Council is responsible for guaranteeing and protecting the freedom of press and\nmedia stipulated in the Constitution; safeguarding its independence, neutrality, plurality\nand diversity, preventing monopolistic practices; monitoring the legality of the sources\nof funding of press and media institutions; and establishing the controls and regulations\nnecessary to ensure the commitment of press and media outlets to adhere to\nprofessional and ethical standards, and national security needs as set out by law.\n\nThe law determines the composition of the Council, its system of operation, and\nstipulates the conditions of employment for its staff.\n\nThe Council is to be consulted on bills and regulations related to its field of operation.",
+              "page": 42,
+              "section": "Mandate, composition",
+              "language": "en",
+              "score": 0.2342
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "stage_2_3_jurisdiction_coverage_audit": {
+    "status": "RESOLVED - previous report flagged this as unaudited",
+    "method": "scrolled all 1,945 points and counted non-null values directly",
+    "jurisdiction_populated": "1945 / 1945 (100.0%)",
+    "jurisdiction_values": {
+      "Egypt": 1945
+    },
+    "caveat": "100% populated but SINGLE-VALUED. Every point is 'Egypt', so the jurisdiction filter is fully covered yet completely untested as a discriminator - no query in this corpus can be narrowed by it. Filtering on any other jurisdiction returns zero. Treat 'jurisdiction filtering works' as unproven until a multi-jurisdiction corpus exists.",
+    "full_field_coverage_across_1945_points": {
+      "document_id": "1945 (100.0%)",
+      "chunk_id": "1945 (100.0%)",
+      "text": "1945 (100.0%)",
+      "page": "1945 (100.0%)",
+      "section": "1912 (98.3%) - 33 points have no section",
+      "clause": "263 (13.5%) - key present on all points, non-empty on 263",
+      "language": "1945 (100.0%) - ar 998 / en 891 / ar-en 41 / unknown 15",
+      "document_type": "1945 (100.0%) - law 1859 / contract 54 / unknown 28 / correspondence 4",
+      "jurisdiction": "1945 (100.0%)",
+      "client_id": "1945 (100.0%)",
+      "matter_id": "1945 (100.0%)",
+      "confidentiality_level": "1945 (100.0%)",
+      "schema_version": "1945 (100.0%)",
+      "metadata": "1945 (100.0%)"
+    },
+    "status_lifecycle_fields": {
+      "checked": [
+        "status",
+        "approval",
+        "approval_state",
+        "current",
+        "superseded",
+        "review_required",
+        "effective_from",
+        "effective_to"
+      ],
+      "result": "NONE present on ANY of the 1,945 points - confirmed by direct scroll, not inference"
+    }
+  },
+  "stage_3_exact_identifier_search": {
+    "status": "BUILT AND TESTED - not yet backfilled onto the live collection",
+    "m2_untouched": "src/query_processor.py was not modified. The new code consumes ProcessedQuery.identifiers, which M2 already populated and which had no consumer before this.",
+    "new_module": {
+      "path": "src/retrieval/identifiers.py",
+      "purpose": "normalization + lookup-key construction; calls QueryProcessor.extract_identifiers rather than restating its regexes, so index side and query side cannot drift"
+    },
+    "collision_solution": {
+      "problem": "An article number is unique only within one law. 'Article 15' exists in the 2014 constitution, the 2019 amendments and the WIPO instruments in this corpus.",
+      "solution": "Two keys per identifier.",
+      "article_no": "bare normalized number, e.g. '15' - used when the query names no law",
+      "article_ref": "compound '{document_id}:a{number}', e.g. 'doc_0422a112599d:a15' - used automatically when QueryFilters.document_ids scopes the query, so precision rises with the context the caller supplies",
+      "case_no": "normalized alphanumeric docket, digits folded, whitespace removed, e.g. '123/2019'",
+      "normalization": "Arabic-Indic (U+0660-0669) and Persian (U+06F0-06F9) digits folded to ASCII; leading zeros stripped; unnormalizable values DROPPED rather than stored, since an unmatchable key can never be hit"
+    },
+    "payload_indices_added": [
+      "article_no",
+      "article_ref",
+      "case_no"
+    ],
+    "index_type": "KEYWORD (exact match) - verified created on a real server by test_identifier_fields_are_indexed_on_a_real_server",
+    "query_routing": {
+      "where": "HybridSearcher._identifier_search -> QdrantVectorStore.identifier_search",
+      "fusion": "third input to weighted RRF alongside dense and sparse",
+      "access_control": "consumes the SAME Filter object built once by build_qdrant_filter; identifier conditions are added under 'should' with an explicit min_should=1 on top of the existing 'must'. There is no separate filter construction and no unfiltered path.",
+      "min_should_note": "Verified empirically against the live server: without should-enforcement Qdrant would return everything matching 'must' alone, i.e. the whole permitted corpus. Confirmed 0 results when the should-condition cannot match.",
+      "no_identifier_in_query": "returns [] and fusion behaves exactly as before - non-citation queries are unaffected"
+    },
+    "rrf_weights": {
+      "dense": 0.9,
+      "keyword": 0.1,
+      "identifier": 1.0,
+      "identifier_rationale": "1.0/(60+1)=0.01639 > 0.9/(60+1)=0.01475, so an exact hit at rank 1 edges out the best possible dense hit, without being large enough to bury the semantic candidates when identifier extraction is wrong.",
+      "WARNING": "ALL THREE ARE UN-TUNED. dense/keyword were already carried over unvalidated from the BM25 era; identifier was picked to satisfy one inequality against no labeled data. Adding a third signal enlarged the untuned surface rather than validating the existing two. A labeled evaluation set is still needed and still does not exist."
+    },
+    "tests": {
+      "file": "tests/test_identifier_search.py",
+      "count": 15,
+      "result": "15 passed",
+      "regression_reproduced": "test_dense_alone_ranks_the_wrong_article_first asserts dense retrieval puts article 51 ABOVE article 15 for the query 'ما نص المادة ١٥؟'. test_exact_article_outranks_lexically_similar_wrong_articles then asserts article 15 comes first through the full hybrid path. Both pass, so the bug is demonstrated to exist and then demonstrated fixed.",
+      "also_covered": [
+        "mirror case (article 51 query returns article 51) - proves it is not a hard-coded preference",
+        "cross-law disambiguation via document_ids scoping",
+        "non-identifier queries unaffected",
+        "identifier path is access-filtered (denied tenant gets nothing)",
+        "identifier_search refuses an absent filter",
+        "wrong articles are demoted, not excluded - fusion not filtering"
+      ]
+    },
+    "full_suite": "405 passed, 0 failed (tests/). One pre-existing test, test_vector_store_payload_schema.py, pinned the exact set of indexed fields and was updated to include the three new ones.",
+    "NOT_DONE": {
+      "live_backfill": "The 1,945 live points carry NO identifier keys - they were indexed before this feature existed. The live collection still shows 7 payload indices, not 10. Exact identifier search therefore returns nothing against live data until a backfill runs. This is payload-only (no re-embedding needed): scroll every point, derive keys from stored text/section, set_payload. Not run because it mutates the live collection and was not authorised."
+    }
+  },
+  "stage_4_report_only": {
+    "4_1_evidenceitem_field_drop": {
+      "status": "CONFIRMED STILL DROPPED - no change made",
+      "evidence": "src/pipeline.py:104-115 constructs EvidenceItem with exactly 7 fields; src/schemas/m4_contract.py EvidenceItem declares exactly those 7.",
+      "evidenceitem_fields": [
+        "document_id",
+        "chunk_id",
+        "text",
+        "page",
+        "section",
+        "language",
+        "score"
+      ],
+      "present_on_internal_candidate_but_dropped": [
+        "client_id",
+        "matter_id",
+        "confidentiality_level",
+        "jurisdiction",
+        "document_type",
+        "point_id",
+        "rrf_score",
+        "article_no",
+        "article_ref",
+        "case_no",
+        "matched_by"
+      ],
+      "note": "The three identifier keys and the new 'matched_by' provenance field also stay internal, so Stage 3 did NOT change the M4 contract.",
+      "action": "Needs an M4 conversation before anyone changes the contract. Not changed here."
+    },
+    "4_2_reranker": {
+      "status": "CONFIRMED UNCHANGED - no change made",
+      "bge_reranker_v2_m3_in_local_hf_cache": false,
+      "hf_cache_contents_matching_bge": [
+        "models--BAAI--bge-m3"
+      ],
+      "reranker_use_mock_fallback": false,
+      "reranker_local_files_only": true,
+      "strict_offline": true,
+      "consequence": "With these defaults the production API raises on init on this host rather than silently degrading - which is the intended behaviour. Fallback was enabled only for the Stage 2 sample run and is labelled there.",
+      "action": "Awaiting your decision: download the model (~2.2 GB, and the project's stated posture is that nothing leaves firm infrastructure) or leave the fail-loud behaviour as is."
+    }
+  },
+  "superseded_sections_from_previous_report": {
+    "task_1_exact_identifier_search": {
+      "verdict": "ABSENT from retrieval. Extraction exists upstream and is DEAD-ENDED.",
+      "what_exists": {
+        "identifier_regexes": {
+          "file": "src/query_processor.py",
+          "lines": "23-42, 98-124",
+          "patterns": {
+            "ARTICLE_RE": "\\b(?:article|art\\.?|المادة|مادة)\\s*[-:#]?\\s*([0-9٠-٩]+)\\b",
+            "CASE_RE": "\\b(?:case|case\\s*no\\.?|قضية|دعوى)\\s*[-:#]?\\s*([A-Za-z0-9٠-٩/-]+)",
+            "DATE_RE": "present",
+            "MONEY_RE": "present"
+          },
+          "note": "Handles Latin and Arabic keywords and Arabic-Indic digits. No law-number or decree-number pattern."
+        },
+        "schema_slot": {
+          "file": "src/schemas/m2_contract.py",
+          "lines": "89-95, 128",
+          "detail": "IdentifierSet{article_numbers, case_numbers, dates, monetary_values, party_names}; carried as ProcessedQuery.identifiers (Optional, default None)."
+        },
+        "populated_by": "QueryProcessor.process() -> src/query_processor.py:183"
+      },
+      "what_is_missing": {
+        "consumer_of_identifiers": {
+          "status": "NONE",
+          "evidence": "grep for '.identifiers' / 'article_numbers' / 'case_numbers' across src, app, tests, scripts returns hits ONLY in the definition (m2_contract.py) and the producer (query_processor.py). src/retrieval/, src/pipeline.py and src/vector_store/ never read ProcessedQuery.identifiers."
+        },
+        "qdrant_payload_index_on_identifier": {
+          "status": "NONE",
+          "evidence": "src/vector_store/qdrant_manager.py:_create_payload_indices indexes exactly 7 KEYWORD fields: document_type, jurisdiction, language, document_id, client_id, matter_id, confidentiality_level."
+        },
+        "normalized_identifier_payload_field": {
+          "status": "NONE",
+          "detail": "Indexing writes a 'clause' payload key (src/indexing/service.py:277) sourced from M1 chunk.clause, but it is (a) free-text, not normalized, (b) not payload-indexed, (c) never filtered on by build_qdrant_filter."
+        },
+        "query_routing_to_structured_lookup": {
+          "status": "NONE",
+          "detail": "HybridSearcher.search() is unconditional: build filter -> dense_search -> keyword_search -> RRF. No branch, no pre-check, no identifier-triggered path."
+        }
+      },
+      "explicit_disambiguation": "The BGE-M3 sparse vector (named vector 'text_sparse', qdrant_manager.py:51) is learned lexical term weighting scored by similarity - it is NOT exact structured matching. A query for article 15 can rank a chunk about article 51 above article 15. There is no equality or regex predicate on any identifier anywhere in the retrieval path."
+    },
+    "note": "Kept for traceability. The 'ABSENT' verdict was correct at the time; Stage 3 above implements it."
+  },
+  "stage_5_identifier_backfill": {
+    "status": "APPLIED to the live collection",
+    "method": "scripts/backfill_identifiers.py --apply; payload-only set_payload merge, reusing src.retrieval.identifiers.identifier_payload (the same function DocumentIndexingService calls at index time) rather than reimplementing it",
+    "vectors_touched": "NONE - scrolled with with_vectors=False, wrote via set_payload only. Verified post-hoc: a sampled point still carries dense(1024) + text_sparse.",
+    "split": {
+      "points_scanned": 1945,
+      "points_written": 1120,
+      "pct_written": "57.6%",
+      "points_with_no_identifier": 825,
+      "pct_no_identifier": "42.4%",
+      "note_on_the_split": "825 points carry no article or case number. Expected: headings, preambles and connective prose have no identifier to extract. Not a defect.",
+      "reconciliation": {
+        "article_only": 1025,
+        "case_only": 6,
+        "both": 89,
+        "neither": 825,
+        "article_total": 1114,
+        "case_total": 95,
+        "check": "1114 article + 6 case-only = 1120 written; 1120 + 825 = 1945"
+      },
+      "distinct_article_numbers": 247,
+      "documents_containing_articles": "11 of 19"
+    },
+    "integrity_after": {
+      "points_count": 1945,
+      "unchanged_from_1945": true,
+      "indexed_vectors_count": 1945,
+      "status": "green",
+      "payload_indices": {
+        "article_no": 1114,
+        "article_ref": 1114,
+        "case_no": 95,
+        "client_id": 1945,
+        "confidentiality_level": 1945,
+        "document_id": 1945,
+        "document_type": 1945,
+        "jurisdiction": 1945,
+        "language": 1945,
+        "matter_id": 1945
+      },
+      "index_count": "10 (was 7)"
+    },
+    "live_verification": {
+      "method": "same query run twice against live data - once with identifiers stripped from the ProcessedQuery (reproducing pre-Stage-3 behaviour), once with the identifier path active - so the delta is attributable to nothing else",
+      "points_carrying_article_no_15": 5,
+      "queries": [
+        {
+          "language": "ar",
+          "query": "ما نص المادة ١٥؟",
+          "m2_extracted": [
+            "١٥"
+          ],
+          "rank_of_article_15_BEFORE": 9,
+          "rank_of_article_15_AFTER": 1,
+          "top_result_is_article_15": true
+        },
+        {
+          "language": "en",
+          "query": "What does article 15 say?",
+          "m2_extracted": [
+            "15"
+          ],
+          "rank_of_article_15_BEFORE": 8,
+          "rank_of_article_15_AFTER": 1,
+          "top_result_is_article_15": true
+        }
+      ],
+      "verdict": "CONFIRMED on live data. Arabic 'ما نص المادة ١٥؟' moved the correct chunk from rank 9 to rank 1; English 'What does article 15 say?' from rank 8 to rank 1. Before, the top hits were articles 74/75/55 - the exact lexically-similar-wrong-article failure mode from the original audit."
+    }
+  },
+  "stage_6_reranker_fail_loud": {
+    "status": "FIXED - two defects found, both closed. Model NOT downloaded.",
+    "model_download": "NOT DONE, deliberately. Whether bge-reranker-v2-m3 may be placed on firm infrastructure is a human policy call.",
+    "default_unchanged": "reranker_use_mock_fallback is still False (pinned by a test).",
+    "defect_1_untyped_error": {
+      "before": "raised bare builtins.OSError from the HF loader, message 'We couldn't connect to https://huggingface.co ... Check your internet connection'",
+      "why_that_was_bad": "On a deliberately air-gapped host that message describes policy, not a fault, and sends an operator to diagnose a network problem that does not exist. It was also indistinguishable from any other OSError, so a caller could not catch it selectively.",
+      "after": "raises src.retrieval.reranker.RerankerUnavailable (a RuntimeError, NOT an OSError subclass) naming the model, the real reason, and how to opt into degrading. Original exception preserved as __cause__."
+    },
+    "defect_2_silent_degradation_hole": {
+      "found": "reranker_model_name='' bypassed use_mock_fallback=False entirely: _init_model returned early leaving model=None, and rerank() then served heuristic scores with no error at all.",
+      "severity": "This defeated the exact guarantee the flag exists to provide.",
+      "after": "an empty model name with use_mock_fallback=False now raises RerankerUnavailable; a defence-in-depth guard in rerank() also refuses to return heuristic scores whenever model is None and fallback is forbidden."
+    },
+    "startup_behaviour_confirmed": "build_rag_service is called from the FastAPI lifespan and the exception is NOT swallowed - the app fails to boot rather than serving degraded results. That was already correct and is unchanged.",
+    "no_regression": "src/api/health.py catches OSError in two places; both are httpx readiness probes for Ollama and Qdrant, unrelated to the reranker.",
+    "tests": "tests/test_reranker_fail_loud.py - 9 tests, all passing",
+    "verdict": "SAFE to leave fail-loud in production. It now fails at startup, with a typed, catchable, self-explanatory error. Remaining rough edge is operational, not code: the model is absent, so any deploy with these defaults will not boot until it is placed in the local HF cache."
+  },
+  "stage_7_rrf_tuning_harness": {
+    "status": "BUILT and proven end-to-end. NO TUNING PERFORMED.",
+    "script": "scripts/tune_rrf_weights.py",
+    "enabler_change": {
+      "what": "HybridSearcher.__init__ now accepts dense_weight / keyword_weight / identifier_weight, defaulting to the existing constants.",
+      "why": "The weights were previously reachable only as default arguments on a private method, so nothing could vary them without editing the module - which is part of why none has ever been measured.",
+      "behaviour_change": "None. Defaults are the same constants; 414 tests pass."
+    },
+    "measures_by_default": "fusion output, PRE-rerank",
+    "why_pre_rerank": "The cross-encoder re-scores whatever fusion hands it, so a good reranker masks a bad fusion ranking and weight changes become invisible. Measuring fusion directly keeps the weights attributable.",
+    "reranked_mode": "--stage reranked runs end-to-end with use_mock_fallback=False; on this host it raises RerankerUnavailable rather than substituting heuristic scores into what claims to be a measurement. Verified.",
+    "metrics": [
+      "precision@k",
+      "recall@k",
+      "MRR",
+      "rank-of-first-correct per case"
+    ],
+    "smoke_test": {
+      "cases": 2,
+      "LABEL": "SMOKE TEST STUB - NOT A REAL EVALUATION SET. Two identifier-shaped cases only, present to prove the harness runs. Must not be used to choose weights.",
+      "result": {
+        "d=0.9 k=0.1 i=1.0 (current)": "P@5=0.700 MRR=1.000 ranks 1,1",
+        "d=0.9 k=0.1 i=0.0 (identifier off)": "P@5=0.000 MRR=0.087 ranks 9,16"
+      },
+      "note": "The i=0.0 row independently reproduces the pre-Stage-3 failure on live data."
+    },
+    "expected_case_format": {
+      "compatible_with_existing": "evaluation/benchmark_cases.json loads as-is (BenchmarkCase schema: case_id, category, language, question, filters, ground_truth_chunk_ids, expect_supported).",
+      "preferred_ground_truth": {
+        "field": "ground_truth",
+        "shape": "[{\"document_id\": \"doc_...\", \"chunk_id\": \"chunk_...\"}]",
+        "why": "chunk_id is unique only WITHIN a document. Cases whose ground truth is a bare chunk_id are ambiguous against the live collection and the harness flags them."
+      },
+      "case_filters_applied": "document_type, jurisdiction, language, document_ids are applied to the query. access is always server-derived and is never read from a case file."
+    },
+    "FINDING_existing_eval_set_unusable": {
+      "claim": "evaluation/benchmark_cases.json already exists, but it is NOT a usable evaluation set against the live collection.",
+      "evidence": [
+        "Its ground truth is bare chunk_ids. 'chunk_017' resolves to 12 distinct live points across 12 documents (3 even after its document_type/jurisdiction filters), so a 'hit' cannot be distinguished from a coincidence.",
+        "Case 'en_ksa_termination' filters jurisdiction=KSA, which matches 0 live points - the corpus is 100% Egypt, consistent with the earlier jurisdiction audit.",
+        "Measured end-to-end: 2 of 8 scorable cases found their ground truth at all (P@5=0.025), and the numbers were IDENTICAL for identifier weight 1.0 and 0.0, i.e. the set does not discriminate between weight settings."
+      ],
+      "conclusion": "A real eval set still needs to be authored against the live corpus, using (document_id, chunk_id) pairs. The harness is ready for it."
+    }
+  },
+  "stage_8_eval_set_v2": {
+    "status": "AUTHORED from live corpus content. First legitimate baseline captured.",
+    "file": "evaluation/benchmark_cases_v2.json",
+    "old_file": "evaluation/benchmark_cases.json left in place, UNMODIFIED (9 cases). Do not use going forward.",
+    "authoring_method": "Every case was written after reading the actual chunk text out of the live collection - full dumps of the 6 small documents, plus targeted fetches of specific constitution articles. No case derives from a filename or metadata.",
+    "ground_truth_integrity": {
+      "format": "{\"query\", \"ground_truth\":[{\"document_id\",\"chunk_id\"}], \"notes\", ...}",
+      "pairs_verified": 47,
+      "all_resolve_to_exactly_one_point": true,
+      "note": "The build script fails hard if any pair resolves to 0 or >1 points. Separately confirmed: all 1,945 (document_id, chunk_id) pairs in the collection are unique - 0 duplicates."
+    },
+    "counts": {
+      "total": 37,
+      "by_category": {
+        "semantic": 11,
+        "identifier": 10,
+        "adversarial": 6,
+        "language_variation": 5,
+        "negative": 5
+      },
+      "by_confidence": {
+        "self_verified": 33,
+        "needs_lawyer": 4
+      },
+      "multi_chunk": 15,
+      "single_chunk": 22
+    },
+    "jurisdiction": "No jurisdiction-discriminating case included. The corpus is 100% Egypt, so a non-Egypt filter matches zero points - the exact defect (KSA) that made the old set vacuous.",
+    "corpus_findings_that_shaped_the_set": [
+      "doc_33fedccceb2b and doc_90b6457f5814 are byte-identical duplicate copies of supply law 17/2026 - so article lookups there are legitimately multi-chunk.",
+      "doc_694f11671c02 and doc_7f50f934ecc4 are near-duplicate supply contracts.",
+      "Constitution documents contain table-of-contents chunks carrying the SAME article_no as the body chunk - a real near-miss that exact matching alone cannot resolve.",
+      "doc_0422a112599d (2019 constitution, 279 chunks) yielded 0 article numbers: its OCR emits the number BEFORE the word المادة, which ARTICLE_RE does not match. No identifier case was written against it.",
+      "doc_e88a137f4d25 is IP-authority law, so intellectual property could NOT be used as a negative case."
+    ],
+    "baseline": {
+      "weights": "dense 0.9 / keyword 0.1 / identifier 1.0 (current defaults, untuned)",
+      "stage": "fusion (pre-rerank)",
+      "scorable_cases": 32,
+      "negatives_held_out": 5,
+      "k5": {
+        "P@5": 0.238,
+        "R@5": 0.844,
+        "MRR": 0.67,
+        "found": "32/32"
+      },
+      "k10": {
+        "P@10": 0.131,
+        "R@10": 0.906,
+        "MRR": 0.67,
+        "found": "32/32"
+      },
+      "rank_distribution": {
+        "rank_1": "17/32",
+        "top_3": "23/32",
+        "top_5": "28/32"
+      },
+      "by_category_k5": {
+        "identifier": {
+          "n": 10,
+          "P@5": 0.32,
+          "MRR": 0.775,
+          "found": "10/10"
+        },
+        "language_variation": {
+          "n": 5,
+          "P@5": 0.2,
+          "MRR": 0.75,
+          "found": "5/5"
+        },
+        "semantic": {
+          "n": 11,
+          "P@5": 0.236,
+          "MRR": 0.612,
+          "found": "11/11"
+        },
+        "adversarial": {
+          "n": 6,
+          "P@5": 0.133,
+          "MRR": 0.535,
+          "found": "6/6"
+        }
+      },
+      "how_to_read_P_at_k": "P@k is bounded by how many correct chunks a case has - a single-answer case can never exceed 0.2 at k=5. R@k and MRR are the primary signals here.",
+      "weakest_cases": {
+        "sem_lease_premises": 15,
+        "sem_supply_fine_amount": 12,
+        "adv_contract_article_4_vs_definitions": 10,
+        "adv_article_4_vs_citing_chunks": 9
+      },
+      "headline_finding": "adv_article_4_vs_citing_chunks sits at rank 9: querying for the text of Article 4 returns the Article 7 and Article 9 chunks that merely CITE 'المادة (4)' above the actual Article 4 chunk. This is a real, currently unfixed retrieval defect that the eval set was built to expose. It is the mention-vs-subject problem, and the identifier index does not distinguish them because extraction indexes every article number appearing in a chunk."
+    },
+    "lawyer_review": {
+      "file": "evaluation/NEEDS_LAWYER_REVIEW.md",
+      "flagged": 4,
+      "self_verified": 33,
+      "cases": [
+        "sem_memo_recommendation",
+        "sem_press_freedom",
+        "adv_contract_article_4_vs_definitions",
+        "neg_environmental_impact"
+      ]
+    },
+    "harness_changes": [
+      "accepts 'query' (v2) as well as 'question' (v1)",
+      "negative cases (ground_truth: []) are held out of P@k/MRR and reported separately - retrieval always returns top-k, so no-answer is M4's decision",
+      "per-category breakdown added",
+      "case filters (document_type/jurisdiction/language/document_ids) are applied"
+    ]
+  },
+  "stage_9_storage_relocation": {
+    "status": "DONE and verified live on 2026-09-09",
+    "why": "Both the index (%TEMP%/qd/storage, 1.4 GB) and the qdrant.exe binary (a Claude session scratchpad under %TEMP%) were exposed to routine temp cleanup and reboots. Rebuilding the index requires a full BGE-M3 re-encode plus the identifier backfill.",
+    "new_root": "E:/Trend Egypt/Law firm 34/qdrant_data",
+    "layout": {
+      "binary": "bin/qdrant.exe",
+      "config": "bin/config/config.yaml",
+      "index": "storage/",
+      "snapshots": "snapshots/",
+      "start": "start_qdrant.ps1",
+      "docs": "README.md"
+    },
+    "git": "Sibling of the AI-Lexora repo, NOT inside it, so no .gitignore entry is needed and a 1.4 GB index cannot be accidentally committed.",
+    "method": "Copy-then-verify-then-retire, not move: the original was left intact until verification passed. Binary copy SHA256-matched.",
+    "verified_after_move": {
+      "points_count": 1945,
+      "indexed_vectors_count": 1945,
+      "status": "green",
+      "payload_indices": 10,
+      "proof_beyond_file_copy": "real retrieval pipeline re-run: 'ما نص المادة ١٥؟' and 'What does article 15 say?' both return the correct chunk at rank 1 (9 and 8 with the identifier path off) - identical to pre-move measurements",
+      "old_path_untouched_during_run": true
+    },
+    "old_copy": "C:/Users/Youssef Elghandour/AppData/Local/Temp/qd - now redundant and safe to delete; left in place for the user to remove.",
+    "remaining_temp_dependency": "RESOLVED 2026-09-09. %TEMP% was deleted; the index and binary survived on E: as designed, the venv did not. Rebuilt at E:/Trend Egypt/Law firm 34/venv on Python 3.14 (matching the interpreter the baseline was measured on). No project script or committed file ever hardcoded the venv path, so nothing needed a code change.",
+    "reproducibility_gap_found": "requirements.txt omitted pytest, pytest-asyncio and python-multipart, so a clean rebuild from it could not run `pytest tests/`. Now captured in requirements-dev.txt."
+  },
+  "stage_10_venv_rebuild": {
+    "status": "DONE and verified 2026-09-09",
+    "trigger": "User deleted %TEMP%, destroying the Python venv. The Qdrant index and binary survived because they had been moved to E: the day before.",
+    "new_path": "E:/Trend Egypt/Law firm 34/venv  (Python 3.14)",
+    "rebuild_script": "qdrant_data/rebuild_venv.ps1",
+    "python_version_note": "3.14 chosen deliberately to match the interpreter the baseline was measured on. RESOLVED 2026-09-09: .python-version, pyproject.toml requires-python and uv.lock all said 3.12 and now all say 3.14. The earlier claim that 3.12 was not installed was wrong - CPython 3.12.10 is present, so uv python find inside AI-Lexora resolved to it and the mismatch silently built a 3.12 environment instead of failing.",
+    "reproducibility_gap_fixed": "requirements.txt omitted pytest, pytest-asyncio and python-multipart, so a clean rebuild could not run the test suite. Now in requirements-dev.txt.",
+    "version_drift_vs_lost_venv": {
+      "sentence-transformers": "5.6.1 -> 5.7.0",
+      "transformers": "5.14.1 -> 5.15.0",
+      "torch": "2.13.0 (unchanged, +cpu build)",
+      "impact_measured": "NONE - see baseline_reproduction below"
+    },
+    "incident_note": "A first install attempt appeared to hang for ~25 minutes. Root cause was self-inflicted: a second concurrent 'uv pip install' deadlocked with the first on uv's per-wheel cache lock for torch. Diagnostic signal was CPU time (43s over 25 min = blocked, not downloading). Recorded in rebuild_venv.ps1 so it is not repeated.",
+    "verification": {
+      "imports": "all OK incl. pytest and python-multipart",
+      "test_suite": "414 passed (identical to pre-deletion)",
+      "qdrant_untouched": "1945 points, 10 indices, green - verified before any rebuild work began"
+    },
+    "baseline_reproduction": {
+      "weights": "0.9 / 0.1 / 1.0 (unchanged)",
+      "k5": {
+        "P@5": 0.244,
+        "R@5": 0.859,
+        "MRR": 0.671,
+        "found": "32/32"
+      },
+      "k10": {
+        "P@10": 0.131,
+        "R@10": 0.906,
+        "MRR": 0.671,
+        "found": "32/32"
+      },
+      "by_category_MRR": {
+        "identifier": 0.775,
+        "language_variation": 0.75,
+        "semantic": 0.612,
+        "adversarial": 0.538
+      },
+      "verdict": "EXACT MATCH to the pre-deletion baseline at every metric, every category, and every per-case rank. The rank string '1,1,2,1,1,1,15,3,12,4,2,4,4,1,1,1,1,1,1,1,4,7,1,1,2,2,12,1,2,1,4,1' is identical, which is a stronger check than the aggregates: it shows no individual case moved even by one position. The newer sentence-transformers/transformers pins did not perturb BGE-M3 embeddings."
+    }
+  }
+}

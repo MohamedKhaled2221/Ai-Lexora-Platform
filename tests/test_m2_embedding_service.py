@@ -141,7 +141,16 @@ def test_normalization_can_be_disabled():
     ]
 
 
-def test_encode_requests_dense_output_only():
+def test_encode_names_its_requested_outputs_explicitly():
+    """Every output flag is passed explicitly, none left to library defaults.
+
+    This test previously asserted ``return_sparse is False``. M3 now consumes
+    BGE-M3's lexical weights for hybrid retrieval, so sparse follows the
+    ``return_sparse`` setting rather than being hardcoded off; ColBERT stays
+    off because nothing consumes it. What still matters -- and is what this
+    test guards -- is that the call names what it wants, so a future
+    FlagEmbedding whose defaults shift cannot quietly change M2's output.
+    """
     model = FakeModel()
 
     service = make_service(
@@ -163,7 +172,7 @@ def test_encode_requests_dense_output_only():
         model.last_kwargs[
             "return_sparse"
         ]
-        is False
+        is service.return_sparse
     )
 
     assert (

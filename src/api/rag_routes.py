@@ -13,6 +13,11 @@ from src.api.dependencies import (
     get_rag_service,
     get_raw_rag_service,
 )
+from src.api.identity import (
+    CallerIdentityDependency,
+    apply_access_scope,
+    reject_client_supplied_access,
+)
 from src.api.schemas import (
     RAGAnswerRequest,
     RawRAGAnswerRequest,
@@ -128,6 +133,7 @@ async def answer_raw_rag(
     request_body: RawRAGAnswerRequest,
     request: Request,
     service: RawRAGServiceDependency,
+    identity: CallerIdentityDependency,
 ) -> AIResponse:
     """
     Execute the complete raw-question pipeline:
@@ -135,14 +141,29 @@ async def answer_raw_rag(
     M2 processing/embedding
         -> M3 retrieval
         -> M4 grounded generation.
+
+    The access scope is set here from the authenticated caller. A body that
+    arrives already carrying one is refused rather than overwritten -- see
+    reject_client_supplied_access.
     """
+
+    reject_client_supplied_access(
+        request_body.filters,
+        request,
+        field_path="filters.access",
+    )
+
+    scoped_filters = apply_access_scope(
+        request_body.filters,
+        identity,
+    )
 
     try:
         result = (
             await service
             .aanswer_with_metrics(
                 question=request_body.question,
-                filters=request_body.filters,
+                filters=scoped_filters,
             )
         )
 
@@ -296,17 +317,54 @@ async def answer_rag(
     request_body: RAGAnswerRequest,
     request: Request,
     service: RAGServiceDependency,
+    identity: CallerIdentityDependency,
 ) -> AIResponse:
     """
     Execute M3 retrieval followed by grounded
     M4 local-LLM answer generation.
+
+    The access scope is overwritten from the authenticated caller, and a
+    client-supplied one is refused, exactly as on /ask.
+
+    FLAG FOR M4 OWNER -- not an access-control issue, and deliberately not
+    addressed here: this endpoint accepts a fully client-constructed
+    ProcessedQuery, including its embedding vector and normalized text. ACL
+    filtering constrains *which documents* the search may return, but it
+    cannot constrain a caller who chooses the query vector itself: such a
+    caller can probe the vector space of their own tenant freely, and the
+    embedding never has to correspond to the text shown to the user. That is
+    an argument for making this endpoint internal-only regardless of access
+    control. Raised for M4 to decide; M3 has not changed the behaviour.
     """
+
+    reject_client_supplied_access(
+        request_body.processed_query.filters,
+        request,
+        field_path=(
+            "processed_query.filters.access"
+        ),
+    )
+
+    scoped_query = (
+        request_body
+        .processed_query
+        .model_copy(
+            update={
+                "filters": apply_access_scope(
+                    request_body
+                    .processed_query
+                    .filters,
+                    identity,
+                )
+            }
+        )
+    )
 
     try:
         result = (
             await service
             .aanswer_with_metrics(
-                request_body.processed_query
+                scoped_query
             )
         )
 
