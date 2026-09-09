@@ -20,6 +20,12 @@ DocumentType = Literal[
     "unknown",
 ]
 
+ConfidentialityLevel = Literal[
+    "public",
+    "internal",
+    "privileged",
+]
+
 
 class DocumentChunk(BaseModel):
     """
@@ -78,6 +84,40 @@ class DocumentChunk(BaseModel):
     metadata: dict[str, Any] = Field(
         default_factory=dict,
         description="Additional M1 structural/source metadata",
+    )
+
+    # ------------------------------------------------------------------
+    # Access control.
+    #
+    # Optional on the wire because M1 is not an authority on who may read
+    # a document. The authoritative values are stamped at the M3 ingest
+    # boundary from the authenticated caller and overwrite anything set
+    # here; indexing refuses a chunk that is still unstamped, so None can
+    # never reach Qdrant meaning "unrestricted".
+    # ------------------------------------------------------------------
+
+    client_id: str | None = Field(
+        default=None,
+        description=(
+            "Owning tenant/client. Reserved value '_shared' marks the "
+            "cross-tenant legal corpus."
+        ),
+    )
+
+    matter_id: str | None = Field(
+        default=None,
+        description=(
+            "Owning matter. Reserved value '_none' marks a client-level "
+            "document not tied to any matter."
+        ),
+    )
+
+    confidentiality_level: ConfidentialityLevel | None = Field(
+        default=None,
+        description=(
+            "Access ladder: public < internal < privileged. Distinct from "
+            "M5's ClauseType.CONFIDENTIALITY, which is a clause topic."
+        ),
     )
 
     @field_validator("text")

@@ -9,6 +9,9 @@ from pydantic import (
     Field,
 )
 
+from src.schemas import DocumentChunk
+from src.schemas.access_control import ChunkACL
+
 from .m1_client import M1Client
 from .service import (
     DocumentIndexingError,
@@ -103,14 +106,56 @@ class DocumentIngestionService:
         self.m1_client = m1_client
         self.indexing_service = indexing_service
 
+    @staticmethod
+    def _stamp(
+        chunks: list[DocumentChunk],
+        acl: ChunkACL,
+    ) -> list[DocumentChunk]:
+        """
+        Apply the caller's ACL to every chunk, overwriting what M1 sent.
+
+        The overwrite is the point. M1 sees only the file, and the uploader
+        can put anything in it, so neither is an authority on who may read
+        the result. Whatever arrives in these fields is discarded in favour
+        of the authenticated caller's own scope.
+        """
+
+        return [
+            chunk.model_copy(
+                update={
+                    "client_id": acl.client_id,
+                    "matter_id": acl.matter_id,
+                    "confidentiality_level": (
+                        acl.confidentiality_level
+                    ),
+                }
+            )
+            for chunk in chunks
+        ]
+
     async def ingest_document(
         self,
         *,
         file_name: str,
         file_object: BinaryIO,
+        acl: ChunkACL,
         content_type: str | None = None,
         document_id: str | None = None,
     ) -> DocumentIngestionResult:
+        """
+        Process and index one document under the caller's access control.
+
+        ``acl`` is keyword-only and has no default, so a caller cannot ingest
+        without deciding who owns the result.
+        """
+
+        if not isinstance(acl, ChunkACL):
+            raise DocumentIndexingError(
+                "ingest_document requires a ChunkACL built from the "
+                "authenticated caller. Refusing to index a document with no "
+                "verified owner."
+            )
+
         m1_result = (
             await self.m1_client.ingest_document(
                 file_name=file_name,
@@ -120,10 +165,15 @@ class DocumentIngestionService:
             )
         )
 
+        stamped_chunks = self._stamp(
+            m1_result.chunks,
+            acl,
+        )
+
         try:
             indexing_result = await asyncio.to_thread(
                 self.indexing_service.index_document,
-                m1_result.chunks,
+                stamped_chunks,
             )
 
         except DocumentIndexingError:

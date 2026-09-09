@@ -45,8 +45,19 @@ class APISecuritySettings(BaseSettings):
 
     environment: Literal[
         "development",
+        "staging",
         "production",
     ] = "development"
+    """
+    Deployment posture.
+
+    ``"staging"`` carries production's hardening -- docs off by default,
+    trusted-host enforcement on -- while still permitting header identity, so
+    the access-control path can be exercised end to end before a verified
+    identity provider exists. It is the only hardened environment where
+    header identity is allowed, and it exists precisely so that staging does
+    not have to call itself "development" to get one.
+    """
 
     debug: bool = False
 
@@ -81,6 +92,27 @@ class APISecuritySettings(BaseSettings):
 
     cors_allow_credentials: bool = False
 
+    identity_mode: Literal[
+        "header",
+        "disabled",
+    ] = "header"
+    """
+    How the caller's identity is established for access control.
+
+    ``"header"``
+        Phase 1. Identity is read from X-Client-Id / X-Matter-Id /
+        X-Confidentiality-Ceiling. Only defensible where the process
+        boundary is the trust boundary, i.e. a local/offline deployment.
+        Rejected outright in production below.
+    ``"disabled"``
+        No identity provider. Identity-requiring routes fail closed with
+        503 rather than serving unfiltered results.
+
+    Phase 2 adds a real token/session mode; until then, production has no
+    valid setting here on purpose, so deploying to production fails loudly
+    at startup instead of quietly trusting a spoofable header.
+    """
+
     @property
     def effective_docs_enabled(
         self,
@@ -91,6 +123,22 @@ class APISecuritySettings(BaseSettings):
         return (
             self.environment
             == "development"
+        )
+
+    @property
+    def is_hardened_environment(
+        self,
+    ) -> bool:
+        """
+        Whether this deployment gets production's transport hardening.
+
+        Staging and production share every transport-level rule. They differ
+        only in whether header identity is acceptable.
+        """
+
+        return self.environment in (
+            "staging",
+            "production",
         )
 
     @property
@@ -105,10 +153,7 @@ class APISecuritySettings(BaseSettings):
                 self.trusted_host_enforcement
             )
 
-        return (
-            self.environment
-            == "production"
-        )
+        return self.is_hardened_environment
 
     @model_validator(mode="after")
     def validate_security_policy(
@@ -151,20 +196,19 @@ class APISecuritySettings(BaseSettings):
                 "a wildcard origin"
             )
 
-        if (
-            self.environment
-            == "production"
-        ):
+        if self.is_hardened_environment:
+            environment = self.environment
+
             if self.debug:
                 raise ValueError(
                     "API debug mode must be "
-                    "disabled in production"
+                    f"disabled in {environment}"
                 )
 
             if self.docs_enabled is True:
                 raise ValueError(
                     "API documentation must be "
-                    "disabled in production"
+                    f"disabled in {environment}"
                 )
 
             if (
@@ -174,7 +218,7 @@ class APISecuritySettings(BaseSettings):
                 raise ValueError(
                     "Trusted-host enforcement "
                     "cannot be disabled in "
-                    "production"
+                    f"{environment}"
                 )
 
             if (
@@ -183,8 +227,26 @@ class APISecuritySettings(BaseSettings):
             ):
                 raise ValueError(
                     "Wildcard CORS origins are "
-                    "not allowed in production"
+                    f"not allowed in {environment}"
                 )
+
+        # Header identity is refused in production only. Staging keeps it so
+        # the access-control path is testable under production-like
+        # transport rules; production has no valid setting until a verified
+        # identity provider exists, which is deliberate.
+        if (
+            self.environment == "production"
+            and self.identity_mode == "header"
+        ):
+            raise ValueError(
+                "Header-based caller identity "
+                "cannot be used in production: "
+                "X-Client-Id is trivially "
+                "spoofable by any client that "
+                "can reach the API. Configure a "
+                "verified identity provider "
+                "before deploying."
+            )
 
         return self
 

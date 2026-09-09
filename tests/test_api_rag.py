@@ -11,6 +11,7 @@ from src.orchestration import (
     RAGExecutionMetrics,
     RAGExecutionResult,
 )
+from tests.access_helpers import IDENTITY_HEADERS
 
 
 def make_request_body() -> dict:
@@ -93,6 +94,7 @@ def test_rag_answer_endpoint():
     with TestClient(app) as client:
         response = client.post(
             "/api/v1/rag/answer",
+            headers=IDENTITY_HEADERS,
             json=make_request_body(),
         )
 
@@ -118,6 +120,7 @@ def test_rag_endpoint_maps_citation_validation_failure_to_502():
     with TestClient(app) as client:
         response = client.post(
             "/api/v1/rag/answer",
+            headers=IDENTITY_HEADERS,
             json=make_request_body(),
         )
 
@@ -134,6 +137,7 @@ def test_rag_endpoint_returns_503_without_runtime():
     with TestClient(app) as client:
         response = client.post(
             "/api/v1/rag/answer",
+            headers=IDENTITY_HEADERS,
             json=make_request_body(),
         )
 
@@ -167,6 +171,7 @@ def test_rag_endpoint_rejects_invalid_request():
     with TestClient(app) as client:
         response = client.post(
             "/api/v1/rag/answer",
+            headers=IDENTITY_HEADERS,
             json={
                 "processed_query": {
                     "query_id": "broken"

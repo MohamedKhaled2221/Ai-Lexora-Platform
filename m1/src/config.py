@@ -452,8 +452,63 @@ class ChunkingConfig(BaseModel):
     level actually detected in the document."""
 
     keep_tables_whole: bool = True
-    """Never split a table across chunks; oversized tables are emitted as their
-    own chunk regardless of ``max_chunk_chars``."""
+    """Never split a table across chunks *on character limits*; oversized
+    tables are emitted as their own chunk regardless of ``max_chunk_chars``.
+
+    Deliberately unchanged in meaning. The intent -- do not let an arbitrary
+    character count mangle a grid -- is still right. The encoder's token
+    window is a different concern, governed by ``table_token_strategy``."""
+
+    table_token_strategy: Literal["split_rows", "flag", "never"] = "split_rows"
+    """What to do when a table exceeds ``max_chunk_tokens``.
+
+    Because ``keep_tables_whole`` exempted tables from every limit, tables were
+    the *worst* affected content, not the safest. A realistic Arabic payment
+    schedule passes 480 tokens at about fifteen rows; a 150-row annexure runs
+    to roughly 4,800 tokens, so nine tenths of it was never embedded while
+    remaining fully matchable by keyword search.
+
+    ``"split_rows"``
+        Split into row groups, repeating the header row (and caption) on each
+        piece so every piece is a valid, self-describing table. Rows are
+        atomic -- never split mid-row. A single row that alone exceeds the
+        budget cannot be split without destroying the grid, so it is emitted
+        whole and flagged as ``embedding_incomplete``.
+    ``"flag"``
+        Emit whole, but record ``embedding_incomplete`` so retrieval knows the
+        vector covers only the beginning of the table. Honest, but does not
+        fix anything.
+    ``"never"``
+        Exactly the pre-token-budget behaviour: emit whole, flag nothing.
+    """
+
+    max_chunk_tokens: int = 480
+    """Hard cap in **embedding-model tokens**, enforced after the character
+    split.
+
+    The character limits above and BGE-M3's 512-token encoder window were never
+    reconciled, and characters are a poor proxy: measured over the real corpus,
+    Arabic legal text runs 1.50-2.26 chars/token against English's 3.86-5.03.
+    At ``max_chunk_chars=2000`` that put 78% of Arabic chunks past 512 tokens,
+    median 741, worst 1332 -- and the encoder silently drops everything past
+    512, so the tail of the chunk is never embedded while remaining fully
+    present in the payload for keyword search to match.
+
+    480 rather than 512 leaves headroom for the heading prefix and overlap
+    tail, which are both prepended *after* splitting.
+    """
+
+    token_budget_model: str = "BAAI/bge-m3"
+    """Whose tokenizer defines ``max_chunk_tokens``.
+
+    Must match the embedding model M2 actually uses. If the two drift apart,
+    chunks are sized against the wrong vocabulary and the truncation gap
+    reopens without any error."""
+
+    enforce_token_budget: bool = True
+    """When False, chunking behaves exactly as it did before token counting
+    existed. Kept as an escape hatch for evaluating the two side by side, not
+    as a supported production setting."""
 
     attach_heading_to_body: bool = True
     """Prepend the governing heading text to each chunk so a retrieved chunk is

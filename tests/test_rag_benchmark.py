@@ -14,6 +14,7 @@ from src.schemas import (
     QueryFilters,
     RetrievedEvidence,
 )
+from tests.access_helpers import scoped_filters
 
 
 class FakeM2Pipeline:
@@ -29,7 +30,7 @@ class FakeM2Pipeline:
             ),
             language="en",
             embedding=[],
-            filters=QueryFilters(),
+            filters=scoped_filters(),
         )
 
         return EmbeddedQuery(
@@ -133,7 +134,7 @@ def make_case():
         question=(
             "CONFIDENTIAL TEST QUESTION"
         ),
-        filters=QueryFilters(
+        filters=scoped_filters(
             document_type="contract",
             jurisdiction="Egypt",
         ),

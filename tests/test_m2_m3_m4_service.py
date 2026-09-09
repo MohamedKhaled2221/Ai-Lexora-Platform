@@ -14,6 +14,7 @@ from src.schemas import (
     ProcessedQuery,
     QueryFilters,
 )
+from tests.access_helpers import scoped_filters
 
 
 class FakeM2QueryPipeline:
@@ -58,7 +59,7 @@ class FakeM2QueryPipeline:
             ),
             language="ar-en",
             embedding=[],
-            filters=QueryFilters(),
+            filters=scoped_filters(),
         )
 
         embedding = [
@@ -143,7 +144,7 @@ def test_sync_composition_copies_embedding_and_filters():
         expected_embedding_dimension=1024,
     )
 
-    filters = QueryFilters(
+    filters = scoped_filters(
         document_type="contract",
         jurisdiction="Egypt",
     )
@@ -261,7 +262,7 @@ async def test_async_composition_uses_existing_rag_service():
             question=(
                 "ما هي شروط termination؟"
             ),
-            filters=QueryFilters(),
+            filters=scoped_filters(),
         )
     )
 
@@ -296,6 +297,7 @@ def test_wrong_embedding_dimension_is_rejected_before_rag():
     ):
         service.answer_with_metrics(
             question="test",
+            filters=scoped_filters(),
         )
 
     assert rag.sync_calls == 0
@@ -319,6 +321,7 @@ def test_declared_dimension_must_match_vector_length():
     ):
         service.answer_with_metrics(
             question="test",
+            filters=scoped_filters(),
         )
 
     assert rag.sync_calls == 0
@@ -341,6 +344,7 @@ def test_m2_value_error_is_translated():
     ):
         service.answer_with_metrics(
             question="invalid",
+            filters=scoped_filters(),
         )
 
 
@@ -364,6 +368,7 @@ def test_unexpected_m2_error_is_sanitized():
     ):
         service.answer_with_metrics(
             question="test",
+            filters=scoped_filters(),
         )
 def test_raw_composition_preserves_document_scope():
     m2 = FakeM2QueryPipeline()
@@ -375,7 +380,7 @@ def test_raw_composition_preserves_document_scope():
         expected_embedding_dimension=1024,
     )
 
-    filters = QueryFilters(
+    filters = scoped_filters(
         document_ids=[
             "backend-doc-27",
             "backend-doc-31",

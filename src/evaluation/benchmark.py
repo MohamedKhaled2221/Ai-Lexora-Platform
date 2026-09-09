@@ -75,6 +75,14 @@ class BenchmarkSample:
     case_id: str
     category: str
 
+    keyword_backend: str
+    """Which keyword retriever produced these numbers.
+
+    Recorded per sample rather than per run: an A/B is only comparable if
+    every row says which side it came from, and a CSV outlives whatever
+    command produced it.
+    """
+
     declared_language: str
     detected_language: str
 
@@ -182,6 +190,25 @@ class RAGBenchmarkRunner:
 
         self.expected_embedding_dimension = (
             expected_embedding_dimension
+        )
+
+    @property
+    def keyword_backend(self) -> str:
+        """
+        The keyword retriever behind this run, for labelling results.
+
+        Read off the retrieval pipeline rather than configured separately:
+        a benchmark that could be told one backend while measuring another
+        would produce confidently mislabelled A/B numbers, which is worse
+        than not labelling them at all.
+        """
+
+        return str(
+            getattr(
+                self.retrieval_pipeline,
+                "keyword_backend",
+                "unknown",
+            )
         )
 
     def run_case(
@@ -343,6 +370,9 @@ class RAGBenchmarkRunner:
                 ),
                 case_id=case.case_id,
                 category=case.category,
+                keyword_backend=(
+                    self.keyword_backend
+                ),
                 declared_language=(
                     case.language
                 ),
@@ -477,6 +507,9 @@ class RAGBenchmarkRunner:
                 ),
                 case_id=case.case_id,
                 category=case.category,
+                keyword_backend=(
+                    self.keyword_backend
+                ),
                 declared_language=(
                     case.language
                 ),

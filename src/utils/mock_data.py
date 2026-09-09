@@ -1,8 +1,99 @@
+import hashlib
+import re
+
 import numpy as np
 from typing import List, Dict, Any
 from qdrant_client.http.models import PointStruct
 
+from src.schemas.access_control import (
+    NO_MATTER_ID,
+    AccessScope,
+)
+from src.vector_store.qdrant_manager import (
+    DENSE_VECTOR_NAME,
+    SPARSE_VECTOR_NAME,
+    to_sparse_vector,
+)
 from src.schemas.m2_contract import ProcessedQuery, QueryFilters
+
+
+DEMO_CLIENT_ID = "client_demo"
+"""The tenant the demo/mock corpus belongs to."""
+
+
+def generate_mock_sparse_weights(
+    text: str,
+    vocab_size: int = 250_002,
+    ngram: int = 3,
+) -> Dict[str, float]:
+    """
+    Stand in for BGE-M3 lexical weights without loading BGE-M3.
+
+    Hashes **character n-grams** as well as whole words to stable pseudo token
+    ids. The n-grams matter: BGE-M3 is a subword model, and whole-word hashing
+    is the wrong abstraction for Arabic. The demo query asks about
+    ``الفسخ`` while the corpus says ``فسخ`` -- the same root carrying a
+    definite article -- and a whole-word hash gives those two entirely
+    different ids, so the demo's sparse retrieval silently returns nothing.
+    Subword overlap is what makes the query and the document meet.
+
+    This is still not BGE-M3: there is no learned term importance, only
+    frequency and length. It exists so ``run_demo.py`` exercises the real
+    native-sparse code path without the model weights installed. Real weights
+    come from :meth:`EmbeddingService._encode_full`.
+    """
+
+    words = [
+        word
+        for word in re.split(r"\W+", text.lower())
+        if word
+    ]
+
+    if not words:
+        return {}
+
+    features: List[str] = []
+
+    for word in words:
+        features.append(word)
+
+        # Subword features. Short words contribute themselves only.
+        for start in range(0, max(0, len(word) - ngram) + 1):
+            piece = word[start:start + ngram]
+
+            if len(piece) == ngram:
+                features.append(piece)
+
+    counts: Dict[str, int] = {}
+    for feature in features:
+        counts[feature] = counts.get(feature, 0) + 1
+
+    weights: Dict[str, float] = {}
+
+    for feature, count in counts.items():
+        token_id = (
+            int(
+                hashlib.sha1(
+                    feature.encode("utf-8")
+                ).hexdigest()[:8],
+                16,
+            )
+            % vocab_size
+        )
+
+        # Longer, repeated features weigh more -- a crude stand-in for the
+        # learned importance BGE-M3 would assign.
+        weight = min(
+            1.0,
+            0.15 * count + 0.05 * len(feature),
+        )
+
+        weights[str(token_id)] = max(
+            weights.get(str(token_id), 0.0),
+            round(weight, 4),
+        )
+
+    return weights
 
 
 def generate_mock_embedding(dim: int = 1024, seed: int = 42) -> List[float]:
@@ -101,12 +192,45 @@ def prepare_qdrant_points(chunks: List[Dict[str, Any]], vector_size: int = 1024)
             "section": chunk.get("section"),
             "language": chunk.get("language", "ar"),
             "document_type": chunk.get("document_type"),
-            "jurisdiction": chunk.get("jurisdiction")
+            "jurisdiction": chunk.get("jurisdiction"),
+            # Demo data is stamped like real data: an unstamped point is
+            # invisible to every scoped query, so the demo would retrieve
+            # nothing without this.
+            "client_id": chunk.get(
+                "client_id",
+                DEMO_CLIENT_ID,
+            ),
+            "matter_id": chunk.get(
+                "matter_id",
+                NO_MATTER_ID,
+            ),
+            "confidentiality_level": chunk.get(
+                "confidentiality_level",
+                "internal",
+            ),
         }
+        # The demo indexes both vectors, so run_demo.py exercises the real
+        # native-sparse retrieval path instead of logging "no sparse query
+        # vector" and quietly degrading to dense-only.
+        sparse_vector = to_sparse_vector(
+            generate_mock_sparse_weights(
+                chunk["text"]
+            )
+        )
+
+        vector = (
+            {
+                DENSE_VECTOR_NAME: vec,
+                SPARSE_VECTOR_NAME: sparse_vector,
+            }
+            if sparse_vector is not None
+            else vec
+        )
+
         points.append(
             PointStruct(
                 id=chunk["id"],
-                vector=vec,
+                vector=vector,
                 payload=payload
             )
         )
@@ -131,9 +255,18 @@ def generate_mock_processed_query(
         normalized_text=query_text.strip(),
         language=lang,
         embedding=generate_mock_embedding(dim=1024, seed=seed),
+        sparse_embedding=generate_mock_sparse_weights(
+            query_text
+        ),
         filters=QueryFilters(
             document_type=doc_type,
             jurisdiction=jurisdiction,
-            language=lang
+            language=lang,
+            # Retrieval refuses a query with no scope. In the API this comes
+            # from the authenticated caller; the demo stands in for one.
+            access=AccessScope(
+                client_id=DEMO_CLIENT_ID,
+                max_confidentiality="privileged",
+            ),
         )
     )

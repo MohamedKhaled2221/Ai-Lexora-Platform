@@ -14,6 +14,7 @@ from src.indexing import (
     M1DocumentProcessingError,
     M1ServiceUnavailableError,
 )
+from tests.access_helpers import IDENTITY_HEADERS
 
 
 class FakeDocumentIngestionService:
@@ -30,6 +31,7 @@ class FakeDocumentIngestionService:
         *,
         file_name,
         file_object,
+        acl,
         content_type=None,
         document_id=None,
     ):
@@ -38,6 +40,7 @@ class FakeDocumentIngestionService:
                 "file_name": file_name,
                 "content_type": content_type,
                 "document_id": document_id,
+                "acl": acl,
                 "bytes": file_object.read(),
             }
         )
@@ -95,6 +98,7 @@ def test_document_ingestion_endpoint():
     with TestClient(app) as client:
         response = client.post(
             "/api/v1/documents/ingest",
+            headers=IDENTITY_HEADERS,
             params={
                 "document_id": "doc_001",
             },
@@ -142,6 +146,7 @@ def test_document_ingestion_maps_unsupported_file():
     with TestClient(app) as client:
         response = client.post(
             "/api/v1/documents/ingest",
+            headers=IDENTITY_HEADERS,
             files={
                 "file": (
                     "bad.exe",
@@ -171,6 +176,7 @@ def test_document_ingestion_maps_m1_unavailable():
     with TestClient(app) as client:
         response = client.post(
             "/api/v1/documents/ingest",
+            headers=IDENTITY_HEADERS,
             files={
                 "file": (
                     "contract.pdf",
@@ -201,6 +207,7 @@ def test_document_ingestion_respects_body_limit():
     with TestClient(app) as client:
         response = client.post(
             "/api/v1/documents/ingest",
+            headers=IDENTITY_HEADERS,
             files={
                 "file": (
                     "large.pdf",

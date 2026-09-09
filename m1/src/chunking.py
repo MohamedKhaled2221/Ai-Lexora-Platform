@@ -58,8 +58,14 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass, field
+from typing import Callable
 
 from .config import ChunkingConfig, PipelineConfig
+from .token_budget import (
+    FALLBACK_CHARS_PER_TOKEN,
+    get_token_counter,
+    tokenizer_is_real,
+)
 from .document_chunk_schema import (
     BlockType,
     BoundingBox,
@@ -82,6 +88,15 @@ from .structure_preservation import (
 )
 
 logger = logging.getLogger(__name__)
+
+Measure = Callable[[str], int]
+"""How a budget is counted: ``len`` for characters, a tokenizer for tokens."""
+
+_MIN_SPLIT_LIMIT = 100
+"""Floor for the character working limit, so a large overlap cannot drive it to zero."""
+
+_MIN_TOKEN_LIMIT = 64
+"""Floor for the token working limit, for the same reason."""
 
 # Sentence terminators for Arabic and English. Arabic full stop is the same
 # U+002E as Latin; the question mark and semicolon differ.
@@ -312,7 +327,13 @@ def _nearest_struct(doc: ExtractedDocument, page: ExtractedPage, table: Extracte
 # ---------------------------------------------------------------------------
 
 
-def split_oversized(text: str, cfg: ChunkingConfig, budget: int | None = None) -> list[str]:
+def split_oversized(
+    text: str,
+    cfg: ChunkingConfig,
+    budget: int | None = None,
+    measure: Measure = len,
+    overlap_cost: int | None = None,
+) -> list[str]:
     """Split text that exceeds ``max_chunk_chars``, with overlap.
 
     Descends through boundary quality: paragraph breaks, then sentence ends,
@@ -326,30 +347,60 @@ def split_oversized(text: str, cfg: ChunkingConfig, budget: int | None = None) -
     split, so a naive implementation silently overshoots the configured maximum
     on every split chunk -- which then breaks whatever token limit downstream
     sized itself against ``max_chunk_chars``.
+
+    ``measure`` decides what the budget counts. It defaults to ``len``, i.e.
+    characters, which is what every existing caller wants. Passing a token
+    counter runs the identical boundary-quality descent against the embedding
+    model's tokenizer instead -- the splitting logic is good and worth reusing;
+    only the yardstick changes.
+
+    ``overlap_cost`` is how much room the overlap tail needs *in the units
+    being measured*. It defaults to ``cfg.overlap_chars``, which is correct
+    for characters; a token-measured caller passes the token equivalent.
     """
     ceiling = cfg.max_chunk_chars if budget is None else budget
-    if len(text) <= ceiling:
+    if measure(text) <= ceiling:
         return [text]
 
     # Leave room for the overlap tail that gets prepended below.
-    limit = max(ceiling - max(cfg.overlap_chars, 0), 100)
+    reserve = (
+        max(cfg.overlap_chars, 0)
+        if overlap_cost is None
+        else max(overlap_cost, 0)
+    )
 
-    pieces = _split_on(text, _PARA_BREAK, limit)
-    if any(len(p) > limit for p in pieces):
+    floor = _MIN_SPLIT_LIMIT if overlap_cost is None else _MIN_TOKEN_LIMIT
+    limit = max(ceiling - reserve, floor)
+
+    pieces = _split_on(text, _PARA_BREAK, limit, measure)
+    if any(measure(p) > limit for p in pieces):
         out: list[str] = []
         for p in pieces:
-            out.extend(_split_on(p, _SENTENCE_END, limit) if len(p) > limit else [p])
+            out.extend(
+                _split_on(p, _SENTENCE_END, limit, measure)
+                if measure(p) > limit
+                else [p]
+            )
         pieces = out
-    if any(len(p) > limit for p in pieces):
+    if any(measure(p) > limit for p in pieces):
         out = []
         for p in pieces:
-            out.extend(_hard_wrap(p, limit) if len(p) > limit else [p])
+            out.extend(
+                _hard_wrap(p, limit, measure)
+                if measure(p) > limit
+                else [p]
+            )
         pieces = out
 
     return _apply_overlap(pieces, cfg.overlap_chars) if cfg.overlap_chars > 0 else pieces
 
 
-def _split_on(text: str, pattern: re.Pattern, limit: int) -> list[str]:
+def _split_on(
+    text: str,
+    pattern: re.Pattern,
+    limit: int,
+    measure: Measure = len,
+) -> list[str]:
     """Greedily pack the pattern-delimited parts of ``text`` into <= ``limit`` chunks."""
     parts = [p for p in pattern.split(text) if p and p.strip()]
     if len(parts) <= 1:
@@ -357,7 +408,7 @@ def _split_on(text: str, pattern: re.Pattern, limit: int) -> list[str]:
     out, buf = [], ""
     for part in parts:
         candidate = f"{buf}\n\n{part}" if buf else part
-        if buf and len(candidate) > limit:
+        if buf and measure(candidate) > limit:
             out.append(buf)
             buf = part
         else:
@@ -367,12 +418,16 @@ def _split_on(text: str, pattern: re.Pattern, limit: int) -> list[str]:
     return out
 
 
-def _hard_wrap(text: str, limit: int) -> list[str]:
+def _hard_wrap(
+    text: str,
+    limit: int,
+    measure: Measure = len,
+) -> list[str]:
     """Last resort: pack whitespace-delimited tokens up to ``limit``."""
     out, buf = [], ""
     for token in text.split(" "):
         candidate = f"{buf} {token}" if buf else token
-        if buf and len(candidate) > limit:
+        if buf and measure(candidate) > limit:
             out.append(buf)
             buf = token
         else:
@@ -380,6 +435,177 @@ def _hard_wrap(text: str, limit: int) -> list[str]:
     if buf:
         out.append(buf)
     return out
+
+
+def split_table_rows(
+    table,
+    cfg: ChunkingConfig,
+    *,
+    caption: str | None = None,
+) -> list[tuple[str, bool]]:
+    """Split one table into row groups that each fit ``max_chunk_tokens``.
+
+    Returns ``(markdown, embedding_incomplete)`` per piece.
+
+    ``to_markdown()`` is a pure function of ``rows``, so the split is done on
+    the rows and each group is re-rendered -- never by cutting the rendered
+    string, which would leave a torn grid that is neither valid markdown nor
+    interpretable text.
+
+    The header row and the caption are repeated on every piece. That costs
+    around 9% in duplicated tokens on a typical schedule, and buys a piece
+    that means something on its own: a bare grid of numbers retrieved without
+    its column names is not evidence anybody can act on.
+
+    A single row that exceeds the budget by itself is emitted whole with
+    ``embedding_incomplete=True``. Splitting inside a row would break the
+    column alignment that makes the row readable, and silently truncating it
+    is the very failure this function exists to remove -- so it is recorded
+    instead of hidden.
+    """
+    rows = list(table.rows or [])
+
+    if not rows:
+        return []
+
+    count = get_token_counter(cfg.token_budget_model)
+
+    head = f"{caption}\n" if caption else ""
+
+    def render(body_rows: list[list[str]]) -> str:
+        from .structure_preservation import ExtractedTable
+
+        piece = ExtractedTable(
+            rows=[rows[0], *body_rows],
+            page=table.page,
+            bbox=table.bbox,
+            caption=table.caption,
+            source_engine=table.source_engine,
+            order=table.order,
+        )
+        return head + piece.to_markdown()
+
+    body = rows[1:]
+
+    if not body:
+        return [(head + table.to_markdown(), False)]
+
+    budget = cfg.max_chunk_tokens
+
+    pieces: list[tuple[str, bool]] = []
+    group: list[list[str]] = []
+
+    for row in body:
+        alone = render([row])
+
+        if count(alone) > budget:
+            # This row cannot be made to fit by grouping. Flush what we have,
+            # then emit it whole and say that its vector is incomplete.
+            if group:
+                pieces.append((render(group), False))
+                group = []
+
+            pieces.append((alone, True))
+            continue
+
+        candidate = group + [row]
+
+        if group and count(render(candidate)) > budget:
+            pieces.append((render(group), False))
+            group = [row]
+        else:
+            group = candidate
+
+    if group:
+        pieces.append((render(group), False))
+
+    return pieces
+
+
+def split_to_token_budget(
+    pieces: list[str],
+    cfg: ChunkingConfig,
+    *,
+    head_cost_tokens: int = 0,
+) -> tuple[list[str], bool]:
+    """Re-split any piece that still exceeds ``cfg.max_chunk_tokens``.
+
+    Runs *after* the character split rather than replacing it. The character
+    pass is cheap and gets most pieces into range; this pass only pays for
+    tokenization on what is left, and only re-splits what is genuinely over.
+
+    Returns the pieces and whether any of them had to be split again, so the
+    caller can record that the boundary is artificial.
+    """
+    if not cfg.enforce_token_budget:
+        return pieces, False
+
+    count = get_token_counter(cfg.token_budget_model)
+    budget = max(cfg.max_chunk_tokens - head_cost_tokens, _MIN_TOKEN_LIMIT)
+
+    out: list[str] = []
+    split_any = False
+
+    for piece in pieces:
+        if count(piece) <= budget:
+            out.append(piece)
+            continue
+
+        split_any = True
+        # The overlap tail is configured in characters; converted here at
+        # the densest ratio actually observed, so the reservation errs toward
+        # too much room rather than too little.
+        pieces_out = split_oversized(
+            piece,
+            cfg,
+            budget=budget,
+            measure=count,
+            overlap_cost=int(
+                max(cfg.overlap_chars, 0)
+                / FALLBACK_CHARS_PER_TOKEN
+            ),
+        )
+
+        out.extend(
+            _enforce_final_budget(pieces_out, budget, count)
+        )
+
+    return out, split_any
+
+
+def _enforce_final_budget(
+    pieces: list[str],
+    budget: int,
+    count: Measure,
+) -> list[str]:
+    """Verify the *finished* pieces, and re-split any that still overshoot.
+
+    The overlap tail is prepended after the split, so its cost has to be
+    reserved in advance -- and a reservation derived from a chars-per-token
+    ratio is an estimate, which pathological text defeats. Table-of-contents
+    dot leaders ("`. . . . . .`") tokenize at roughly one token per character,
+    denser than the 1.5 floor the reservation assumes, so 150 characters of
+    overlap cost about 148 tokens where 100 were set aside. Two chunks in a
+    1,919-chunk corpus came out at 516 and 519 tokens: past the encoder window
+    the whole exercise exists to stay inside.
+
+    So the estimate is kept -- it produces good boundaries in the normal case
+    -- but it is no longer trusted. Anything still over budget is hard-wrapped
+    without overlap, which cannot overshoot because nothing is added
+    afterwards. Losing the overlap on such a piece is the right trade: overlap
+    preserves context across an artificial boundary, while exceeding the
+    window silently discards the text entirely.
+    """
+    checked: list[str] = []
+
+    for piece in pieces:
+        if count(piece) <= budget:
+            checked.append(piece)
+            continue
+
+        checked.extend(_hard_wrap(piece, budget, count))
+
+    return checked
 
 
 def _apply_overlap(pieces: list[str], overlap: int) -> list[str]:
@@ -422,13 +648,37 @@ def chunk_document(doc: ExtractedDocument, config: PipelineConfig) -> list[Docum
         heading = _heading_prefix(unit, cfg)
         head_cost = len(heading) + 1 if heading else 0
 
+        # Per-piece flags, parallel to ``pieces``. Only tables populate them.
+        incomplete_flags: list[bool] = []
+
         if unit.table is not None and cfg.keep_tables_whole:
-            pieces, split = [text], False
+            pieces, split, incomplete_flags = _table_pieces(
+                unit=unit, text=text, cfg=cfg,
+            )
         else:
             pieces = split_oversized(text, cfg, budget=cfg.max_chunk_chars - head_cost)
             split = len(pieces) > 1
 
-        for piece in pieces:
+            # Second pass, in the encoder's own units. The character split
+            # above gets most pieces into range cheaply; this only tokenizes
+            # what survived it, and only re-splits what is genuinely over.
+            # Without it, a dense Arabic chunk sits comfortably under
+            # max_chunk_chars while running to twice the encoder's window,
+            # and the tail is dropped at encode time with no error.
+            head_cost_tokens = (
+                _heading_token_cost(heading, cfg)
+                if heading
+                else 0
+            )
+
+            pieces, split_on_tokens = split_to_token_budget(
+                pieces,
+                cfg,
+                head_cost_tokens=head_cost_tokens,
+            )
+            split = split or split_on_tokens
+
+        for piece_no, piece in enumerate(pieces):
             body = piece.strip()
             if not body:
                 continue
@@ -438,11 +688,92 @@ def chunk_document(doc: ExtractedDocument, config: PipelineConfig) -> list[Docum
                 _emit(
                     doc=doc, config=config, unit=unit, text=final, index=index,
                     split_from_unit=split, char_start=char_cursor,
+                    table_part=(
+                        (piece_no + 1, len(pieces))
+                        if unit.table is not None and len(pieces) > 1
+                        else None
+                    ),
+                    embedding_incomplete=(
+                        incomplete_flags[piece_no]
+                        if piece_no < len(incomplete_flags)
+                        else False
+                    ),
                 )
             )
             char_cursor += len(final) + 2
 
     return chunks
+
+
+def _table_pieces(
+    *,
+    unit: _Unit,
+    text: str,
+    cfg: ChunkingConfig,
+) -> tuple[list[str], bool, list[bool]]:
+    """Decide how one whole-table unit becomes chunk pieces.
+
+    Returns ``(pieces, split_from_unit, embedding_incomplete_flags)``.
+
+    Tables were exempt from every size limit, which made them the worst
+    affected by the encoder's token window rather than the safest: a long
+    schedule was emitted whole and then silently truncated at encode time.
+    """
+    table = unit.table
+
+    if (
+        not cfg.enforce_token_budget
+        or cfg.table_token_strategy == "never"
+        or table is None
+    ):
+        return [text], False, [False]
+
+    count = get_token_counter(cfg.token_budget_model)
+
+    if count(text) <= cfg.max_chunk_tokens:
+        return [text], False, [False]
+
+    if cfg.table_token_strategy == "flag":
+        logger.warning(
+            "table on page %s is %d tokens against a %d-token budget; "
+            "emitting whole and flagging it embedding-incomplete",
+            table.page, count(text), cfg.max_chunk_tokens,
+        )
+        return [text], False, [True]
+
+    pieces = split_table_rows(table, cfg, caption=table.caption)
+
+    if not pieces:
+        return [text], False, [False]
+
+    texts = [markdown for markdown, _ in pieces]
+    flags = [incomplete for _, incomplete in pieces]
+
+    if any(flags):
+        logger.warning(
+            "table on page %s has %d row(s) that exceed the %d-token budget "
+            "on their own; those rows are emitted whole and flagged "
+            "embedding-incomplete",
+            table.page, sum(flags), cfg.max_chunk_tokens,
+        )
+
+    return texts, len(texts) > 1, flags
+
+
+def _heading_token_cost(heading: str, cfg: ChunkingConfig) -> int:
+    """Tokens the heading prefix will consume once prepended.
+
+    Measured rather than estimated: an Arabic heading can cost several times
+    what its character count suggests, and the heading is added *after* the
+    split, so under-reserving here puts the finished chunk back over budget.
+    """
+    if not heading or not cfg.enforce_token_budget:
+        return 0
+
+    count = get_token_counter(cfg.token_budget_model)
+
+    # +1 for the newline joining heading to body.
+    return count(heading) + 1
 
 
 def _merge_tiny_units(units: list[_Unit], cfg: ChunkingConfig) -> list[_Unit]:
@@ -531,6 +862,8 @@ def _squash(s: str) -> str:
 def _emit(
     *, doc: ExtractedDocument, config: PipelineConfig, unit: _Unit, text: str,
     index: int, split_from_unit: bool, char_start: int,
+    table_part: tuple[int, int] | None = None,
+    embedding_incomplete: bool = False,
 ) -> DocumentChunk:
     """Build one fully-populated ``DocumentChunk``."""
     pages = unit.pages
@@ -615,7 +948,17 @@ def _emit(
         page_span=pages,
         char_span=(char_start, char_start + len(text)),
         is_table=unit.table is not None,
-        table_markdown=unit.table.to_markdown() if unit.table else None,
+        # The *whole* table, on the first piece only. M5 reads the table
+        # programmatically from here rather than from chunk text, so one
+        # intact copy serves it; repeating a large grid on every piece would
+        # bloat each payload for no gain, since metadata is never embedded.
+        table_markdown=(
+            unit.table.to_markdown()
+            if unit.table and (table_part is None or table_part[0] == 1)
+            else None
+        ),
+        # Always the full table's shape, never the fragment's -- a consumer
+        # asking "how big is this table" means the table, not this slice.
         table_shape=unit.table.shape if unit.table else None,
         ocr_confidence=ocr_conf,
         rtl_flags=rtl_flags,
@@ -632,6 +975,18 @@ def _emit(
         n_chars=len(text),
         n_words=len(text.split()),
     )
+
+    if table_part is not None:
+        # (piece, total). Present only on a table that had to be split, so
+        # its absence means "this chunk is the whole table".
+        meta.table_part = list(table_part)
+
+    if embedding_incomplete:
+        # The chunk's vectors cover only the leading ``max_chunk_tokens`` of
+        # its text. Recorded rather than silently accepted: retrieval can then
+        # tell that a keyword hit on this chunk's tail has no vector behind it.
+        meta.embedding_incomplete = True
+        meta.embedded_tokens = config.chunking.max_chunk_tokens
 
     # ``section`` is the human-readable label the spec's example shows
     # ("Termination"), so prefer the deepest unit's *title*. Fall back to the

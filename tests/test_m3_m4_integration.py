@@ -14,6 +14,7 @@ from src.schemas.m2_contract import (
     ProcessedQuery,
     QueryFilters,
 )
+from tests.access_helpers import scoped_filters
 
 
 def make_query() -> ProcessedQuery:
@@ -24,7 +25,7 @@ def make_query() -> ProcessedQuery:
         language="en",
         embedding=[0.1, 0.2, 0.3],
         sparse_embedding=None,
-        filters=QueryFilters(),
+        filters=scoped_filters(),
     )
 
 

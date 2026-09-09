@@ -1,0 +1,779 @@
+{
+  "schema_version": 2,
+  "generated": "2026-09-08",
+  "collection": "legal_documents_v2",
+  "collection_points_at_authoring": 1945,
+  "provenance": "Every case was authored by reading the actual chunk text out of the live collection. No case was derived from filenames, metadata or assumption. Every ground_truth (document_id, chunk_id) pair was verified to resolve to exactly one live point at build time.",
+  "jurisdiction_note": "The corpus is 100% jurisdiction='Egypt' (1945/1945 points). No jurisdiction-discriminating case is included, because any non-Egypt filter matches zero points and would produce a vacuous case - the defect that made the previous benchmark_cases.json unusable.",
+  "confidence_levels": {
+    "self_verified": "Chunk content read directly and unambiguously supports this as the correct answer. Factual or structural; no legal judgment required.",
+    "needs_lawyer": "The chunk contains the right facts, but whether it is the legally CORRECT or COMPLETE answer requires a lawyer's sign-off."
+  },
+  "counts": {
+    "total": 41,
+    "by_category": {
+      "semantic": 11,
+      "identifier": 10,
+      "adversarial": 6,
+      "language_variation": 5,
+      "negative": 5,
+      "identifier_date": 4
+    },
+    "by_confidence": {
+      "self_verified": 37,
+      "needs_lawyer": 4
+    },
+    "multi_chunk": 17,
+    "single_chunk": 24
+  },
+  "cases": [
+    {
+      "case_id": "sem_delay_penalty_rate",
+      "category": "semantic",
+      "language": "ar",
+      "query": "ما هي نسبة غرامة التاخير وحدها الاقصي في عقد التوريد؟",
+      "ground_truth": [
+        {
+          "document_id": "doc_7f50f934ecc4",
+          "chunk_id": "chunk_007"
+        },
+        {
+          "document_id": "doc_694f11671c02",
+          "chunk_id": "chunk_008"
+        }
+      ],
+      "multi_chunk": true,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Both chunks state verbatim: 0.5% per week of delay, capped at 10% of total contract value. The two documents are near-duplicate supply contracts, so both are correct; neither can be preferred."
+    },
+    {
+      "case_id": "sem_contract_value",
+      "category": "semantic",
+      "language": "ar",
+      "query": "ما هي القيمة الاجمالية لعقد التوريد شاملة ضريبة القيمة المضافة؟",
+      "ground_truth": [
+        {
+          "document_id": "doc_7f50f934ecc4",
+          "chunk_id": "chunk_005"
+        },
+        {
+          "document_id": "doc_694f11671c02",
+          "chunk_id": "chunk_006"
+        }
+      ],
+      "multi_chunk": true,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Both state 2,450,000 EGP inclusive of VAT, verbatim."
+    },
+    {
+      "case_id": "sem_execution_period",
+      "category": "semantic",
+      "language": "ar",
+      "query": "كم مدة تنفيذ عقد التوريد ومن اي تاريخ تبدا؟",
+      "ground_truth": [
+        {
+          "document_id": "doc_7f50f934ecc4",
+          "chunk_id": "chunk_006"
+        },
+        {
+          "document_id": "doc_694f11671c02",
+          "chunk_id": "chunk_007"
+        }
+      ],
+      "multi_chunk": true,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Both state eighteen months from receipt of the written works-commencement order."
+    },
+    {
+      "case_id": "sem_confidentiality_duration",
+      "category": "semantic",
+      "language": "ar",
+      "query": "الي متي يستمر التزام السرية بعد انتهاء العقد؟",
+      "ground_truth": [
+        {
+          "document_id": "doc_7f50f934ecc4",
+          "chunk_id": "chunk_009"
+        },
+        {
+          "document_id": "doc_694f11671c02",
+          "chunk_id": "chunk_010"
+        }
+      ],
+      "multi_chunk": true,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Both state the confidentiality obligation survives five years after termination."
+    },
+    {
+      "case_id": "sem_lease_annual_rent",
+      "category": "semantic",
+      "language": "ar",
+      "query": "ما هو مبلغ الاجرة السنوية وكيفية سدادها في عقد الايجار؟",
+      "ground_truth": [
+        {
+          "document_id": "doc_041cd3837c44",
+          "chunk_id": "chunk_007"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Single chunk, Arabic: 480,000 EGP annually, paid quarterly in advance."
+    },
+    {
+      "case_id": "sem_lease_rent_escalation",
+      "category": "semantic",
+      "language": "en",
+      "query": "By how much does the rent increase each year under the lease?",
+      "ground_truth": [
+        {
+          "document_id": "doc_041cd3837c44",
+          "chunk_id": "chunk_008"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Single chunk, English: seven percent (7%) on each anniversary of the Commencement Date."
+    },
+    {
+      "case_id": "sem_lease_premises",
+      "category": "semantic",
+      "language": "en",
+      "query": "What premises are demised under the lease agreement?",
+      "ground_truth": [
+        {
+          "document_id": "doc_041cd3837c44",
+          "chunk_id": "chunk_003"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Single chunk: the third floor of 44 El Geish Street, Tanta, Gharbia."
+    },
+    {
+      "case_id": "sem_lease_dispute_forum",
+      "category": "semantic",
+      "language": "ar",
+      "query": "اي محكمة تختص بنظر المنازعات الناشئة عن عقد الايجار؟",
+      "ground_truth": [
+        {
+          "document_id": "doc_041cd3837c44",
+          "chunk_id": "chunk_018"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Single chunk: Tanta Courts of First Instance. Distinct from the supply contract's North Cairo forum, so a wrong-document hit is detectable."
+    },
+    {
+      "case_id": "sem_supply_fine_amount",
+      "category": "semantic",
+      "language": "ar",
+      "query": "ما هي العقوبة المقررة لمخالفة احكام المادة الرابعة من قانون التوريدات؟",
+      "ground_truth": [
+        {
+          "document_id": "doc_33fedccceb2b",
+          "chunk_id": "chunk_011"
+        },
+        {
+          "document_id": "doc_90b6457f5814",
+          "chunk_id": "chunk_011"
+        }
+      ],
+      "multi_chunk": true,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Both copies state a fine of not less than 50,000 and not more than 500,000 EGP. LAW_A and LAW_B are byte-identical duplicate documents."
+    },
+    {
+      "case_id": "sem_memo_recommendation",
+      "category": "semantic",
+      "language": "ar",
+      "query": "ما هي توصية المذكرة القانونية بشان بند تسوية المنازعات؟",
+      "ground_truth": [
+        {
+          "document_id": "doc_094209645c75",
+          "chunk_id": "chunk_003"
+        },
+        {
+          "document_id": "doc_094209645c75",
+          "chunk_id": "chunk_004"
+        }
+      ],
+      "multi_chunk": true,
+      "confidence": "needs_lawyer",
+      "filters": {},
+      "notes": "chunk_003 proposes replacing the North Cairo forum with CRCICA arbitration; chunk_004 is the formal recommendation not to sign before amending clauses 5, 6 and 8. Which chunk is 'the' recommendation, and whether both belong in ground truth, is an editorial/legal judgment."
+    },
+    {
+      "case_id": "sem_press_freedom",
+      "category": "semantic",
+      "language": "en",
+      "query": "What does the Egyptian constitution guarantee regarding freedom of the press?",
+      "ground_truth": [
+        {
+          "document_id": "doc_6450dfd093f8",
+          "chunk_id": "chunk_145"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "needs_lawyer",
+      "filters": {},
+      "notes": "chunk_145 is the Article 70 body text. Article 71 (chunk_146, prohibition on censorship/confiscation) is arguably part of a complete answer. Whether the correct ground truth is Article 70 alone needs legal judgment."
+    },
+    {
+      "case_id": "id_ar_indic_article_9_law",
+      "category": "identifier",
+      "language": "ar",
+      "query": "ما نص المادة ٩ من قانون تنظيم التوريدات الحكومية؟",
+      "ground_truth": [
+        {
+          "document_id": "doc_33fedccceb2b",
+          "chunk_id": "chunk_011"
+        },
+        {
+          "document_id": "doc_90b6457f5814",
+          "chunk_id": "chunk_011"
+        }
+      ],
+      "multi_chunk": true,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Arabic-Indic digits. Article 9 exists in both duplicate copies. Exercises digit folding plus the duplicate-document collision."
+    },
+    {
+      "case_id": "id_ascii_article_9_law",
+      "category": "identifier",
+      "language": "ar",
+      "query": "ما نص المادة 9 من قانون تنظيم التوريدات الحكومية؟",
+      "ground_truth": [
+        {
+          "document_id": "doc_33fedccceb2b",
+          "chunk_id": "chunk_011"
+        },
+        {
+          "document_id": "doc_90b6457f5814",
+          "chunk_id": "chunk_011"
+        }
+      ],
+      "multi_chunk": true,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "ASCII-digit twin of id_ar_indic_article_9_law. The two must return the same ground truth or digit normalization is broken."
+    },
+    {
+      "case_id": "id_article_7_mukarrar",
+      "category": "identifier",
+      "language": "ar",
+      "query": "ما حكم المادة 7 مكرر في حالات الطوارئ المعلنة؟",
+      "ground_truth": [
+        {
+          "document_id": "doc_33fedccceb2b",
+          "chunk_id": "chunk_009"
+        },
+        {
+          "document_id": "doc_90b6457f5814",
+          "chunk_id": "chunk_009"
+        }
+      ],
+      "multi_chunk": true,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "'7 مكرر' (7-bis) is a distinct provision from Article 7. Both copies carry it. Chunks for plain Article 7 (chunk_008) are the near-miss and must NOT be preferred. Note: the current extractor normalizes both to article_no '7'."
+    },
+    {
+      "case_id": "id_en_article_5_delay",
+      "category": "identifier",
+      "language": "en",
+      "query": "Article 5 delay penalty",
+      "ground_truth": [
+        {
+          "document_id": "doc_7f50f934ecc4",
+          "chunk_id": "chunk_014"
+        },
+        {
+          "document_id": "doc_694f11671c02",
+          "chunk_id": "chunk_015"
+        }
+      ],
+      "multi_chunk": true,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "English Article 5 bodies in both contract documents; text read and verified."
+    },
+    {
+      "case_id": "id_en_article_6_termination",
+      "category": "identifier",
+      "language": "en",
+      "query": "What does Article 6 of the supply agreement provide?",
+      "ground_truth": [
+        {
+          "document_id": "doc_7f50f934ecc4",
+          "chunk_id": "chunk_015"
+        },
+        {
+          "document_id": "doc_694f11671c02",
+          "chunk_id": "chunk_016"
+        }
+      ],
+      "multi_chunk": true,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Article 6 termination grounds (a)-(c). Structural lookup, not interpretation."
+    },
+    {
+      "case_id": "id_en_article_8_governing_law",
+      "category": "identifier",
+      "language": "en",
+      "query": "Article 8 governing law and dispute resolution",
+      "ground_truth": [
+        {
+          "document_id": "doc_7f50f934ecc4",
+          "chunk_id": "chunk_016"
+        },
+        {
+          "document_id": "doc_694f11671c02",
+          "chunk_id": "chunk_017"
+        }
+      ],
+      "multi_chunk": true,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Article 8 bodies. CONTRACT_BI chunk_019 is a signature-block fragment also tagged article 8 and is a legitimate near-miss."
+    },
+    {
+      "case_id": "id_const_article_43_suez",
+      "category": "identifier",
+      "language": "en",
+      "query": "Article 43 of the constitution",
+      "ground_truth": [
+        {
+          "document_id": "doc_6450dfd093f8",
+          "chunk_id": "chunk_118"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {
+        "document_ids": [
+          "doc_6450dfd093f8"
+        ]
+      },
+      "notes": "Article 43 = Suez Canal. Body chunk. Article 43 also appears in other constitution copies; this case is scoped to the English 2014 text by document_ids so the compound article_ref key is exercised."
+    },
+    {
+      "case_id": "id_const_article_76_syndicates",
+      "category": "identifier",
+      "language": "en",
+      "query": "Article 76 right to form syndicates",
+      "ground_truth": [
+        {
+          "document_id": "doc_6450dfd093f8",
+          "chunk_id": "chunk_151"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {
+        "document_ids": [
+          "doc_6450dfd093f8"
+        ]
+      },
+      "notes": "Body chunk on page 18. chunk_039 is the table-of-contents line for the same article and is the near-miss."
+    },
+    {
+      "case_id": "id_collision_article_4_scoped",
+      "category": "identifier",
+      "language": "ar",
+      "query": "المادة 4",
+      "ground_truth": [
+        {
+          "document_id": "doc_33fedccceb2b",
+          "chunk_id": "chunk_005"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {
+        "document_ids": [
+          "doc_33fedccceb2b"
+        ]
+      },
+      "notes": "Article 4 appears in 11 documents. Scoping to LAW_A must return LAW_A's article 4 only - this is the direct regression test for the compound article_ref key."
+    },
+    {
+      "case_id": "id_collision_article_4_unscoped",
+      "category": "identifier",
+      "language": "ar",
+      "query": "ما نص المادة 4 من قانون تنظيم التوريدات الحكومية؟",
+      "ground_truth": [
+        {
+          "document_id": "doc_33fedccceb2b",
+          "chunk_id": "chunk_005"
+        },
+        {
+          "document_id": "doc_90b6457f5814",
+          "chunk_id": "chunk_005"
+        }
+      ],
+      "multi_chunk": true,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Same article, unscoped, but the query names the statute. Both duplicate copies are correct. Contrast with the scoped case above."
+    },
+    {
+      "case_id": "adv_article_4_vs_citing_chunks",
+      "category": "adversarial",
+      "language": "ar",
+      "query": "ما هو نص المادة 4 نفسها من قانون التوريدات؟",
+      "ground_truth": [
+        {
+          "document_id": "doc_33fedccceb2b",
+          "chunk_id": "chunk_005"
+        },
+        {
+          "document_id": "doc_90b6457f5814",
+          "chunk_id": "chunk_005"
+        }
+      ],
+      "multi_chunk": true,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "CORRECTED 2026-09-08 after live investigation. The original note claimed the Article 7 and Article 9 chunks (which contain the literal string 'المادة (4)') outrank the real Article 4 chunk. That is FALSE: QueryProcessor.ARTICLE_RE does not match a parenthesised number, so those chunks never carry article_no='4' and never appear in the identifier results at all. The real competition is article 4 of OTHER LAWS - the IP authority law, a WIPO treaty, the constitution - 18 chunks corpus-wide carry article_no='4'. This is a cross-law collision on an unscoped query, not a mention-vs-subject problem. It remains a valid and useful hard case.",
+      "known_rank": {
+        "before_subject_ranking": 9,
+        "after_subject_ranking": 7
+      }
+    },
+    {
+      "case_id": "adv_article_34_vs_43",
+      "category": "adversarial",
+      "language": "en",
+      "query": "Article 34 public property",
+      "ground_truth": [
+        {
+          "document_id": "doc_6450dfd093f8",
+          "chunk_id": "chunk_109"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {
+        "document_ids": [
+          "doc_6450dfd093f8"
+        ]
+      },
+      "notes": "Digit-transposition pair found in the live corpus: Article 34 = Public Property, Article 43 = Suez Canal (chunk_118). Entirely different subjects, so a transposition error is unambiguous. Same class as article 15 vs 51 but a different pair, as required."
+    },
+    {
+      "case_id": "adv_article_43_vs_34",
+      "category": "adversarial",
+      "language": "en",
+      "query": "Article 43 Suez Canal protection",
+      "ground_truth": [
+        {
+          "document_id": "doc_6450dfd093f8",
+          "chunk_id": "chunk_118"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {
+        "document_ids": [
+          "doc_6450dfd093f8"
+        ]
+      },
+      "notes": "Mirror of adv_article_34_vs_43; guards against a fix that merely biases toward one member of the pair."
+    },
+    {
+      "case_id": "adv_toc_vs_body_article_70",
+      "category": "adversarial",
+      "language": "en",
+      "query": "Article 70 freedom of the press full text",
+      "ground_truth": [
+        {
+          "document_id": "doc_6450dfd093f8",
+          "chunk_id": "chunk_145"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {
+        "document_ids": [
+          "doc_6450dfd093f8"
+        ]
+      },
+      "notes": "chunk_033 is the table-of-contents entry 'Article 70. Freedom of the press ....... 17' and carries the SAME article_no. The body text (chunk_145) is the answer. Exact identifier matching alone cannot separate these - it needs the semantic half - which makes this a fusion test rather than a lookup test."
+    },
+    {
+      "case_id": "adv_toc_vs_body_article_76",
+      "category": "adversarial",
+      "language": "en",
+      "query": "Article 76 syndicates full text",
+      "ground_truth": [
+        {
+          "document_id": "doc_6450dfd093f8",
+          "chunk_id": "chunk_151"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {
+        "document_ids": [
+          "doc_6450dfd093f8"
+        ]
+      },
+      "notes": "Second TOC-vs-body instance (TOC is chunk_039), so the behaviour is shown to generalize rather than being one lucky chunk."
+    },
+    {
+      "case_id": "adv_contract_article_4_vs_definitions",
+      "category": "adversarial",
+      "language": "en",
+      "query": "Article 4 execution period of the agreement",
+      "ground_truth": [
+        {
+          "document_id": "doc_694f11671c02",
+          "chunk_id": "chunk_007"
+        },
+        {
+          "document_id": "doc_7f50f934ecc4",
+          "chunk_id": "chunk_006"
+        }
+      ],
+      "multi_chunk": true,
+      "confidence": "needs_lawyer",
+      "filters": {},
+      "notes": "Article 1 (Definitions, chunk_013/chunk_012) is tagged article_no ['1','4'] because it says 'Execution Period means the period specified in Article 4'. The substantive Article 4 text exists only in the ARABIC chunks. Whether the English definitions chunk is an acceptable answer for an English query is a judgment call.  || ADDED 2026-09-08: this case's ground-truth Arabic chunks carry NO article_no at all - their heading is 'المادة (4)' (parenthesised) and their section is 'مدة التنفيذ', so neither extraction path reaches them. The case is therefore only solvable by the semantic half, and it moved 10 -> 12 when identifier ordering changed. Same root cause as the documented OCR/extraction gap; see KNOWN_ISSUES.md.",
+      "known_rank": {
+        "before_subject_ranking": 10,
+        "after_subject_ranking": 12
+      }
+    },
+    {
+      "case_id": "lang_ar_lease_arrears",
+      "category": "language_variation",
+      "language": "ar",
+      "query": "متي يحق للمؤجر انهاء عقد الايجار فورا بسبب تاخر السداد؟",
+      "ground_truth": [
+        {
+          "document_id": "doc_041cd3837c44",
+          "chunk_id": "chunk_015"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Ground truth is an ARABIC-ONLY chunk (60 days' arrears). Arabic control."
+    },
+    {
+      "case_id": "lang_en_lease_arrears",
+      "category": "language_variation",
+      "language": "en",
+      "query": "When may the landlord immediately terminate the lease for unpaid rent?",
+      "ground_truth": [
+        {
+          "document_id": "doc_041cd3837c44",
+          "chunk_id": "chunk_015"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Same Arabic-only ground truth, asked in English - a true cross-lingual retrieval test, since no English chunk states this rule."
+    },
+    {
+      "case_id": "lang_mixed_lease_arrears",
+      "category": "language_variation",
+      "language": "ar-en",
+      "query": "متي يحق للمؤجر immediate termination بسبب تاخر rent payment؟",
+      "ground_truth": [
+        {
+          "document_id": "doc_041cd3837c44",
+          "chunk_id": "chunk_015"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Mixed-script phrasing, same ground truth."
+    },
+    {
+      "case_id": "lang_ar_rent_increase",
+      "category": "language_variation",
+      "language": "ar",
+      "query": "ما هي نسبة الزيادة السنوية في الاجرة؟",
+      "ground_truth": [
+        {
+          "document_id": "doc_041cd3837c44",
+          "chunk_id": "chunk_008"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Ground truth is an ENGLISH-ONLY chunk (7% annual increase), asked in Arabic - the reverse direction of the arrears trio."
+    },
+    {
+      "case_id": "lang_en_rent_increase",
+      "category": "language_variation",
+      "language": "en",
+      "query": "What is the annual rent escalation percentage?",
+      "ground_truth": [
+        {
+          "document_id": "doc_041cd3837c44",
+          "chunk_id": "chunk_008"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "English control for the same English-only ground truth."
+    },
+    {
+      "case_id": "neg_annual_leave",
+      "category": "negative",
+      "language": "ar",
+      "query": "ما هي مدة الاجازة السنوية المستحقة للعامل وفقا لقانون العمل؟",
+      "ground_truth": [],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Verified absent: a full scan of all 1,945 chunks found zero occurrences of 'annual leave', 'اجازة سنوية', 'الاجازات', 'vacation' or 'اجازة'. No labour code is in the corpus."
+    },
+    {
+      "case_id": "neg_crypto_regulation",
+      "category": "negative",
+      "language": "ar",
+      "query": "ما هي الاحكام المنظمة لتداول العملات الرقمية المشفرة في مصر؟",
+      "ground_truth": [],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Verified absent: zero occurrences of 'crypto', 'bitcoin', 'blockchain', 'عملة رقمية', 'العملات المشفرة', 'virtual asset' across all 1,945 chunks."
+    },
+    {
+      "case_id": "neg_franchise_agreement",
+      "category": "negative",
+      "language": "en",
+      "query": "What are the disclosure obligations of a franchisor under a franchise agreement?",
+      "ground_truth": [],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Verified absent: zero occurrences of 'franchise', 'الامتياز التجاري', 'فرنشايز'. The corpus has supply, lease and constitutional material only."
+    },
+    {
+      "case_id": "neg_insurance_premium",
+      "category": "negative",
+      "language": "en",
+      "query": "What happens if an insurance premium is not paid when due under the policy?",
+      "ground_truth": [],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Verified absent: zero occurrences of 'insurance policy', 'وثيقة تامين', 'قسط التامين'. Note the corpus DOES contain non-payment rules for rent and supply, so a plausible-looking wrong answer is likely - which is the point."
+    },
+    {
+      "case_id": "neg_environmental_impact",
+      "category": "negative",
+      "language": "ar",
+      "query": "ما هي اجراءات تقييم الاثر البيئي المطلوبة قبل الترخيص للمشروعات الصناعية؟",
+      "ground_truth": [],
+      "multi_chunk": false,
+      "confidence": "needs_lawyer",
+      "filters": {},
+      "notes": "Verified absent as a procedure: zero occurrences of 'environmental impact' or 'تقييم الاثر البيئي'. FLAGGED: the 2014 constitution does contain a general environmental-protection provision adjacent to Article 43, so a lawyer should confirm that 'no answer' is the right label rather than 'partial answer'."
+    },
+    {
+      "case_id": "date_lease_term_commencement",
+      "category": "identifier_date",
+      "language": "en",
+      "query": "Which clause defines a term commencing 1 February 2026?",
+      "ground_truth": [
+        {
+          "document_id": "doc_041cd3837c44",
+          "chunk_id": "chunk_004"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Chunk text verbatim: 'Clause 1.3 / 1.3 \"Term\" means five (5) years commencing 1 February 2026.' A full scan of all 1,945 chunks finds '1 February 2026' in this chunk and no other, so the answer is unique. Exercises the spelled-month date form: M2 extracts '1 February 2026' and normalize_date reduces it to 2026-02-01."
+    },
+    {
+      "case_id": "date_memo_dated_15_03_2026",
+      "category": "identifier_date",
+      "language": "ar",
+      "query": "ما هي المذكرة الداخلية المؤرخة 15/03/2026؟",
+      "ground_truth": [
+        {
+          "document_id": "doc_094209645c75",
+          "chunk_id": "chunk_001"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Chunk text carries 'التاريخ: 15/03/2026' in the memo header and is the only chunk in the collection containing that date. Exercises the day-first slash form: 15/03/2026 must normalize to 2026-03-15, not 2026-15-03. The corpus settles the day-first-vs-month-first question on its own - it also contains 20/03/2026, which has no month-first reading. Also a near-miss test: the same document carries 12/03/2026 and 20/03/2026 in adjacent chunks, so an implementation that matched on the document rather than the exact date would still look correct at document level and be wrong here."
+    },
+    {
+      "case_id": "date_payment_milestone_2026_05_30",
+      "category": "identifier_date",
+      "language": "en",
+      "query": "Which payment milestone is due on 2026-05-30?",
+      "ground_truth": [
+        {
+          "document_id": "doc_694f11671c02",
+          "chunk_id": "chunk_006"
+        },
+        {
+          "document_id": "doc_694f11671c02",
+          "chunk_id": "chunk_018"
+        },
+        {
+          "document_id": "doc_6786296fd29a",
+          "chunk_id": "chunk_001"
+        },
+        {
+          "document_id": "doc_6786296fd29a",
+          "chunk_id": "chunk_002"
+        },
+        {
+          "document_id": "doc_7f50f934ecc4",
+          "chunk_id": "chunk_017"
+        }
+      ],
+      "multi_chunk": true,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "The date-collision case, and the reason date_ref exists. 2026-05-30 is the phase-1 delivery milestone in the supply contract's payment schedule, and that schedule appears five times across three documents: the Arabic contract (doc_694f11671c02, two chunks), its near-duplicate (doc_7f50f934ecc4) and a standalone payment annex (doc_6786296fd29a, two chunks). All five carry the date verbatim in a table row reading '| Delivery of phase 1 | 30 | 735,000 | 2026-05-30 |', so all five are correct and none can be preferred - exactly the situation article numbers face across statutes."
+    },
+    {
+      "case_id": "date_law_effective_24_may_2017",
+      "category": "identifier_date",
+      "language": "en",
+      "query": "Which provision is dated 24 May 2017?",
+      "ground_truth": [
+        {
+          "document_id": "doc_b8294a1bd6da",
+          "chunk_id": "chunk_006"
+        },
+        {
+          "document_id": "doc_b8294a1bd6da",
+          "chunk_id": "chunk_020"
+        }
+      ],
+      "multi_chunk": true,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Both chunks carry '24 May 2017' verbatim: chunk_020 is the promulgation clause ('Article Eight ... Issued at the Presidency of the Republic on 27 Shaban 1438 Hijria / Corresponding to 24 May 2017'), chunk_006 is the standalone heading line of the same phrase. Exercises the abbreviated/spelled-month form alongside a Hijri date the extractor correctly does not match - '27 Shaban 1438' is not picked up, which is right, because normalize_date has no Hijri calendar and inventing one would index a Gregorian key for a Hijri fact."
+    }
+  ],
+  "identifier_date_note": "The identifier_date cases were added when ProcessedQuery.identifiers.dates was first wired into retrieval. Ground truth is every chunk carrying the queried date, established by running M2's own extractor over all 1,945 chunks - not by keyword search of the query string. No monetary case exists: QueryProcessor.MONEY_RE matches ASCII ',' only, while the real amounts in this corpus use U+066C ARABIC THOUSANDS SEPARATOR, so every genuine amount extracts truncated. See docs/KNOWN_ISSUES.md ISSUE-3. Authoring a monetary case now would mean asserting behaviour that is wrong upstream."
+}

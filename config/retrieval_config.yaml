@@ -1,6 +1,6 @@
 qdrant:
   location: ":memory:"
-  collection_name: "legal_documents"
+  collection_name: "legal_documents_v2"
   vector_size: 1024
   distance: "Cosine"
 

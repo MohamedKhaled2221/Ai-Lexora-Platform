@@ -22,7 +22,7 @@ def main():
     print("\n[Step 1] Initializing Qdrant Collection & Indexing Metadata...")
     vector_store = QdrantVectorStore(
         location=":memory:",
-        collection_name="legal_documents",
+        collection_name="legal_documents_v2",
         vector_size=1024
     )
 

@@ -11,7 +11,9 @@ from src.orchestration import (
     M4OrchestrationService,
 )
 from src.pipeline import M3RetrievalPipeline
+from src.retrieval.hybrid_search import KeywordBackend
 from src.vector_store.qdrant_manager import (
+    DEFAULT_COLLECTION_NAME,
     QdrantVectorStore,
 )
 from src.indexing import (
@@ -64,7 +66,7 @@ class RAGRuntimeSettings(BaseSettings):
     )
 
     qdrant_collection_name: str = (
-        "legal_documents"
+        DEFAULT_COLLECTION_NAME
     )
 
     qdrant_vector_size: int = Field(
@@ -81,6 +83,15 @@ class RAGRuntimeSettings(BaseSettings):
         default=5,
         ge=1,
     )
+
+    keyword_backend: KeywordBackend = "sparse"
+    """Which retriever supplies the keyword half of hybrid search.
+
+    Settable as RAG_KEYWORD_BACKEND so an A/B run between native sparse
+    retrieval and the original Python BM25 path needs an environment variable
+    rather than a code change. Both are filtered by the same access
+    conditions, so this is purely a relevance choice.
+    """
 
     reranker_model_name: str = (
         "BAAI/bge-reranker-v2-m3"
@@ -199,6 +210,9 @@ def build_rag_service(
         ),
         reranker_local_files_only=(
             settings.reranker_local_files_only
+        ),
+        keyword_backend=(
+            settings.keyword_backend
         ),
     )
 

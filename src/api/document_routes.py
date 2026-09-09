@@ -15,6 +15,7 @@ from fastapi import (
 from src.api.dependencies import (
     get_document_ingestion_service,
 )
+from src.api.identity import CallerIdentityDependency
 from src.indexing import (
     DocumentIndexingError,
     DocumentIndexingRuntimeError,
@@ -23,6 +24,7 @@ from src.indexing import (
     M1DocumentProcessingError,
     M1ServiceUnavailableError,
 )
+from src.schemas.access_control import ConfidentialityLevel
 
 
 logger = logging.getLogger(__name__)
@@ -61,12 +63,23 @@ def _request_id(
 async def ingest_document(
     request: Request,
     service: DocumentIngestionDependency,
+    identity: CallerIdentityDependency,
     file: UploadFile = File(...),
     document_id: Annotated[
         str | None,
         Query(
             min_length=1,
             max_length=200,
+        ),
+    ] = None,
+    confidentiality_level: Annotated[
+        ConfidentialityLevel | None,
+        Query(
+            description=(
+                "Classification for this document. May only lower the "
+                "caller's own ceiling, never raise it. Defaults to the "
+                "ceiling itself."
+            ),
         ),
     ] = None,
 ) -> DocumentIngestionResult:
@@ -79,6 +92,10 @@ async def ingest_document(
             -> M2 BGE-M3
             -> Qdrant
 
+    The access-control stamp comes from the authenticated caller and is
+    written onto every chunk, overwriting anything M1 or the uploader
+    supplied. A document's ACL is never derived from its contents.
+
     File contents and filenames are never written
     to operational logs.
     """
@@ -89,9 +106,44 @@ async def ingest_document(
     )
 
     try:
+        acl = identity.to_chunk_acl(
+            confidentiality_level=(
+                confidentiality_level
+            ),
+        )
+
+    except ValueError as exc:
+        logger.warning(
+            "document_ingestion_rejected",
+            extra={
+                "request_id": (
+                    _request_id(request)
+                ),
+                "failure_stage": (
+                    "access_control"
+                ),
+                "error_type": (
+                    type(exc).__name__
+                ),
+            },
+        )
+
+        raise HTTPException(
+            status_code=(
+                status.HTTP_403_FORBIDDEN
+            ),
+            detail=(
+                "Cannot ingest a document above "
+                "your own confidentiality "
+                "ceiling."
+            ),
+        ) from exc
+
+    try:
         result = await service.ingest_document(
             file_name=file_name,
             file_object=file.file,
+            acl=acl,
             content_type=file.content_type,
             document_id=document_id,
         )

@@ -13,6 +13,7 @@ from src.orchestration import (
     RAGExecutionResult,
 )
 from src.schemas import AIResponse
+from tests.access_helpers import IDENTITY_HEADERS
 
 
 class FakeRAGService:
@@ -84,6 +85,7 @@ def test_raw_rag_answer_endpoint():
     with TestClient(app) as client:
         response = client.post(
             "/api/v1/rag/ask",
+            headers=IDENTITY_HEADERS,
             json={
                 "question": (
                     "ما هي شروط الفسخ؟"
@@ -147,6 +149,7 @@ def test_raw_rag_rejects_whitespace_question():
     with TestClient(app) as client:
         response = client.post(
             "/api/v1/rag/ask",
+            headers=IDENTITY_HEADERS,
             json={
                 "question": "   "
             },
@@ -162,6 +165,7 @@ def test_raw_rag_returns_503_without_runtime():
     with TestClient(app) as client:
         response = client.post(
             "/api/v1/rag/ask",
+            headers=IDENTITY_HEADERS,
             json={
                 "question": (
                     "What is Article 69?"
@@ -193,6 +197,7 @@ def test_raw_rag_maps_embedding_contract_failure_to_502():
     with TestClient(app) as client:
         response = client.post(
             "/api/v1/rag/ask",
+            headers=IDENTITY_HEADERS,
             json={
                 "question": (
                     "What is Article 69?"
@@ -222,6 +227,7 @@ def test_raw_rag_maps_m2_runtime_failure_to_503():
     with TestClient(app) as client:
         response = client.post(
             "/api/v1/rag/ask",
+            headers=IDENTITY_HEADERS,
             json={
                 "question": (
                     "What is Article 69?"
@@ -257,6 +263,7 @@ def test_raw_rag_maps_citation_validation_failure_to_502(
     with TestClient(app) as client:
         response = client.post(
             "/api/v1/rag/ask",
+            headers=IDENTITY_HEADERS,
             json={
                 "question": (
                     "What provision applies?"
@@ -322,6 +329,7 @@ def test_raw_rag_logging_does_not_include_question(
     with TestClient(app) as client:
         response = client.post(
             "/api/v1/rag/ask",
+            headers=IDENTITY_HEADERS,
             json={
                 "question": question
             },
@@ -359,6 +367,7 @@ def test_raw_rag_factory_is_initialized_once():
     with TestClient(app) as client:
         first = client.post(
             "/api/v1/rag/ask",
+            headers=IDENTITY_HEADERS,
             json={
                 "question": (
                     "First question"
@@ -368,6 +377,7 @@ def test_raw_rag_factory_is_initialized_once():
 
         second = client.post(
             "/api/v1/rag/ask",
+            headers=IDENTITY_HEADERS,
             json={
                 "question": (
                     "Second question"

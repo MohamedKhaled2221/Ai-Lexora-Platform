@@ -45,13 +45,26 @@ class TestIngestEndpoint:
         assert body["document_type"] == "law"
 
     def test_chunks_match_the_spec_shape(self, client, statute_txt):
-        """This is the field set M2/M3 destructure. It must not drift."""
+        """This is the field set M2/M3 destructure. It must not drift.
+
+        The access-control triple was added 2026-09-05 for M3 tenancy
+        filtering. It is additive and every field defaults to None -- M1 does
+        not know who may read a document, so the M3 ingest boundary stamps the
+        real values from the authenticated caller. Listed explicitly so this
+        test still catches a field nobody decided on.
+        """
+        spec_fields = {
+            "document_id", "chunk_id", "text", "page",
+            "section", "clause", "language", "document_type", "metadata",
+        }
+        access_control_fields = {
+            "client_id", "matter_id", "confidentiality_level",
+        }
         chunks = client.post("/ingest", files=_upload(statute_txt)).json()["chunks"]
         for chunk in chunks:
-            assert set(chunk) == {
-                "document_id", "chunk_id", "text", "page",
-                "section", "clause", "language", "document_type", "metadata",
-            }
+            assert set(chunk) == spec_fields | access_control_fields
+            for name in access_control_fields:
+                assert chunk[name] is None
             assert isinstance(chunk["metadata"], dict)
             assert chunk["text"].strip()
 

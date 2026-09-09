@@ -1,3 +1,19 @@
+# NOT THE LIVE DEPLOYMENT ON THIS HOST.
+#
+# This file describes an intended container deployment. It has never run here:
+# there is no Docker engine on this machine, and the external volume below
+# (ai_lexora_qdrant_storage) has never existed on it.
+#
+# What actually serves M3 is a native binary:
+#
+#     E:\Trend Egypt\Law firm 34\qdrant_data\start_qdrant.ps1
+#
+# with its index at E:\Trend Egypt\Law firm 34\qdrant_data\storage.
+# See that directory's README.md. Keep this file for the eventual containerised
+# deployment, but do not assume it reflects where the data currently lives --
+# an earlier audit wasted time concluding the index was lost because it trusted
+# this file over the running process.
+
 services:
   qdrant:
     image: qdrant/qdrant@sha256:057ee3a8da769fe7310dd3537b4dc7583bf87a95ce8ac43c0af5a46bc580d1fc

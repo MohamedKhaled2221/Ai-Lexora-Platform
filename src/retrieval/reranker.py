@@ -4,6 +4,37 @@ from typing import List, Dict, Any
 logger = logging.getLogger(__name__)
 
 
+class RerankerUnavailable(RuntimeError):
+    """
+    The cross-encoder could not be loaded and degrading was not permitted.
+
+    Raised instead of letting the underlying loader error escape. The loader
+    raises a bare ``OSError`` whose message reads "We couldn't connect to
+    'https://huggingface.co' ... Check your internet connection" -- which on a
+    deliberately air-gapped host sends the operator to diagnose a network fault
+    that is *policy*, not a fault. The real cause is that the model is not in
+    the local cache, and the real fix is to place it there.
+
+    It is also a distinct type so a caller can catch *this* and surface
+    "reranking unavailable" without also swallowing every unrelated ``OSError``
+    (a closed socket, a full disk) that the same ``except`` clause would
+    otherwise absorb.
+
+    ``__cause__`` carries the original exception, so nothing is lost.
+    """
+
+
+def _unavailable_message(model_name: str, reason: str) -> str:
+    return (
+        f"Cross-encoder reranker {model_name!r} is unavailable: {reason}. "
+        "The pipeline is configured with use_mock_fallback=False, so it "
+        "refuses to fall back to the heuristic reranker and serve degraded "
+        "relevance silently. Either place the model in the local Hugging Face "
+        "cache, or set reranker_use_mock_fallback=True to accept heuristic "
+        "reranking explicitly."
+    )
+
+
 class BGEReranker:
     """
     BGE-M3 Cross-Encoder Reranker Engine.
@@ -28,6 +59,20 @@ class BGEReranker:
         Attempt to load BGE CrossEncoder model, falling back gracefully if unavailable or offline.
         """
         if not self.model_name:
+            # Previously this returned unconditionally, which quietly defeated
+            # use_mock_fallback=False: an empty model name produced a reranker
+            # with self.model = None, and rerank() then routed every request
+            # through the heuristic path. The flag that exists precisely to
+            # forbid silent degradation did not cover the one configuration
+            # that degrades without any error at all.
+            if not self.use_mock_fallback:
+                raise RerankerUnavailable(
+                    _unavailable_message(
+                        self.model_name,
+                        "no model name was configured",
+                    )
+                )
+
             logger.info("No HuggingFace model specified. Using fast heuristic/mock reranker.")
             return
 
@@ -43,7 +88,12 @@ class BGEReranker:
             if self.use_mock_fallback:
                 logger.info("Enabling intelligent heuristic/mock reranker fallback.")
             else:
-                raise e
+                # Re-raised as a typed error rather than propagating the
+                # loader's own exception. `from e` keeps the original as
+                # __cause__, so the traceback still shows what actually failed.
+                raise RerankerUnavailable(
+                    _unavailable_message(self.model_name, str(e).strip())
+                ) from e
 
     def rerank(
         self,
@@ -57,6 +107,20 @@ class BGEReranker:
         """
         if not candidates:
             return []
+
+        if self.model is None and not self.use_mock_fallback:
+            # Unreachable via __init__, which now refuses to construct such an
+            # instance. Repeated here because this is the point where degraded
+            # scores would actually reach a caller: any future path that builds
+            # a reranker another way (a test double, a partially-initialized
+            # object, a subclass overriding _init_model) must not be able to
+            # serve heuristic scores under a configuration that forbids them.
+            raise RerankerUnavailable(
+                _unavailable_message(
+                    self.model_name,
+                    "no cross-encoder was loaded",
+                )
+            )
 
         if self.model is not None:
             pairs = [[query_text, c["text"]] for c in candidates]

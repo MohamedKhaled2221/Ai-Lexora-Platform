@@ -17,6 +17,7 @@ from src.schemas import (
     AIResponse,
     Citation,
 )
+from tests.access_helpers import IDENTITY_HEADERS
 
 
 def make_observability_rag_request() -> dict:
@@ -151,6 +152,7 @@ def test_validation_error_uses_common_format():
     with TestClient(app) as client:
         response = client.post(
             "/api/v1/rag/answer",
+            headers=IDENTITY_HEADERS,
             json={
                 "processed_query": {
                     "query_id": "broken"
@@ -314,6 +316,7 @@ def test_rag_success_log_contains_safe_metrics(
     with TestClient(app) as client:
         response = client.post(
             "/api/v1/rag/answer",
+            headers=IDENTITY_HEADERS,
             json=(
                 make_observability_rag_request()
             ),
@@ -405,6 +408,7 @@ def test_rag_failure_log_is_sanitized(
     with TestClient(app) as client:
         response = client.post(
             "/api/v1/rag/answer",
+            headers=IDENTITY_HEADERS,
             json=(
                 make_observability_rag_request()
             ),
