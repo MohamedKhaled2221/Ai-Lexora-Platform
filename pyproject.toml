@@ -3,6 +3,7 @@ name = "ai-lexora"
 version = "0.1.0"
 description = "Local multilingual Legal Intelligence Assistant"
 readme = "README.md"
+
 # 3.14 is the validated runtime, not an aspiration: the retrieval baseline in
 # docs/M3_SESSION_SUMMARY.md (MRR 0.671) and the test suite were both measured
 # on it, and qdrant_data/rebuild_venv.ps1 builds the venv with --python 3.14.
@@ -21,22 +22,29 @@ dependencies = [
     "pydantic>=2.0.0",
     "pydantic-settings",
     "psutil",
+
     # M3 retrieval
     "qdrant-client>=1.7.0",
     "numpy>=1.24.0",
     "sentence-transformers>=2.2.2",
     "PyYAML>=6.0",
     "rank-bm25>=0.2.2",
+
     # M4 orchestration
     "langchain-core",
     "langchain-ollama",
     "httpx",
     "ollama",
+
     # Delivery API
     "fastapi",
     "uvicorn[standard]",
     "python-dotenv>=1.2.3",
     "python-multipart==0.0.20",
+
+    # M6 knowledge base
+    "SQLAlchemy>=2.0.0",
+    "psycopg[binary]>=3.3.0",
 ]
 
 [dependency-groups]
