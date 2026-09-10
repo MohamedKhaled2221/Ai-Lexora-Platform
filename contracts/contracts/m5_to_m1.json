@@ -1,0 +1,51 @@
+{
+  "contract": "M5 -> M1",
+  "package": "P3",
+  "input": {
+    "approved_clauses": "ApprovedClause[]",
+    "clause_decisions": "ClauseDecision[]",
+    "source_metadata": "SourceMetadata"
+  },
+  "responsibilities": {
+    "m5": [
+      "Provide approved legal clauses.",
+      "Provide required, optional, prohibited and conditional decisions.",
+      "Provide compatibility information for document type and jurisdiction.",
+      "Provide source metadata and clause version information.",
+      "Provide insertion_key for each clause when placement is required."
+    ],
+    "m1": [
+      "Accept only approved clauses for assembly.",
+      "Validate document type compatibility.",
+      "Validate jurisdiction compatibility.",
+      "Validate required clause presence.",
+      "Reject prohibited or incompatible clauses.",
+      "Validate clause insertion_key against the selected template.",
+      "Preserve clause source metadata and version information.",
+      "Do not modify or invent approved legal clause text."
+    ]
+  },
+  "rules": [
+    "Only clauses with approval_status=approved may be assembled.",
+    "Document type and jurisdiction must be compatible with the selected template.",
+    "Required clauses must be present.",
+    "Prohibited or incompatible clauses must not be selected.",
+    "Each clause requiring placement must provide a valid insertion_key.",
+    "The insertion_key must exist in the selected template section_placeholders.",
+    "Clause version and source metadata must be preserved for provenance.",
+    "Unsupported special conditions return requires_lawyer_input.",
+    "M1 must not create new legal clause text."
+  ],
+  "handoff_output": {
+    "assembled_by_m1": [
+      "AssembledDraft",
+      "GenerationManifest"
+    ]
+  },
+  "notes": [
+    "M5 owns approved clause content and legal compatibility decisions.",
+    "M1 owns deterministic template selection, validation, placement and assembly.",
+    "M1 does not reinterpret or rewrite M5 legal decisions.",
+    "M1 passes provenance information downstream through the GenerationManifest."
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "template_id": "nda",
+  "version": "1.0",
+  "document_type": "NDA",
+  "jurisdiction": "Egypt",
+  "language": "en",
+  "file_path": "templates/nda/v1.docx",
+  "fields": [
+    {
+      "name": "party_a_name",
+      "label": "Party A",
+      "field_type": "text",
+      "required": true
+    },
+    {
+      "name": "party_b_name",
+      "label": "Party B",
+      "field_type": "text",
+      "required": true
+    },
+    {
+      "name": "effective_date",
+      "label": "Effective Date",
+      "field_type": "date",
+      "required": true
+    }
+  ],
+  "section_placeholders": {
+    "section_confidentiality": "{{CLAUSE:section_confidentiality}}",
+    "section_governing_law": "{{CLAUSE:section_governing_law}}",
+    "section_dispute_resolution": "{{CLAUSE:section_dispute_resolution}}",
+    "section_penalty": "{{CLAUSE:section_penalty}}"
+  },
+  "template_structure": "NON-LEGAL DEMO NDA\n\nParty A: {{party_a_name}}\nParty B: {{party_b_name}}\nEffective Date: {{effective_date}}\n\nConfidentiality:\n{{CLAUSE:section_confidentiality}}\n\nGoverning Law:\n{{CLAUSE:section_governing_law}}\n\nDispute Resolution:\n{{CLAUSE:section_dispute_resolution}}\n\nPenalty:\n{{CLAUSE:section_penalty}}"
+}

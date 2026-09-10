@@ -1,0 +1,51 @@
+{
+  "contract": "M1 -> M4",
+  "package": "P3",
+  "input": {
+    "assembled_draft": "AssembledDraft",
+    "generation_manifest": "GenerationManifest",
+    "grounding_context": "P3GroundingContext"
+  },
+  "output": {
+    "validated_draft": "ValidatedDraft"
+  },
+  "responsibilities": {
+    "m1": [
+      "Produce the deterministic AssembledDraft.",
+      "Produce the GenerationManifest.",
+      "Preserve approved clause references and source provenance.",
+      "Do not invent legal clause text.",
+      "Provide the assembled draft for downstream grounding and validation."
+    ],
+    "m4": [
+      "Perform grounding validation.",
+      "Perform provenance validation.",
+      "Perform structural validation.",
+      "Reject new unsourced legal clauses.",
+      "Verify that legal content is traceable to trusted sources."
+    ]
+  },
+  "trusted_source_types": [
+    "template",
+    "approved_clause",
+    "user_input",
+    "lawyer_approved_edit"
+  ],
+  "ai_transformation_rules": [
+    "AI text transformation may only transform approved source text.",
+    "Any AI transformation must preserve source traceability.",
+    "AI-generated text must not introduce a new unsourced legal clause."
+  ],
+  "validation_rules": [
+    "Approved clauses must remain traceable to their source references.",
+    "M4 must reject unsupported or newly introduced legal clauses.",
+    "Provenance information must be preserved through the M1 to M4 handoff.",
+    "Structural validation must confirm that the assembled draft matches the selected template and approved clause placement."
+  ],
+  "notes": [
+    "M1 is responsible for deterministic assembly.",
+    "M4 performs grounding, provenance, and structural validation.",
+    "The GenerationManifest is used to preserve generation and source traceability.",
+    "Lawyer review remains part of the downstream validation flow."
+  ]
+}
