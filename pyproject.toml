@@ -27,6 +27,10 @@ dependencies = [
     "fastapi",
     "uvicorn[standard]",
     "python-dotenv>=1.2.3",
+
+    # M6 knowledge base
+    "SQLAlchemy>=2.0.0",
+    "psycopg[binary]>=3.3.0",
 ]
 
 [dependency-groups]
