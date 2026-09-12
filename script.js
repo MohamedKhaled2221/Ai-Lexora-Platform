@@ -18,6 +18,197 @@ function loadDocumentParser() {
 const toast = document.querySelector("[data-toast]");
 const themeToggles = document.querySelectorAll("[data-theme-toggle]");
 
+function setupNavbarMenu() {
+  document.querySelectorAll(".navbar").forEach((navbar) => {
+    if (navbar.dataset.navMenuReady === "true") return;
+
+    const nav = navbar.querySelector("nav");
+    if (!nav) return;
+
+    const burgerButton = document.createElement("button");
+    burgerButton.type = "button";
+    burgerButton.className = "nav-burger";
+    burgerButton.dataset.navBurger = "true";
+    burgerButton.setAttribute("aria-label", "فتح قائمة التنقل");
+    burgerButton.setAttribute("aria-expanded", "false");
+    burgerButton.innerHTML = '<span></span><span></span><span></span>';
+    navbar.appendChild(burgerButton);
+
+    const backdrop = document.createElement("div");
+    backdrop.className = "nav-backdrop";
+    backdrop.hidden = true;
+    document.body.appendChild(backdrop);
+
+    const drawer = document.createElement("aside");
+    drawer.className = "nav-drawer";
+    drawer.setAttribute("aria-hidden", "true");
+    drawer.innerHTML = `
+      <div class="nav-drawer-header">
+        <span>القائمة</span>
+        <button type="button" class="nav-drawer-close" aria-label="إغلاق القائمة">×</button>
+      </div>
+      <div class="nav-drawer-content"></div>
+    `;
+
+    const drawerContent = drawer.querySelector(".nav-drawer-content");
+    Array.from(nav.children).forEach((child) => {
+      drawerContent.appendChild(child.cloneNode(true));
+    });
+
+    document.body.appendChild(drawer);
+
+    const closeDrawer = () => {
+      drawer.classList.remove("is-open");
+      drawer.setAttribute("aria-hidden", "true");
+      backdrop.classList.remove("is-visible");
+      backdrop.hidden = true;
+      burgerButton.setAttribute("aria-expanded", "false");
+      document.body.classList.remove("nav-drawer-open");
+    };
+
+    const openDrawer = () => {
+      drawer.classList.add("is-open");
+      drawer.setAttribute("aria-hidden", "false");
+      backdrop.hidden = false;
+      window.requestAnimationFrame(() => backdrop.classList.add("is-visible"));
+      burgerButton.setAttribute("aria-expanded", "true");
+      document.body.classList.add("nav-drawer-open");
+    };
+
+    burgerButton.addEventListener("click", () => {
+      const isOpen = drawer.classList.contains("is-open");
+      if (isOpen) {
+        closeDrawer();
+      } else {
+        openDrawer();
+      }
+    });
+
+    backdrop.addEventListener("click", closeDrawer);
+    drawer.querySelector(".nav-drawer-close")?.addEventListener("click", closeDrawer);
+    drawer.querySelectorAll("a").forEach((link) => {
+      link.addEventListener("click", closeDrawer);
+    });
+
+    navbar.dataset.navMenuReady = "true";
+  });
+}
+
+function setupDashboardSidebarDrawer() {
+  const layout = document.querySelector(".app-layout");
+  const sidebar = document.querySelector(".sidebar");
+  const toggle = document.querySelector(".dashboard-sidebar-toggle");
+
+  if (!layout || !sidebar || !toggle || sidebar.dataset.drawerReady === "true") {
+    return;
+  }
+
+  layout.classList.add("dashboard-sidebar-mode");
+  sidebar.classList.add("dashboard-sidebar-drawer");
+  sidebar.dataset.drawerReady = "true";
+
+  const backdrop = document.createElement("div");
+  backdrop.className = "dashboard-sidebar-backdrop";
+  backdrop.hidden = true;
+  document.body.appendChild(backdrop);
+
+  const closeSidebar = () => {
+    sidebar.classList.remove("is-open");
+    backdrop.classList.remove("is-visible");
+    backdrop.hidden = true;
+    toggle.setAttribute("aria-expanded", "false");
+    document.body.classList.remove("dashboard-sidebar-open");
+  };
+
+  const openSidebar = () => {
+    sidebar.classList.add("is-open");
+    backdrop.hidden = false;
+    window.requestAnimationFrame(() => backdrop.classList.add("is-visible"));
+    toggle.setAttribute("aria-expanded", "true");
+    document.body.classList.add("dashboard-sidebar-open");
+  };
+
+  toggle.addEventListener("click", () => {
+    const isOpen = sidebar.classList.contains("is-open");
+    if (isOpen) {
+      closeSidebar();
+    } else {
+      openSidebar();
+    }
+  });
+
+  backdrop.addEventListener("click", closeSidebar);
+  sidebar.querySelectorAll("a, button").forEach((item) => {
+    item.addEventListener("click", closeSidebar);
+  });
+}
+
+function setupConsultationAiComposer() {
+  const trigger = document.querySelector(".consultation-ai-plus");
+  const menu = document.querySelector(".consultation-ai-menu");
+
+  if (!trigger || !menu) return;
+
+  const closeMenu = () => {
+    menu.hidden = true;
+    trigger.setAttribute("aria-expanded", "false");
+  };
+
+  const openMenu = () => {
+    menu.hidden = false;
+    trigger.setAttribute("aria-expanded", "true");
+  };
+
+  trigger.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (menu.hidden) {
+      openMenu();
+    } else {
+      closeMenu();
+    }
+  });
+
+  menu.querySelectorAll("button[data-ai-file-target]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const targetId = button.dataset.aiFileTarget;
+      const input = document.getElementById(targetId);
+
+      closeMenu();
+
+      if (input) {
+        input.value = "";
+        window.setTimeout(() => input.click(), 0);
+      }
+    });
+  });
+
+  document.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!menu.contains(target) && target !== trigger && !trigger.contains(target)) {
+      closeMenu();
+    }
+  });
+}
+
+function updateNavbarMode() {
+  const compactMode = window.scrollY > 28;
+
+  document.querySelectorAll(".navbar").forEach((navbar) => {
+    navbar.classList.toggle("navbar--compact", compactMode);
+  });
+}
+
+setupNavbarMenu();
+setupConsultationAiComposer();
+setupDashboardSidebarDrawer();
+updateNavbarMode();
+window.addEventListener("scroll", updateNavbarMode, { passive: true });
+window.addEventListener("resize", updateNavbarMode);
+
 function showToast(message, type = "info") {
   if (!toast) return;
   toast.textContent = message;
@@ -282,13 +473,13 @@ function setModalMode(mode, item = null, trigger = null) {
   const isView = mode === "view";
   const isAssign = mode === "assign";
   const labels = {
-    create: "إضافة قضية تجريبية",
+    create: "إضافة قضية جديدة",
     view: "عرض بيانات القضية",
-    edit: "تعديل قضية تجريبية",
-    assign: "تعيين محامٍ تجريبي",
+    edit: "تعديل القضية",
+    assign: "تعيين محامٍ",
   };
   const contexts = {
-    create: "هذه البيانات تجريبية وتظهر في الجدول الحالي فقط.",
+    create: "هذه نسخة عرض محلية، والبيانات ستظهر فقط داخل الجلسة الحالية للمستخدم.",
     view: "عرض محلي فقط. لا توجد عملية Backend لتفاصيل القضية حاليًا.",
     edit: "التعديل محلي ويستمر أثناء فتح الصفحة فقط.",
     assign: "التعيين محلي فقط. لن يتم تحديث نظام الصلاحيات حاليًا.",
@@ -302,7 +493,7 @@ function setModalMode(mode, item = null, trigger = null) {
   }
   if (modalSecondary) {
     modalSecondary.toggleAttribute("hidden", !isView);
-    modalSecondary.textContent = "إغلاق القضية (Demo)";
+    modalSecondary.textContent = "إغلاق القضية";
   }
   Object.entries(modalFields).forEach(([field, input]) => {
     if (!input) return;
@@ -336,7 +527,7 @@ function saveCaseModal() {
       return;
     }
     if (dashboardCases.some((item) => item.id === values.id)) {
-      showToast("رقم القضية مستخدم بالفعل في البيانات التجريبية.", "error");
+      showToast("رقم القضية مستخدم بالفعل في العرض المحلي.", "error");
       return;
     }
     dashboardCases.push({
@@ -348,7 +539,7 @@ function saveCaseModal() {
     renderCaseRows();
     applyTableFilters();
     closeCaseModal();
-    showToast("تمت إضافة القضية للعرض التجريبي فقط.", "info");
+    showToast("تمت إضافة القضية داخل العرض المحلي فقط.", "info");
     return;
   }
 
@@ -358,7 +549,7 @@ function saveCaseModal() {
   renderCaseRows();
   applyTableFilters();
   closeCaseModal();
-  showToast(modalMode === "assign" ? "تم تحديث المحامي في العرض التجريبي فقط." : "تم تحديث القضية في العرض التجريبي فقط.", "info");
+  showToast(modalMode === "assign" ? "تم تحديث المحامي داخل العرض المحلي فقط." : "تم تحديث القضية داخل العرض المحلي فقط.", "info");
 }
 
 renderCaseRows();

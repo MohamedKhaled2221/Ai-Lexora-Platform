@@ -10,47 +10,42 @@
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="app-layout">
-    <aside class="sidebar">
-      <a class="brand light" href="index.html">AI-Lexora<small>Operations Console</small></a>
-      <nav>
-        <a class="active" href="dashboard.html">لوحة العمل</a>
-        <a href="consultation.html" data-nav-lawyer>قضاياي</a>
-        <a href="consultation.html" data-nav-manager>كل القضايا</a>
-        <button class="sidebar-demo-action" type="button" data-nav-manager data-show-toast="إدارة الفريق جاهزة للتوصيل بقاعدة البيانات.">الفريق (Demo)</button>
-        <button class="sidebar-demo-action" type="button" data-nav-manager data-show-toast="إدارة العملاء تحتاج Endpoint لاحق.">العملاء (Demo)</button>
-        <a href="consultation.html">المستندات</a>
-        <a href="consultation.html">Legal Research</a>
-        <a href="contract-generation.html">انشاء العقود</a>
-        <a href="legal-chat.html">المساعد القانوني</a>
-        <button class="sidebar-demo-action" type="button" data-show-toast="المهام محفوظة حاليا كواجهة فقط.">المهام (Demo)</button>
-        <button class="sidebar-demo-action" type="button" data-nav-manager data-show-toast="التقارير تحتاج API إحصائيات لاحق.">التقارير (Demo)</button>
-        <a href="auth.html">الصلاحيات</a>
-      </nav>
-      <button class="theme-toggle" type="button" data-theme-toggle>
+  <header class="navbar">
+    <a class="brand" href="index.html">AI-Lexora<small>Operations Console</small></a>
+    <nav>
+      <a href="index.html">الرئيسية</a>
+      <a class="active" href="dashboard.html">لوحة العمل</a>
+      <a href="consultation.html">القضايا والبحث</a>
+      <a href="contract-generation.html">انشاء العقود</a>
+      <a href="legal-chat.html">المساعد القانوني</a>
+      <a href="auth.html">الدخول والصلاحيات</a>
+    </nav>
+    <div class="nav-tools">
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="تبديل الوضع الليلي" aria-pressed="false">
         <span class="theme-toggle-track" aria-hidden="true"></span>
         <span data-theme-label>الوضع الغامق</span>
       </button>
-      <p class="sidebar-footer">API Base: .NET Backend</p>
-    </aside>
+      <a class="nav-action" href="dashboard.html">فتح النظام</a>
+    </div>
+  </header>
 
-    <main class="dashboard-main">
-      <header class="dashboard-topbar">
-        <div>
-          <p class="eyebrow">Law Firm Operations</p>
-          <h1>لوحة تشغيل المكتب القانوني</h1>
-        </div>
-        <div class="topbar-actions">
-          <label class="role-switch">الدور
-            <select data-role-switch>
-              <option value="lawyer">Lawyer</option>
-              <option value="manager">Manager / Admin</option>
-            </select>
-          </label>
-          <button class="ghost-btn" type="button" data-check-health>Health</button>
-          <button class="primary-btn" type="button" data-open-modal>إضافة قضية</button>
-        </div>
-      </header>
+  <main class="dashboard-main">
+    <header class="dashboard-topbar">
+      <div class="dashboard-header-controls">
+        <p class="eyebrow">Law Firm Operations</p>
+        <h1>لوحة تشغيل المكتب القانوني</h1>
+      </div>
+      <div class="topbar-actions">
+        <label class="role-switch">الدور
+          <select data-role-switch>
+            <option value="lawyer">Lawyer</option>
+            <option value="manager">Manager / Admin</option>
+          </select>
+        </label>
+        <button class="ghost-btn" type="button" data-check-health>Health</button>
+        <button class="primary-btn" type="button" data-open-modal>إضافة قضية</button>
+      </div>
+    </header>
 
       <section class="dashboard-cards" data-role-panel="lawyer">
         <article class="metric-card"><span>قضاياي</span><strong>18</strong><p>5 تحتاج إجراء اليوم</p></article>
@@ -156,7 +151,6 @@
       </section>
 
     </main>
-  </div>
 
   <div class="modal" data-modal hidden>
     <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="case-modal-title" aria-describedby="case-modal-description">
@@ -164,7 +158,7 @@
         <h2 id="case-modal-title" data-modal-title>إضافة قضية</h2>
         <button type="button" data-close-modal aria-label="إغلاق">×</button>
       </div>
-      <p class="modal-context" id="case-modal-description" data-modal-context>بيانات تجريبية محلية، ولن يتم حفظها في النظام حاليًا.</p>
+      <p class="modal-context" id="case-modal-description" data-modal-context>هذا نموذج عرض محلي، والبيانات ستظهر فقط داخل الجلسة الحالية للمستخدم.</p>
       <label>رقم القضية<input data-modal-case-id type="text" aria-describedby="case-modal-description" placeholder="LEX-1028"></label>
       <label>عنوان القضية<input data-modal-case-title type="text" aria-describedby="case-modal-description" placeholder="مثال: نزاع عقد توريد"></label>
       <label>العميل<input data-modal-case-client type="text" aria-describedby="case-modal-description" placeholder="اسم العميل أو الشركة"></label>
@@ -176,7 +170,7 @@
       </label>
       <div class="modal-actions">
         <button class="ghost-btn" type="button" data-modal-secondary hidden>إغلاق القضية</button>
-        <button class="submit-btn" type="button" data-save-modal>حفظ كبيانات تجريبية</button>
+        <button class="submit-btn" type="button" data-save-modal>حفظ في العرض المحلي</button>
       </div>
     </div>
   </div>
