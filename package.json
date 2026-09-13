@@ -8,9 +8,9 @@
     "@vitejs/plugin-react": "latest",
     "mammoth": "latest",
     "pdfjs-dist": "latest",
-    "vite": "latest",
     "react": "latest",
-    "react-dom": "latest"
-  },
-  "devDependencies": {}
+    "react-dom": "latest",
+    "tesseract.js": "^7.0.0",
+    "vite": "latest"
+  }
 }

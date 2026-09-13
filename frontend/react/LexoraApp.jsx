@@ -258,6 +258,244 @@ function documentStatusLabel(status) {
   return documentStatusLabels[status] || status || "غير معروف";
 }
 
+function useAttachmentMenu() {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    function closeOnOutsideClick(event) {
+      if (!event.target.closest(".attachment-menu-wrap")) setOpen(false);
+    }
+    function closeOnEscape(event) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("click", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("click", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, []);
+
+  return [open, setOpen];
+}
+
+function ChatAttachmentMenu({ fileInputRef, imageInputRef, cameraInputRef, open, setOpen }) {
+  return (
+    <div className="attachment-menu-wrap">
+      <button
+        className={`attach-button${open ? " is-open" : ""}`}
+        type="button"
+        aria-label="إضافة ملف أو صورة"
+        aria-expanded={open}
+        onClick={(event) => {
+          event.stopPropagation();
+          setOpen((current) => !current);
+        }}
+      >+
+      </button>
+      {open ? (
+        <div className="attachment-menu" role="menu">
+          <button type="button" role="menuitem" onClick={() => { setOpen(false); cameraInputRef.current?.click(); }}><img src="/assets/icons/camera.png" alt="" />كاميرا</button>
+          <button type="button" role="menuitem" onClick={() => { setOpen(false); imageInputRef.current?.click(); }}><img src="/assets/icons/image.png" alt="" />صورة</button>
+          <button type="button" role="menuitem" onClick={() => { setOpen(false); fileInputRef.current?.click(); }}><img src="/assets/icons/file.png" alt="" />ملف</button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function ChatBubble({ message }) {
+  const userMessage = message.role === "user";
+  return (
+    <article className={`chat-bubble-row ${userMessage ? "user" : "assistant"}`}>
+      <div className="chat-avatar">{userMessage ? "أنت" : "LX"}</div>
+      <div className="chat-bubble">
+        <strong>{userMessage ? "أنت" : "المساعد القانوني"}</strong>
+        <p>{message.content}</p>
+        {message.citations?.length ? <small>{message.citations.length} مراجع مرتبطة بالإجابة</small> : null}
+      </div>
+    </article>
+  );
+}
+
+export function ChatbotWidget() {
+  const [messages, setMessages] = useState([]);
+  const [question, setQuestion] = useState("");
+  const [attachments, setAttachments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [isListening, setIsListening] = useState(false);
+  const [menuOpen, setMenuOpen] = useAttachmentMenu();
+  const fileInputRef = useRef(null);
+  const imageInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
+  const recognitionRef = useRef(null);
+  const { documents, selectedIds } = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+
+  function addFiles(fileList, source) {
+    const files = Array.from(fileList || []);
+    if (!files.length) return;
+    setAttachments((current) => [
+      ...current,
+      ...files.map((file) => ({
+        id: `${source}-${file.name}-${file.lastModified}-${file.size}`,
+        file,
+        source,
+        status: "ready",
+      })),
+    ]);
+  }
+
+  function toggleMicrophone() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setError("التعرف على الصوت غير متاح في هذا المتصفح.");
+      return;
+    }
+    if (isListening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = "ar-EG";
+    recognition.interimResults = true;
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => {
+      setIsListening(false);
+      setError("تعذر التقاط الصوت. حاول مرة أخرى.");
+    };
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results).map((result) => result[0].transcript).join("");
+      setQuestion((current) => `${current} ${transcript}`.trim());
+    };
+    recognitionRef.current = recognition;
+    recognition.start();
+  }
+
+  async function submitMessage(event) {
+    event.preventDefault();
+    const text = question.trim();
+    if (!text || loading) return;
+    setLoading(true);
+    setError("");
+    setMessages((current) => [...current, { role: "user", content: text }]);
+    setQuestion("");
+
+    try {
+      for (const attachment of attachments) {
+        await uploadDocument(attachment.file, "Contract");
+      }
+      const response = await askDocuments(text, selectedIds);
+      setMessages((current) => [...current, {
+        role: "assistant",
+        content: response.answer || "لم تصل إجابة قابلة للعرض.",
+        citations: response.citations || [],
+      }]);
+      setAttachments([]);
+      window.dispatchEvent(new CustomEvent("lexora:documents-changed"));
+    } catch (requestError) {
+      setError(requestError.message || "تعذر إرسال السؤال.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="chatgpt-shell">
+      <header className="chat-page-header">
+        <div>
+          <p className="eyebrow">AI Legal Workspace</p>
+          <h1>المساعد القانوني</h1>
+          <span>محادثة ذكية مرتبطة بمستنداتك</span>
+        </div>
+        <StatusPill state="ready">جاهز للمساعدة</StatusPill>
+      </header>
+      <div className="chat-layout">
+        <aside className="chat-sidebar">
+          <button className="new-chat-button" type="button" onClick={() => { setMessages([]); setQuestion(""); setAttachments([]); setError(""); }}><span>+</span> محادثة جديدة</button>
+          <div className="chat-sidebar-section"><small>المحادثة الحالية</small><div className="chat-sidebar-current">محادثة قانونية جديدة</div></div>
+          <div className="chat-sidebar-note"><strong>ملاحظة</strong><span>سجل المحادثات سيُربط لاحقًا بخدمة الـ Backend.</span></div>
+        </aside>
+        <section className="chat-main">
+          <div className="chat-messages" aria-live="polite">
+            {!messages.length ? <div className="chat-welcome"><div className="chat-welcome-mark">LX</div><h2>كيف أساعدك اليوم؟</h2><p>ارفع مستندًا أو اكتب سؤالك القانوني، وسأساعدك في فهم النصوص والمراجع.</p><div className="chat-suggestions"><button type="button" onClick={() => setQuestion("ما أهم الالتزامات في هذا العقد؟")}>ما أهم الالتزامات في هذا العقد؟</button><button type="button" onClick={() => setQuestion("ما البنود التي تحتاج مراجعة؟")}>ما البنود التي تحتاج مراجعة؟</button></div></div> : messages.map((message, index) => <ChatBubble key={`${message.role}-${index}`} message={message} />)}
+            {loading ? <div className="chat-typing"><span /><span /><span /> المساعد يراجع المستندات...</div> : null}
+          </div>
+          {error ? <div className="agent-error" role="alert"><strong>تعذر تنفيذ الطلب</strong><p>{error}</p></div> : null}
+          <form className="chat-composer chatgpt-composer" onSubmit={submitMessage}>
+            <div className="chat-composer-input-row">
+              <ChatAttachmentMenu fileInputRef={fileInputRef} imageInputRef={imageInputRef} cameraInputRef={cameraInputRef} open={menuOpen} setOpen={setMenuOpen} />
+              <textarea value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="اكتب رسالتك القانونية..." aria-label="رسالتك القانونية" rows="1" required />
+              <button className={`microphone-button${isListening ? " is-listening" : ""}`} type="button" aria-label="التحدث" title="التحدث" onClick={toggleMicrophone}>◉</button>
+              <button className="chat-send-button" type="submit" aria-label="إرسال" title="إرسال" disabled={loading || !question.trim()}>↑</button>
+            </div>
+            {attachments.length ? <div className="chat-attachment-preview">{attachments.map((item) => <span key={item.id}>{item.file.name}<button type="button" aria-label={`إزالة ${item.file.name}`} onClick={() => setAttachments((current) => current.filter((file) => file.id !== item.id))}>×</button></span>)}</div> : null}
+            <div className="chat-composer-meta"><small>{documents.length ? `${documents.length} مستند متاح` : "ارفع ملفًا للبدء"}</small><small>قد تحتاج الإجابات إلى مراجعة قانونية</small></div>
+            <input ref={fileInputRef} className="visually-hidden" type="file" multiple accept=".pdf,.docx,.txt,.md,.csv,.json,.png,.jpg,.jpeg" onChange={(event) => { addFiles(event.target.files, "file"); event.target.value = ""; }} />
+            <input ref={imageInputRef} className="visually-hidden" type="file" multiple accept=".png,.jpg,.jpeg,image/png,image/jpeg" onChange={(event) => { addFiles(event.target.files, "image"); event.target.value = ""; }} />
+            <input ref={cameraInputRef} className="visually-hidden" type="file" accept="image/jpeg,image/png" capture="environment" onChange={(event) => { addFiles(event.target.files, "camera"); event.target.value = ""; }} />
+          </form>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+function importanceForToken(token) {
+  const normalized = token.toLowerCase();
+  if (/\b(article|section|المادة|البند|القانون|عقد|contract|agreement|shall|يجب|يلتزم|يحظر|لا يجوز|تعويض|غرامة|termination|confidential)\b/i.test(normalized)) return "high";
+  if (/\b(may|must|unless|within|before|after|only|يجوز|خلال|قبل|بعد|فقط|شرط|مدة|تاريخ|مبلغ)\b/i.test(normalized)) return "medium";
+  return "low";
+}
+
+function HighlightedText({ text }) {
+  return <div className="highlighted-document-text">{text.split(/(\s+)/).map((part, index) => part.trim() ? <mark className={`importance-${importanceForToken(part)}`} key={`${part}-${index}`}>{part}</mark> : part)}</div>;
+}
+
+export function FileAnalysisWidget() {
+  const [file, setFile] = useState(null);
+  const [text, setText] = useState("");
+  const [status, setStatus] = useState("idle");
+  const [error, setError] = useState("");
+
+  async function analyzeFile(selectedFile) {
+    if (!selectedFile) return;
+    setFile(selectedFile);
+    setStatus("loading");
+    setError("");
+    setText("");
+    try {
+      const parser = await import("../utils/documentParser.js");
+      const result = await parser.parseDocumentFile(selectedFile);
+      setText(result.text || "");
+      setStatus(result.text ? "success" : "empty");
+    } catch (parseError) {
+      setStatus("error");
+      setError(parseError.message || "تعذر قراءة الملف داخل المتصفح.");
+    }
+  }
+
+  return (
+    <div className="file-analysis-shell">
+      <header className="analysis-page-header">
+        <div><p className="eyebrow">Document Intelligence</p><h1>تحليل الملفات</h1><p>حوّل المستند أو الصورة إلى نص قابل للقراءة، ثم راجع الكلمات المهمة بتدرج بصري واضح.</p></div>
+        <StatusPill state={status === "success" ? "ready" : status === "error" ? "error" : "idle"}>{status === "loading" ? "جاري القراءة" : status === "success" ? "تم استخراج النص" : "جاهز للبدء"}</StatusPill>
+      </header>
+      <div className="analysis-upload-zone">
+        <input id="analysis-file-input" className="visually-hidden" type="file" accept=".pdf,.docx,.txt,.md,.csv,.json,.png,.jpg,.jpeg,.webp" onChange={(event) => { void analyzeFile(event.target.files?.[0]); event.target.value = ""; }} />
+        <label htmlFor="analysis-file-input" className="analysis-dropzone"><span className="analysis-upload-icon">↑</span><strong>{file ? file.name : "ارفع ملفًا للتحليل"}</strong><span>PDF، DOCX، TXT، MD، CSV، JSON والصور</span><small>تتم القراءة محليًا داخل المتصفح في هذه المرحلة</small></label>
+        {file ? <button className="ghost-btn" type="button" onClick={() => { setFile(null); setText(""); setStatus("idle"); setError(""); }}>اختيار ملف آخر</button> : null}
+      </div>
+      <div className="analysis-legend"><span><i className="legend-dot high" />أهمية عالية</span><span><i className="legend-dot medium" />أهمية متوسطة</span><span><i className="legend-dot low" />نص عادي</span></div>
+      {status === "loading" ? <div className="analysis-state">جاري استخراج النص وتحليل الكلمات...</div> : null}
+      {status === "error" ? <div className="agent-error" role="alert"><strong>تعذر قراءة الملف</strong><p>{error}</p></div> : null}
+      {status === "empty" ? <div className="analysis-state">تمت قراءة الملف، لكن لم يتم العثور على نص قابل للعرض.</div> : null}
+      {status === "success" ? <section className="analysis-result"><div className="analysis-result-heading"><div><p className="eyebrow">Extracted Text</p><h2>النص المستخرج</h2></div><span>{text.split(/\s+/).filter(Boolean).length} كلمة</span></div><HighlightedText text={text} /></section> : null}
+    </div>
+  );
+}
+
 export function DocumentLibraryWidget() {
   const { documents, selectedIds } = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   const [loading, setLoading] = useState(true);
@@ -498,6 +736,25 @@ export function LegalAssistantWidget({ mode = "ai" }) {
   const isFullSearch = mode === "search";
   const attachmentIdsRef = useRef(new Set());
   const attachmentFilesRef = useRef(new Map());
+
+  useEffect(() => {
+    function closeAttachmentMenu(event) {
+      if (!event.target.closest(".attachment-menu-wrap")) {
+        setAttachmentMenuOpen(false);
+      }
+    }
+
+    function closeOnEscape(event) {
+      if (event.key === "Escape") setAttachmentMenuOpen(false);
+    }
+
+    document.addEventListener("click", closeAttachmentMenu);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("click", closeAttachmentMenu);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, []);
 
   async function refreshDocuments() {
     setDocumentsLoading(true);
@@ -770,7 +1027,7 @@ export function LegalAssistantWidget({ mode = "ai" }) {
       <div className="table-header">
         <div>
           <p className="eyebrow">AI Agent Workspace</p>
-          <h2>{isFullSearch ? "البحث القانوني بالمصادر" : "اسأل المساعد القانوني"}</h2>
+            <h2>{isFullSearch ? "البحث القانوني بالمصادر" : mode === "analysis" ? "تحليل الملفات" : "اسأل المساعد القانوني"}</h2>
           <p>
            ارفع مستندا ثم اكتب سؤالك بالعربية أو الإنجليزية.
            يتم رفع المستند وفهرسته أولا، ثم تُولّد الإجابة من
@@ -973,7 +1230,7 @@ export function LegalAssistantWidget({ mode = "ai" }) {
             )
           }
         >
-          {isFullSearch ? "تشغيل البحث بالمصادر" : "إرسال السؤال"}
+          {isFullSearch ? "تشغيل البحث بالمصادر" : mode === "analysis" ? "بدء تحليل الملف" : "إرسال السؤال"}
         </button>
       </form>
 

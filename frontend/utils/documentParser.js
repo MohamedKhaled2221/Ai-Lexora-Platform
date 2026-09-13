@@ -1,10 +1,11 @@
 import * as pdfjsLib from "pdfjs-dist";
 import mammoth from "mammoth/mammoth.browser";
+import { createWorker } from "tesseract.js";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.mjs", import.meta.url).toString();
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024;
-const supportedExtensions = new Set(["txt", "md", "csv", "json", "pdf", "doc", "docx"]);
+const supportedExtensions = new Set(["txt", "md", "csv", "json", "pdf", "doc", "docx", "png", "jpg", "jpeg", "webp"]);
 
 function getExtension(fileName) {
   return fileName.split(".").pop()?.toLowerCase() || "";
@@ -43,10 +44,21 @@ async function parseDocxFile(file) {
   return { text: normalizeText(result.value), pages: [] };
 }
 
+async function parseImageFile(file) {
+  const worker = await createWorker("eng+ara");
+  try {
+    const result = await worker.recognize(file);
+    return { text: normalizeText(result.data.text), pages: [] };
+  } finally {
+    await worker.terminate();
+  }
+}
+
 export function validateDocumentFile(file) {
   const extension = getExtension(file.name);
   const mimeIsAllowed = !file.type || [
     "text/plain", "text/markdown", "text/csv", "application/json", "application/pdf",
+    "image/png", "image/jpeg", "image/webp",
     "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   ].includes(file.type);
 
@@ -66,6 +78,7 @@ export async function parseDocumentFile(file) {
 
   if (extension === "pdf") parsed = await parsePdfFile(file);
   else if (extension === "docx") parsed = await parseDocxFile(file);
+  else if (["png", "jpg", "jpeg", "webp"].includes(extension)) parsed = await parseImageFile(file);
   else parsed = { text: parseStructuredText(await file.text(), extension), pages: [] };
 
   const text = normalizeText(parsed.text);

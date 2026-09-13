@@ -17,8 +17,11 @@
       <a href="dashboard.html">لوحة العمل</a>
       <a class="active" href="consultation.html">القضايا والبحث</a>
       <a href="contract-generation.html">انشاء العقود</a>
+      <a href="file-analysis.html">تحليل الملفات</a>
       <a href="legal-chat.html">المساعد القانوني</a>
-      <a href="auth.html">الدخول والصلاحيات</a>
+      <a class="auth-nav-link" href="auth.html" data-tooltip="تسجيل الدخول أو إنشاء حساب" aria-label="تسجيل الدخول أو إنشاء حساب">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><path d="m10 17 5-5-5-5M15 12H3" /></svg>
+      </a>
     </nav>
     <div class="nav-tools">
       <button class="theme-toggle" type="button" data-theme-toggle aria-label="تبديل الوضع الليلي" aria-pressed="false">
@@ -157,61 +160,10 @@
         </div>
       </div>
     </section>
-    <section class="consultation-ai-strip">
-      <form class="consultation-ai-composer" action="#" method="get">
-        <div class="consultation-ai-trigger-wrap">
-          <button class="consultation-ai-plus" type="button" aria-label="إضافة">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-          </button>
-          <div class="consultation-ai-menu" hidden>
-            <button type="button" data-ai-file-target="consultation-ai-file">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M14 3h-7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z" />
-                <path d="M14 3v5h5" />
-              </svg>
-              ملف
-            </button>
-            <button type="button" data-ai-file-target="consultation-ai-image">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <rect x="3" y="5" width="18" height="14" rx="2" />
-                <circle cx="9" cy="10" r="1.8" />
-                <path d="m21 15-5.2-5.2a1 1 0 0 0-1.4 0L7 17" />
-              </svg>
-              صورة
-            </button>
-            <button type="button" data-ai-file-target="consultation-ai-camera">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.6l1.1-2h6.6l1.1 2h1.6A2.5 2.5 0 0 1 21 8.5v8A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-8Z" />
-                <circle cx="12" cy="12.5" r="3.5" />
-              </svg>
-              كاميرا
-            </button>
-          </div>
-        </div>
-        <input class="consultation-ai-input" type="text" placeholder="Write a message..." aria-label="اكتب رسالة" />
-        <div class="consultation-ai-actions">
-          <button class="consultation-ai-icon" type="button" aria-label="الميكروفون">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 15a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Zm-6 0a6 6 0 0 0 12 0M12 18v3" />
-            </svg>
-          </button>
-          <button class="consultation-ai-icon consultation-ai-icon--send" type="submit" aria-label="إرسال">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M5 12.5 19 5l-3.5 14-3.2-5.4L5 12.5Z" />
-            </svg>
-          </button>
-        </div>
-        <input class="visually-hidden" id="consultation-ai-file" type="file" accept=".pdf,.docx,.txt,.png,.jpg,.jpeg" multiple>
-        <input class="visually-hidden" id="consultation-ai-image" type="file" accept=".png,.jpg,.jpeg,image/png,image/jpeg" multiple>
-        <input class="visually-hidden" id="consultation-ai-camera" type="file" accept="image/jpeg,image/png" capture="environment">
-      </form>
-    </section>
   </main>
 
   <footer class="footer">
-    <p>إدارة القضايا Frontend-ready، والربط الكامل يحتاج endpoints للحفظ والرفع لاحقا.</p>
+    <p>إدارة القضايا والبحث داخل الملفات في مساحة عمل واحدة.</p>
     <div>
       <a href="dashboard.html">Dashboard</a>
       <a href="auth.html">Settings</a>

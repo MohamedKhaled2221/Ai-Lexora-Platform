@@ -94,6 +94,75 @@ function setupNavbarMenu() {
   });
 }
 
+function setupAccountControls() {
+  document.querySelectorAll(".auth-nav-link").forEach((link) => {
+    if (link.closest(".account-menu-wrap")) return;
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "account-menu-wrap";
+    link.parentNode.insertBefore(wrapper, link);
+    wrapper.appendChild(link);
+
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "account-menu-trigger";
+    if (link.classList.contains("active")) trigger.classList.add("active");
+    trigger.setAttribute("aria-label", "فتح قائمة الحساب");
+    trigger.setAttribute("aria-expanded", "false");
+    trigger.title = "الحساب";
+    trigger.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.25" /><path d="M5.5 20a6.5 6.5 0 0 1 13 0" /></svg>';
+    link.replaceWith(trigger);
+
+    const menu = document.createElement("div");
+    menu.className = "account-menu";
+    menu.hidden = true;
+    menu.innerHTML = `
+      <a href="auth.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><path d="m10 17 5-5-5-5M15 12H3" /></svg><span>تسجيل الدخول</span></a>
+      <a href="auth.html#register"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4" /><path d="M3 21a6 6 0 0 1 12 0M19 8v6M16 11h6" /></svg><span>إنشاء حساب جديد</span></a>
+    `;
+    wrapper.appendChild(menu);
+
+    const closeMenu = () => {
+      menu.hidden = true;
+      trigger.setAttribute("aria-expanded", "false");
+      wrapper.classList.remove("is-open");
+    };
+
+    trigger.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const isOpen = !menu.hidden;
+      document.querySelectorAll(".account-menu").forEach((item) => { item.hidden = true; });
+      document.querySelectorAll(".account-menu-trigger").forEach((item) => { item.setAttribute("aria-expanded", "false"); });
+      menu.hidden = isOpen;
+      trigger.setAttribute("aria-expanded", String(!isOpen));
+      wrapper.classList.toggle("is-open", !isOpen);
+    });
+
+    menu.addEventListener("click", (event) => event.stopPropagation());
+    menu.querySelectorAll("a").forEach((item) => item.addEventListener("click", closeMenu));
+    trigger.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeMenu();
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        menu.hidden = false;
+        trigger.setAttribute("aria-expanded", "true");
+        menu.querySelector("a")?.focus();
+      }
+    });
+
+    wrapper.accountMenuClose = closeMenu;
+
+    const tools = wrapper.closest(".navbar")?.querySelector(".nav-tools");
+    const primaryAction = tools?.querySelector(".nav-action");
+    if (tools && primaryAction) tools.insertBefore(wrapper, primaryAction);
+  });
+
+  document.addEventListener("click", (event) => {
+    if (event.target.closest(".account-menu-wrap")) return;
+    document.querySelectorAll(".account-menu-wrap").forEach((wrapper) => wrapper.accountMenuClose?.());
+  });
+}
+
 function setupDashboardSidebarDrawer() {
   const layout = document.querySelector(".app-layout");
   const sidebar = document.querySelector(".sidebar");
@@ -203,6 +272,7 @@ function updateNavbarMode() {
 }
 
 setupNavbarMenu();
+setupAccountControls();
 setupConsultationAiComposer();
 setupDashboardSidebarDrawer();
 updateNavbarMode();
@@ -222,8 +292,15 @@ function setTheme(theme) {
   localStorage.setItem("lexora-theme", theme);
   themeToggles.forEach((toggle) => {
     const label = toggle.querySelector("[data-theme-label]");
+    const track = toggle.querySelector(".theme-toggle-track");
     if (label) label.textContent = theme === "dark" ? "الوضع الفاتح" : "الوضع الغامق";
     toggle.setAttribute("aria-pressed", theme === "dark" ? "true" : "false");
+    toggle.setAttribute("title", theme === "dark" ? "تفعيل الوضع الفاتح" : "تفعيل الوضع الغامق");
+    if (track) {
+      track.innerHTML = theme === "dark"
+        ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5 8.5 8.5 0 1 0 20.5 14.5Z" /></svg>'
+        : '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" /></svg>';
+    }
   });
 }
 
@@ -501,6 +578,7 @@ function setModalMode(mode, item = null, trigger = null) {
   });
   if (modal) {
     modal.hidden = false;
+    document.body.classList.add("modal-open");
     window.setTimeout(() => (isView ? modalFields.title : modalFields.id)?.focus(), 0);
   }
 }
@@ -512,6 +590,7 @@ function openCaseModal(mode, item = null, trigger = null) {
 function closeCaseModal() {
   if (!modal) return;
   modal.hidden = true;
+  document.body.classList.remove("modal-open");
   lastModalTrigger?.focus();
   lastModalTrigger = null;
 }
