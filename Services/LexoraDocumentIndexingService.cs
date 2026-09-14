@@ -35,13 +35,26 @@ public sealed class LexoraDocumentIndexingService
 
     private readonly HttpClient _httpClient;
     private readonly ILogger<LexoraDocumentIndexingService> _logger;
+    private readonly string _clientId;
+    private readonly string _confidentialityCeiling;
 
     public LexoraDocumentIndexingService(
         HttpClient httpClient,
-        ILogger<LexoraDocumentIndexingService> logger)
+        ILogger<LexoraDocumentIndexingService> logger,
+        IConfiguration configuration)
     {
         _httpClient = httpClient;
         _logger = logger;
+
+        _clientId =
+            configuration["AiService:ClientId"]?.Trim()
+            ?? throw new InvalidOperationException(
+                "AiService:ClientId is not configured.");
+
+        _confidentialityCeiling =
+            configuration["AiService:ConfidentialityCeiling"]?.Trim()
+            ?? throw new InvalidOperationException(
+                "AiService:ConfidentialityCeiling is not configured.");
     }
 
     public async Task<LexoraDocumentIngestionResponse> IndexAsync(
@@ -102,9 +115,22 @@ public sealed class LexoraDocumentIndexingService
 
         try
         {
-            response = await _httpClient.PostAsync(
-                requestPath,
-                form,
+            using var request = new HttpRequestMessage(
+                HttpMethod.Post,
+                requestPath);
+
+            request.Headers.Add(
+                "X-Client-Id",
+                _clientId);
+
+            request.Headers.Add(
+                "X-Confidentiality-Ceiling",
+                _confidentialityCeiling);
+
+            request.Content = form;
+
+            response = await _httpClient.SendAsync(
+                request,
                 cancellationToken);
         }
         catch (HttpRequestException exception)
@@ -140,11 +166,16 @@ public sealed class LexoraDocumentIndexingService
                 var upstreamStatus =
                     (int)response.StatusCode;
 
+                var responseBody =
+                    await response.Content.ReadAsStringAsync(
+                        cancellationToken);
+
                 _logger.LogWarning(
                     "AI document ingestion returned status {StatusCode} "
-                    + "for backend document {DocumentId}",
+                    + "for backend document {DocumentId}. Response: {ResponseBody}",
                     upstreamStatus,
-                    backendDocumentId);
+                    backendDocumentId,
+                    responseBody);
 
                 var downstreamStatus =
                     upstreamStatus is 400 or 413 or 415 or 422
@@ -152,7 +183,9 @@ public sealed class LexoraDocumentIndexingService
                         : StatusCodes.Status502BadGateway;
 
                 throw new AiDocumentIndexingException(
-                    "The AI service rejected or failed to index the document.",
+                    $"The AI service rejected or failed to index the document. " +
+                    $"Upstream status: {upstreamStatus}. " +
+                    $"Response: {responseBody}",
                     downstreamStatus);
             }
 

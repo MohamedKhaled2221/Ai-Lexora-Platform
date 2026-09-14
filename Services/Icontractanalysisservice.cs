@@ -51,4 +51,6 @@ public sealed record ContractAnalysisResult(
 public sealed record RiskyClauseResult(
     string ClauseText,
     string RiskType,
-    string Explanation);
+    string Explanation,
+    string? Severity = null,
+    string? SeverityColor = null);

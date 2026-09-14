@@ -145,6 +145,13 @@ public class RiskyClause
     public string ClauseText { get; set; } = string.Empty;
     public string RiskType { get; set; } = string.Empty; // Missing, Ambiguous, Unusual
     public string Explanation { get; set; } = string.Empty;
+
+    // Raw severity from the AI pipeline (e.g. "low"/"medium"/"high"/"critical")
+    // and the color it maps to (e.g. "green"/"yellow"/"red"/"dark_red"), kept
+    // separate from RiskType (which can be a localized display label) so
+    // clients can reliably color-code findings without parsing display text.
+    public string? Severity { get; set; }
+    public string? SeverityColor { get; set; }
 }
 
 public class RefreshToken

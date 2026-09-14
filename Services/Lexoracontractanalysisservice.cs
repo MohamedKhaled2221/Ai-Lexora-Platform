@@ -224,9 +224,21 @@ public sealed class LexoraContractAnalysisService : IContractAnalysisService
             .Select(r => new RiskyClauseResult(
                 ClauseText: r.Evidence,
                 RiskType: SeverityLabelsArabic.GetValueOrDefault(r.Severity.Trim().ToLowerInvariant(), r.Severity),
-                Explanation: r.Explanation))
+                Explanation: r.Explanation,
+                Severity: r.Severity.Trim().ToLowerInvariant(),
+                SeverityColor: r.SeverityColor ?? SeverityColorFallback.GetValueOrDefault(r.Severity.Trim().ToLowerInvariant(), "gray")))
             .ToList();
 
         return new ContractAnalysisResult(riskScore, summary, riskyClauses);
     }
+
+    // Mirrors src/schemas/m6_contract.py's severity_color mapping, used only
+    // as a safety net if an older M6 build doesn't send severity_color yet.
+    private static readonly Dictionary<string, string> SeverityColorFallback = new()
+    {
+        ["low"] = "green",
+        ["medium"] = "yellow",
+        ["high"] = "red",
+        ["critical"] = "dark_red"
+    };
 }

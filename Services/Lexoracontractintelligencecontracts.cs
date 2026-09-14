@@ -149,6 +149,13 @@ public sealed class M6ContractRisk
     [JsonPropertyName("severity")]
     public string Severity { get; set; } = string.Empty;
 
+    // Pydantic computed_field on M6's ContractRisk — already resolves severity
+    // to a display color (green/yellow/red/dark_red/gray). Previously not
+    // captured here, so it was silently dropped on deserialization and the
+    // .NET layer had to re-derive an (Arabic-only) label from Severity alone.
+    [JsonPropertyName("severity_color")]
+    public string? SeverityColor { get; set; }
+
     [JsonPropertyName("explanation")]
     public string Explanation { get; set; } = string.Empty;
 

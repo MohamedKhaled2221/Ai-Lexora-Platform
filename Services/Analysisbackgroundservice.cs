@@ -130,7 +130,9 @@ public sealed class AnalysisBackgroundService : BackgroundService
                 {
                     ClauseText = clause.ClauseText,
                     RiskType = clause.RiskType,
-                    Explanation = clause.Explanation
+                    Explanation = clause.Explanation,
+                    Severity = clause.Severity,
+                    SeverityColor = clause.SeverityColor
                 });
             }
 

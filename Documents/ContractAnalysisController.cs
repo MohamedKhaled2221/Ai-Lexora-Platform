@@ -92,7 +92,9 @@ public class ContractAnalysisController : ControllerBase
             {
                 ClauseText = clause.ClauseText.Trim(),
                 RiskType = clause.RiskType.Trim(),
-                Explanation = clause.Explanation.Trim()
+                Explanation = clause.Explanation.Trim(),
+                Severity = clause.Severity?.Trim(),
+                SeverityColor = clause.SeverityColor?.Trim()
             });
         }
 
@@ -191,5 +193,6 @@ public class ContractAnalysisController : ControllerBase
         analysis.CompletedAt,
         analysis.ErrorMessage,
         analysis.AnalyzedAt,
-        analysis.RiskyClauses.Select(c => new RiskyClauseResponse(c.Id, c.ClauseText, c.RiskType, c.Explanation)).ToList());
+        analysis.RiskyClauses.Select(c => new RiskyClauseResponse(
+            c.Id, c.ClauseText, c.RiskType, c.Explanation, c.Severity, c.SeverityColor)).ToList());
 }

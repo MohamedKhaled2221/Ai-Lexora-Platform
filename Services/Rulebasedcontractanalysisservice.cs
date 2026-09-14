@@ -42,7 +42,18 @@ public sealed class RuleBasedContractAnalysisService : IContractAnalysisService
         var summary = CreateSummary(findings);
 
         var riskyClauses = findings
-            .Select(f => new RiskyClauseResult(f.ClauseText, f.RiskType, f.Explanation))
+            .Select(f => new RiskyClauseResult(
+                f.ClauseText,
+                f.RiskType,
+                f.Explanation,
+                Severity: f.RiskType.ToLowerInvariant(),
+                SeverityColor: f.RiskType.ToLowerInvariant() switch
+                {
+                    "high" => "red",
+                    "medium" => "yellow",
+                    "low" => "green",
+                    _ => "gray"
+                }))
             .ToList();
 
         return Task.FromResult(new ContractAnalysisResult(riskScore, summary, riskyClauses));
