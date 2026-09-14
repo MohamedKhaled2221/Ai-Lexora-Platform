@@ -4,7 +4,7 @@ from datetime import date, datetime
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class KnowledgeRecordType(str, Enum):
@@ -44,7 +44,12 @@ class SourcePassage(BaseModel):
 class AccessMetadata(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    access_level: AccessLevel = AccessLevel.PUBLIC
+    # Secure by default
+    access_level: AccessLevel = AccessLevel.RESTRICTED
+
+    # Preserve the original ACL scope from upstream systems
+    acl_scope: str | None = None
+
     client_id: str | None = None
     matter_id: str | None = None
     allowed_roles: list[str] = Field(default_factory=list)
