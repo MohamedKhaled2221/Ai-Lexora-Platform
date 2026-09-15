@@ -15,14 +15,17 @@ from typing import Protocol
 
 import psutil
 from pydantic import (
+    AliasChoices,
     BaseModel,
     ConfigDict,
     Field,
+    model_validator,
 )
 
 from src.evaluation.metrics import (
     RetrievalEvaluator,
 )
+from src.schemas.access_control import AccessScope
 from src.schemas.m2_contract import (
     EmbeddedQuery,
     QueryFilters,
@@ -33,20 +36,41 @@ from src.schemas.m4_contract import (
 )
 
 
+class GroundTruthChunk(BaseModel):
+    """One correct chunk, identified by the full (document_id, chunk_id) pair."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    document_id: str = Field(..., min_length=1)
+    chunk_id: str = Field(..., min_length=1)
+
+
 class BenchmarkCase(BaseModel):
     """
     One reproducible RAG evaluation case.
+
+    Accepts both case-file schemas:
+
+    * v1 (``benchmark_cases.json``): ``question`` + ``ground_truth_chunk_ids``.
+      A bare chunk id is only unique *within* a document, so v1 matching is
+      ambiguous whenever that id exists in several documents.
+    * v2 (``benchmark_cases_v2.json``): ``query`` + ``ground_truth`` as
+      (document_id, chunk_id) pairs, plus authoring metadata. Matched on the
+      full pair. An explicit empty ``ground_truth`` marks a no-answer case.
     """
 
     model_config = ConfigDict(
-        extra="forbid"
+        extra="forbid",
+        populate_by_name=True,
     )
 
     case_id: str
     category: str
     language: str
 
-    question: str
+    question: str = Field(
+        validation_alias=AliasChoices("question", "query"),
+    )
 
     filters: QueryFilters = Field(
         default_factory=QueryFilters
@@ -58,7 +82,58 @@ class BenchmarkCase(BaseModel):
         )
     )
 
+    ground_truth: list[GroundTruthChunk] | None = None
+
     expect_supported: bool = True
+
+    # v2 authoring metadata. Carried, not used for scoring.
+    confidence: str | None = None
+    notes: str | None = None
+    multi_chunk: bool | None = None
+    known_rank: int | dict[str, int] | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _no_answer_cases_expect_abstention(cls, data):
+        if (
+            isinstance(data, dict)
+            and data.get("ground_truth") == []
+            and "expect_supported" not in data
+        ):
+            data = {**data, "expect_supported": False}
+        return data
+
+    @model_validator(mode="after")
+    def _one_ground_truth_schema(self) -> "BenchmarkCase":
+        if self.ground_truth and self.ground_truth_chunk_ids:
+            raise ValueError(
+                "Use either ground_truth (pairs) or ground_truth_chunk_ids, "
+                "not both."
+            )
+        return self
+
+    def ground_truth_keys(self) -> list[str]:
+        """Ground truth in the same key space as :func:`evidence_key`."""
+        if self.ground_truth:
+            return [
+                evidence_key(item.document_id, item.chunk_id, pair=True)
+                for item in self.ground_truth
+            ]
+        return list(self.ground_truth_chunk_ids)
+
+    @property
+    def matches_on_pair(self) -> bool:
+        return bool(self.ground_truth)
+
+
+def evidence_key(document_id: str, chunk_id: str, *, pair: bool) -> str:
+    """
+    Identity used for metric matching.
+
+    Pair mode joins document and chunk id, so ``chunk_017`` of one document
+    never counts as a hit for ``chunk_017`` of another.
+    """
+    return f"{document_id}::{chunk_id}" if pair else chunk_id
 
 
 @dataclass(frozen=True)
@@ -175,7 +250,16 @@ class RAGBenchmarkRunner:
         retrieval_pipeline: RetrievalPipelineProtocol,
         orchestration_service: M4ServiceProtocol,
         expected_embedding_dimension: int = 1024,
+        access_scope: AccessScope | None = None,
     ) -> None:
+        self.access_scope = access_scope
+        """Server-side scope stamped onto every case's filters.
+
+        Case files never carry an identity, and retrieval refuses to run
+        without one, so a live run needs this. When set it always overrides
+        whatever ``access`` a case supplied: access is never taken from data.
+        When None, cases run with their own filters (test fixtures)."""
+
         self.query_pipeline = (
             query_pipeline
         )
@@ -263,11 +347,8 @@ class RAGBenchmarkRunner:
                             embedded_query
                             .embedding
                         ),
-                        "filters": (
-                            case.filters
-                            .model_copy(
-                                deep=True
-                            )
+                        "filters": self._case_filters(
+                            case
                         ),
                     },
                     deep=True,
@@ -308,18 +389,32 @@ class RAGBenchmarkRunner:
                 )
             )
 
+            pair = case.matches_on_pair
+
             retrieved_chunk_ids = [
-                item.chunk_id
+                evidence_key(
+                    item.document_id,
+                    item.chunk_id,
+                    pair=pair,
+                )
                 for item
                 in retrieved_evidence
                 .retrieved_evidence
             ]
 
             cited_chunk_ids = [
-                citation.chunk_id
+                evidence_key(
+                    citation.document_id,
+                    citation.chunk_id,
+                    pair=pair,
+                )
                 for citation
                 in response.citations
             ]
+
+            ground_truth_keys = (
+                case.ground_truth_keys()
+            )
 
             retrieval_metrics = (
                 self._retrieval_metrics(
@@ -327,8 +422,7 @@ class RAGBenchmarkRunner:
                         retrieved_chunk_ids
                     ),
                     ground_truth_chunk_ids=(
-                        case
-                        .ground_truth_chunk_ids
+                        ground_truth_keys
                     ),
                     latency_ms=(
                         retrieval_ms
@@ -344,8 +438,7 @@ class RAGBenchmarkRunner:
                     cited_chunk_ids
                 ),
                 ground_truth_chunk_ids=(
-                    case
-                    .ground_truth_chunk_ids
+                    ground_truth_keys
                 ),
             )
 
@@ -593,6 +686,17 @@ class RAGBenchmarkRunner:
                     ]
                 ),
             )
+
+    def _case_filters(
+        self,
+        case: BenchmarkCase,
+    ) -> QueryFilters:
+        filters = case.filters.model_copy(deep=True)
+
+        if self.access_scope is not None:
+            filters.access = self.access_scope
+
+        return filters
 
     def _validate_embedding(
         self,

@@ -13,6 +13,7 @@ from src.evaluation import (
     load_benchmark_cases,
     write_benchmark_csv,
 )
+from src.schemas.access_control import AccessScope
 
 
 def parse_args():
@@ -61,6 +62,20 @@ def parse_args():
             "Base seed used to deterministically "
             "shuffle case order per repetition."
         ),
+    )
+
+    # Case files carry no identity and retrieval refuses to run without one.
+    # Same defaults as scripts/tune_rrf_weights.py, so both harnesses measure
+    # the same readable corpus.
+    parser.add_argument(
+        "--client-id",
+        default="firm_eval",
+    )
+
+    parser.add_argument(
+        "--max-confidentiality",
+        default="public",
+        choices=["public", "internal", "privileged"],
     )
 
     return parser.parse_args()
@@ -146,6 +161,13 @@ def main() -> None:
         expected_embedding_dimension=(
             runtime_settings
             .qdrant_vector_size
+        ),
+        access_scope=AccessScope(
+            client_id=args.client_id,
+            max_confidentiality=(
+                args.max_confidentiality
+            ),
+            include_shared_corpus=True,
         ),
     )
 
