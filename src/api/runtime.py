@@ -100,6 +100,20 @@ class RAGRuntimeSettings(BaseSettings):
     reranker_local_files_only: bool = True
     reranker_use_mock_fallback: bool = False
 
+    min_dense_score: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+    )
+    """RAG_MIN_DENSE_SCORE. Abstain when the top dense cosine is below this.
+    Off by default; see ``hybrid_search.MEASURED_MIN_DENSE_SCORE``."""
+
+    validity_status_filter: list[str] | None = None
+    """RAG_VALIDITY_STATUS_FILTER, e.g. ``["current"]``. Off by default."""
+
+    include_unversioned_points: bool = False
+    """RAG_INCLUDE_UNVERSIONED_POINTS. Only meaningful with the status filter."""
+
     @model_validator(mode="after")
     def validate_runtime(
         self,
@@ -213,6 +227,13 @@ def build_rag_service(
         ),
         keyword_backend=(
             settings.keyword_backend
+        ),
+        min_dense_score=settings.min_dense_score,
+        allowed_validity_statuses=(
+            settings.validity_status_filter
+        ),
+        include_unversioned_points=(
+            settings.include_unversioned_points
         ),
     )
 

@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import List, Dict, Any, Literal, Optional
+from typing import List, Dict, Any, Literal, Optional, Sequence
 from rank_bm25 import BM25Okapi
 
 from src.vector_store.qdrant_manager import (
@@ -72,6 +72,36 @@ numbers did not change when the retriever underneath them did is a reason to
 distrust them, not to trust them.
 """
 
+MEASURED_MIN_DENSE_SCORE = 0.515
+"""Candidate evidence-sufficiency gate on the **top dense cosine score**.
+**Not enabled by default** -- see ``HybridSearcher.min_dense_score``.
+
+Measured 2026-09-15 on ``benchmark_cases_v2.json`` (62 cases) against the live
+``legal_documents_v2`` collection (BGE-M3 dense, unscoped queries):
+
+    answerable cases (n=50)   top-1 dense cosine  min 0.521  median 0.649
+    no-answer cases  (n=12)   top-1 dense cosine  max 0.542  median 0.496
+
+    threshold   no-answer blocked   answerable wrongly blocked
+    0.510            8 / 12                 0 / 50
+    0.515            9 / 12                 0 / 50
+    0.530           10 / 12                 2 / 50
+    0.545           12 / 12                 4 / 50
+
+**The classes overlap, so this is a partial filter, not an abstention
+decision.** 0.515 is the highest value that wrongly blocks no answerable case,
+and it still lets 3 of 12 no-answer queries through (overtime hours 0.542,
+joint-stock shareholder rights 0.533, divorce grounds 0.528 -- all phrased in
+legal vocabulary close to material the corpus does hold). Those must still be
+caught downstream by M4's grounding and citation checks.
+
+With the first 5 negatives alone the classes separated perfectly; adding 7 more
+broke that. Expect the numbers to move again as cases are added, and
+re-measure whenever the embedding model or corpus changes. Two other signals
+were measured and rejected because they overlap far more: the top-1 sparse
+score and the dense top-1 minus top-5 gap.
+"""
+
 
 def tokenize_text(text: str) -> List[str]:
     """
@@ -106,10 +136,44 @@ class HybridSearcher:
         dense_weight: float = DEFAULT_DENSE_WEIGHT,
         keyword_weight: float = DEFAULT_KEYWORD_WEIGHT,
         identifier_weight: float = DEFAULT_IDENTIFIER_WEIGHT,
+        min_dense_score: Optional[float] = None,
+        allowed_validity_statuses: Optional[Sequence[str]] = None,
+        include_unversioned_points: bool = False,
     ):
         self.vector_store = vector_store
         self.rrf_k = rrf_k
         self.keyword_backend = keyword_backend
+
+        if min_dense_score is not None and not 0.0 <= min_dense_score <= 1.0:
+            raise ValueError("min_dense_score must be between 0.0 and 1.0")
+
+        self.min_dense_score = min_dense_score
+        """Abstain (return no candidates) when the best dense cosine score is
+        below this. ``None`` disables the gate, which is the default.
+
+        Returning nothing rather than weak candidates is deliberate: M4
+        already answers an empty ``RetrievedEvidence`` with a deterministic
+        insufficient-evidence response and no LLM call, so the gate needs no
+        contract change. See :data:`MEASURED_MIN_DENSE_SCORE` for the
+        measured value, its trade-off, and why it is a partial filter that
+        stays off by default."""
+
+        self.allowed_validity_statuses = (
+            list(allowed_validity_statuses)
+            if allowed_validity_statuses is not None
+            else None
+        )
+        """Restrict retrieval to these ``validity_status`` payload values
+        (M6's ``current`` / ``superseded`` / ``review_required``). ``None``
+        applies no status condition, which is today's behaviour: no point in
+        the live collection carries the field yet."""
+
+        self.include_unversioned_points = include_unversioned_points
+        """When the status filter is on, whether points with no
+        ``validity_status`` at all still match. Defaults to False (fail
+        closed). Every point indexed before M6 sync existed has no status, so
+        turning the filter on with this False hides the whole current corpus
+        -- that trade-off is a team decision, so it is an explicit switch."""
 
         # Fusion weights were previously reachable only as default arguments
         # on a private method, so nothing could vary them without editing the
@@ -160,6 +224,12 @@ class HybridSearcher:
                 extra_filters=(
                     query.filters.extra_filters
                 ),
+                validity_statuses=(
+                    self.allowed_validity_statuses
+                ),
+                include_unversioned_points=(
+                    self.include_unversioned_points
+                ),
             )
         )
 
@@ -169,6 +239,25 @@ class HybridSearcher:
             query_filter=qdrant_filter,
             top_k=candidate_top_k
         )
+
+        # 2b. Evidence-sufficiency gate. Runs before the keyword and
+        # identifier searches, so an abstained query costs one search.
+        if self.min_dense_score is not None:
+            top_dense = (
+                dense_results[0].get("score", 0.0)
+                if dense_results
+                else 0.0
+            )
+
+            if top_dense < self.min_dense_score:
+                logger.info(
+                    "retrieval_abstained query_id=%s top_dense_score=%.4f "
+                    "min_dense_score=%.4f",
+                    query.query_id,
+                    top_dense,
+                    self.min_dense_score,
+                )
+                return []
 
         # 3. Keyword search over the same access-filtered scope.
         keyword_results = self._keyword_search(

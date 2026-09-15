@@ -44,7 +44,9 @@ class BGEReranker:
     def __init__(
         self,
         model_name: str = "BAAI/bge-reranker-v2-m3",
-        use_mock_fallback: bool = True,
+        # Fail loud by default. Heuristic reranking is an explicit opt-in, so a
+        # caller that forgets the flag gets an error, not degraded scores.
+        use_mock_fallback: bool = False,
         local_files_only: bool = True,
     ):
         self.model_name = model_name
@@ -56,7 +58,9 @@ class BGEReranker:
 
     def _init_model(self) -> None:
         """
-        Attempt to load BGE CrossEncoder model, falling back gracefully if unavailable or offline.
+        Load the BGE CrossEncoder model. If it is unavailable, raise
+        RerankerUnavailable unless use_mock_fallback explicitly allows the
+        heuristic reranker.
         """
         if not self.model_name:
             # Previously this returned unconditionally, which quietly defeated

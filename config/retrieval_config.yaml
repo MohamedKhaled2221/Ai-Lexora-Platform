@@ -11,7 +11,7 @@ retrieval:
 
 reranker:
   model_name: "BAAI/bge-reranker-v2-m3"
-  use_mock_fallback: true
+  use_mock_fallback: false
 
 evaluation:
   metrics:

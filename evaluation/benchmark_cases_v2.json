@@ -10,21 +10,21 @@
     "needs_lawyer": "The chunk contains the right facts, but whether it is the legally CORRECT or COMPLETE answer requires a lawyer's sign-off."
   },
   "counts": {
-    "total": 41,
+    "total": 62,
     "by_category": {
-      "semantic": 11,
+      "semantic": 18,
+      "negative": 12,
+      "adversarial": 11,
       "identifier": 10,
-      "adversarial": 6,
-      "language_variation": 5,
-      "negative": 5,
+      "language_variation": 7,
       "identifier_date": 4
     },
     "by_confidence": {
-      "self_verified": 37,
+      "self_verified": 58,
       "needs_lawyer": 4
     },
-    "multi_chunk": 17,
-    "single_chunk": 24
+    "multi_chunk": 22,
+    "single_chunk": 40
   },
   "cases": [
     {
@@ -773,7 +773,329 @@
       "confidence": "self_verified",
       "filters": {},
       "notes": "Both chunks carry '24 May 2017' verbatim: chunk_020 is the promulgation clause ('Article Eight ... Issued at the Presidency of the Republic on 27 Shaban 1438 Hijria / Corresponding to 24 May 2017'), chunk_006 is the standalone heading line of the same phrase. Exercises the abbreviated/spelled-month form alongside a Hijri date the extractor correctly does not match - '27 Shaban 1438' is not picked up, which is right, because normalize_date has no Hijri calendar and inventing one would index a Gregorian key for a Hijri fact."
+    },
+    {
+      "case_id": "sem_assoc_min_members",
+      "category": "semantic",
+      "language": "en",
+      "query": "How many founding members are needed to form a civil association?",
+      "ground_truth": [
+        {
+          "document_id": "doc_b8294a1bd6da",
+          "chunk_id": "chunk_026"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Law 70/2017 Art.1 clause 2: an association is composed of Egyptian natural or legal persons 'whose number is not less than 10'. Regex for (10|ten) near members/founders/persons found no other chunk in this law stating the association minimum (constitution hits are about the House and the Elections Commission)."
+    },
+    {
+      "case_id": "sem_assoc_status_rectification",
+      "category": "semantic",
+      "language": "en",
+      "query": "How long do existing civil society entities have to bring themselves into line with the new associations law, and what happens if they do not?",
+      "ground_truth": [
+        {
+          "document_id": "doc_b8294a1bd6da",
+          "chunk_id": "chunk_014"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Law 70/2017 Article Two: entities 'shall rectify their status pursuant to this law within one year of its effectiveness; otherwise, the competent court shall order its dissolution.' Other 'within one year' hits (chunk_082 board elections, chunk_085 inactivity) answer different questions."
+    },
+    {
+      "case_id": "sem_assoc_exec_regulations_deadline",
+      "category": "semantic",
+      "language": "en",
+      "query": "What deadline does the Prime Minister have to issue the implementing regulations of the associations law?",
+      "ground_truth": [
+        {
+          "document_id": "doc_b8294a1bd6da",
+          "chunk_id": "chunk_018"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Law 70/2017 Article Six: 'The Prime Minister shall issue the Executive Regulations of the enclosed law within two months as of the date of its promulgation.' Only chunk stating this deadline."
+    },
+    {
+      "case_id": "sem_foundation_min_capital",
+      "category": "semantic",
+      "language": "en",
+      "query": "What is the minimum amount of money that must be allocated to set up a foundation?",
+      "ground_truth": [
+        {
+          "document_id": "doc_b8294a1bd6da",
+          "chunk_id": "chunk_028"
+        },
+        {
+          "document_id": "doc_b8294a1bd6da",
+          "chunk_id": "chunk_097"
+        }
+      ],
+      "multi_chunk": true,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Both chunks state the same minimum: chunk_028 (Art.1 clause 4 definition) 'an amount not less than fifty thousand pounds upon establishment'; chunk_097 (Art.54) 'shall not be less than fifty thousand pounds upon establishment'. chunk_131 also mentions fifty thousand pounds but as a criminal fine - a distractor, not ground truth."
+    },
+    {
+      "case_id": "sem_ip_agency_affiliation_seat",
+      "category": "semantic",
+      "language": "ar",
+      "query": "لمن يتبع الجهاز المصري للملكية الفكرية واين يقع مقره الرئيسي؟",
+      "ground_truth": [
+        {
+          "document_id": "doc_e88a137f4d25",
+          "chunk_id": "chunk_013"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Law 163/2023 accompanying law Art.2: the agency is a public authority 'وتتبع رئيس مجلس الوزراء، ويكون مقرها الرئيس مدينة القاهرة'. Only chunk matching 'مقرها الرئيس'."
+    },
+    {
+      "case_id": "sem_ip_board_meeting_frequency",
+      "category": "semantic",
+      "language": "ar",
+      "query": "كم مرة يجتمع مجلس ادارة الجهاز المصري للملكية الفكرية وما النصاب اللازم لصحة اجتماعه؟",
+      "ground_truth": [
+        {
+          "document_id": "doc_e88a137f4d25",
+          "chunk_id": "chunk_021"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Law 163/2023 accompanying law Art.7: the board meets 'مرة واحدة علي الاقل شهريا' and a meeting is valid only with a majority of members including the agency head or deputy. Only chunk matching 'مرة واحدة علي الاقل'."
+    },
+    {
+      "case_id": "sem_ip_transition_period",
+      "category": "semantic",
+      "language": "ar",
+      "query": "خلال اي مدة يجب ان يبدا الجهاز المصري للملكية الفكرية مباشرة اختصاصاته، وهل يجوز مد هذه المدة؟",
+      "ground_truth": [
+        {
+          "document_id": "doc_e88a137f4d25",
+          "chunk_id": "chunk_007"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Law 163/2023 issuing law Article 3: the agency exercises its powers 'في موعد اقصاه عام من تاريخ العمل بهذا القانون' and the period may be extended six months once by Prime Ministerial decree. Only chunk matching 'موعد اقصاه عام'."
+    },
+    {
+      "case_id": "adv_repealed_law_vs_transitional_boards",
+      "category": "adversarial",
+      "language": "en",
+      "query": "Which earlier law is repealed by the 2017 associations law?",
+      "ground_truth": [
+        {
+          "document_id": "doc_b8294a1bd6da",
+          "chunk_id": "chunk_019"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Article Seven: 'The law of civil associations and foundations No. 84 of 2002 is hereby abolished'. Distractors that also cite Law 84/2002 but do not repeal it: chunk_017 (existing boards continue operating) and chunk_121 (fund transfer)."
+    },
+    {
+      "case_id": "adv_specialized_vs_regional_federation",
+      "category": "adversarial",
+      "language": "en",
+      "query": "What is the minimum number of members required for a specialized federation?",
+      "ground_truth": [
+        {
+          "document_id": "doc_b8294a1bd6da",
+          "chunk_id": "chunk_033"
+        },
+        {
+          "document_id": "doc_b8294a1bd6da",
+          "chunk_id": "chunk_127"
+        }
+      ],
+      "multi_chunk": true,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "chunk_033 (definition): 'established by at least fifteen members'; chunk_127 (Art.84): 'formed of no less than fifteen Egyptian associations or national foundations'. Distractor: chunk_032, the regional federation definition (no less than ten), which is structurally identical."
+    },
+    {
+      "case_id": "adv_regional_vs_specialized_federation",
+      "category": "adversarial",
+      "language": "en",
+      "query": "How many associations or foundations are needed to establish a regional federation?",
+      "ground_truth": [
+        {
+          "document_id": "doc_b8294a1bd6da",
+          "chunk_id": "chunk_032"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "chunk_032 (definition): 'established by no less than ten civil associations or foundations, or both, located in one province'. Art.82 (chunk_125) governs regional federations but states no number. Distractors: chunk_033/chunk_127 (specialized federation, fifteen)."
+    },
+    {
+      "case_id": "adv_ip_annual_report_vs_constitution",
+      "category": "adversarial",
+      "language": "en",
+      "query": "To whom does the Egyptian Intellectual Property Agency submit its annual report?",
+      "ground_truth": [
+        {
+          "document_id": "doc_e88a137f4d25",
+          "chunk_id": "chunk_026"
+        }
+      ],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Cross-language: English query, Arabic-only law. Art.11: the agency prepares an annual report 'ويقدم هذا التقرير الي كل من رئيس الجمهورية ومجلس الوزراء'. Distractor: doc_6450dfd093f8 chunk_301 (constitution: independent bodies present annual reports to the President and the House), which is about regulatory bodies in general, not this agency."
+    },
+    {
+      "case_id": "adv_general_federation_seat",
+      "category": "adversarial",
+      "language": "en",
+      "query": "Where is the headquarters of the General Federation of associations located?",
+      "ground_truth": [
+        {
+          "document_id": "doc_b8294a1bd6da",
+          "chunk_id": "chunk_034"
+        },
+        {
+          "document_id": "doc_b8294a1bd6da",
+          "chunk_id": "chunk_128"
+        }
+      ],
+      "multi_chunk": true,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "chunk_034 (definition): 'The federation shall be located in the city of Cairo'; chunk_128 (Art.85): 'The headquarters of this Federation shall be in the city of Cairo'. Distractors that also name Cairo: doc_641a63c3a69e chunk_186 (Cairo is the capital) and doc_e88a137f4d25 chunk_013 (IP agency seat)."
+    },
+    {
+      "case_id": "lang_ar_foundation_capital",
+      "category": "language_variation",
+      "language": "ar",
+      "query": "ما هو الحد الادني للمبلغ المخصص لانشاء مؤسسة اهلية؟",
+      "ground_truth": [
+        {
+          "document_id": "doc_b8294a1bd6da",
+          "chunk_id": "chunk_028"
+        },
+        {
+          "document_id": "doc_b8294a1bd6da",
+          "chunk_id": "chunk_097"
+        }
+      ],
+      "multi_chunk": true,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Arabic phrasing of sem_foundation_min_capital against an English-only law. Same ground truth and same verification (fifty thousand pounds in both chunks)."
+    },
+    {
+      "case_id": "lang_mixed_foundation_capital",
+      "category": "language_variation",
+      "language": "ar-en",
+      "query": "ما هو minimum capital المطلوب لانشاء foundation اهلية؟",
+      "ground_truth": [
+        {
+          "document_id": "doc_b8294a1bd6da",
+          "chunk_id": "chunk_028"
+        },
+        {
+          "document_id": "doc_b8294a1bd6da",
+          "chunk_id": "chunk_097"
+        }
+      ],
+      "multi_chunk": true,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "Mixed Arabic/English phrasing of sem_foundation_min_capital. Same ground truth."
+    },
+    {
+      "case_id": "neg_medical_malpractice_limitation",
+      "category": "negative",
+      "language": "en",
+      "query": "What is the limitation period for suing a doctor for medical malpractice?",
+      "ground_truth": [],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "No-answer case added 2026-09-15. Absence verified by regex over all 1,945 chunk texts for the topic's key terms in English and Arabic (malpractice, medical negligence, limitation period, التقادم): 0 hits for malpractice/negligence; التقادم hits are constitutional crimes that have no statute of limitation (torture, attacks on freedoms), unrelated to civil malpractice. Arabic text in doc_22afd9d663b8 and doc_0422a112599d has spacing/word-order extraction defects, so the English counterpart (doc_6450dfd093f8) was checked too."
+    },
+    {
+      "case_id": "neg_professional_driving_licence",
+      "category": "negative",
+      "language": "ar",
+      "query": "ما هي الشروط المطلوبة لاستخراج رخصة قيادة مهنية؟",
+      "ground_truth": [],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "No-answer case added 2026-09-15. Absence verified by regex over all 1,945 chunk texts for the topic's key terms in English and Arabic (رخصة قيادة, رخص القيادة, driving licence, licence near driv): 0 hits. Arabic text in doc_22afd9d663b8 and doc_0422a112599d has spacing/word-order extraction defects, so the English counterpart (doc_6450dfd093f8) was checked too."
+    },
+    {
+      "case_id": "neg_overtime_hours",
+      "category": "negative",
+      "language": "en",
+      "query": "How many overtime hours may an employee be required to work each week?",
+      "ground_truth": [],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "No-answer case added 2026-09-15. Absence verified by regex over all 1,945 chunk texts for the topic's key terms in English and Arabic (overtime, working hours, ساعات العمل): 0 hits. Arabic text in doc_22afd9d663b8 and doc_0422a112599d has spacing/word-order extraction defects, so the English counterpart (doc_6450dfd093f8) was checked too."
+    },
+    {
+      "case_id": "neg_apartment_sale_registration",
+      "category": "negative",
+      "language": "ar",
+      "query": "كيف يتم تسجيل عقد بيع شقة سكنية في الشهر العقاري؟",
+      "ground_truth": [],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "No-answer case added 2026-09-15. Absence verified by regex over all 1,945 chunk texts for the topic's key terms in English and Arabic (الشهر العقاري, real estate registration, land registry, register near deed/property): 0 hits; 'تسجيل' matches only patent/trademark registration in doc_7983400b1672 - a deliberate hard negative. Arabic text in doc_22afd9d663b8 and doc_0422a112599d has spacing/word-order extraction defects, so the English counterpart (doc_6450dfd093f8) was checked too."
+    },
+    {
+      "case_id": "neg_joint_stock_shareholder_rights",
+      "category": "negative",
+      "language": "en",
+      "query": "What voting rights do shareholders have at the general assembly of a joint-stock company?",
+      "ground_truth": [],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "No-answer case added 2026-09-15. Absence verified by regex over all 1,945 chunk texts for the topic's key terms in English and Arabic (shareholder, المساهمين, joint-stock): 0 hits; 'general assembly' appears only for associations (doc_b8294a1bd6da) and the Supreme Constitutional Court - a deliberate hard negative. Arabic text in doc_22afd9d663b8 and doc_0422a112599d has spacing/word-order extraction defects, so the English counterpart (doc_6450dfd093f8) was checked too."
+    },
+    {
+      "case_id": "neg_divorce_grounds",
+      "category": "negative",
+      "language": "ar",
+      "query": "ما هي الاسباب التي تجيز للزوجة طلب الطلاق؟",
+      "ground_truth": [],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "No-answer case added 2026-09-15. Absence verified by regex over all 1,945 chunk texts for the topic's key terms in English and Arabic (الطلاق, divorce): 0 hits. Arabic text in doc_22afd9d663b8 and doc_0422a112599d has spacing/word-order extraction defects, so the English counterpart (doc_6450dfd093f8) was checked too."
+    },
+    {
+      "case_id": "neg_paid_sick_leave",
+      "category": "negative",
+      "language": "en",
+      "query": "How many days of paid sick leave is an employee entitled to per year?",
+      "ground_truth": [],
+      "multi_chunk": false,
+      "confidence": "self_verified",
+      "filters": {},
+      "notes": "No-answer case added 2026-09-15. Absence verified by regex over all 1,945 chunk texts for the topic's key terms in English and Arabic (sick leave, مرضية, illness): 0 hits. Arabic text in doc_22afd9d663b8 and doc_0422a112599d has spacing/word-order extraction defects, so the English counterpart (doc_6450dfd093f8) was checked too."
     }
   ],
-  "identifier_date_note": "The identifier_date cases were added when ProcessedQuery.identifiers.dates was first wired into retrieval. Ground truth is every chunk carrying the queried date, established by running M2's own extractor over all 1,945 chunks - not by keyword search of the query string. No monetary case exists: QueryProcessor.MONEY_RE matches ASCII ',' only, while the real amounts in this corpus use U+066C ARABIC THOUSANDS SEPARATOR, so every genuine amount extracts truncated. See docs/KNOWN_ISSUES.md ISSUE-3. Authoring a monetary case now would mean asserting behaviour that is wrong upstream."
+  "identifier_date_note": "The identifier_date cases were added when ProcessedQuery.identifiers.dates was first wired into retrieval. Ground truth is every chunk carrying the queried date, established by running M2's own extractor over all 1,945 chunks - not by keyword search of the query string. No monetary case exists: QueryProcessor.MONEY_RE matches ASCII ',' only, while the real amounts in this corpus use U+066C ARABIC THOUSANDS SEPARATOR, so every genuine amount extracts truncated. See docs/KNOWN_ISSUES.md ISSUE-3. Authoring a monetary case now would mean asserting behaviour that is wrong upstream.",
+  "cases_added_2026_09_15_note": "21 cases added: 7 semantic, 5 adversarial, 2 language_variation, 7 negative. They cover two documents that had no cases (Law 70/2017 on Associations, doc_b8294a1bd6da; Law 163/2023 establishing the Egyptian IP Agency, doc_e88a137f4d25). Every positive ground truth was established by regex over all 1,945 chunk texts, so every chunk stating the fact is included, and named distractors are recorded in notes. Negatives were added mainly to calibrate the minimum dense-score gate (5 was too few). All are factual/structural, so none needs legal sign-off."
 }
