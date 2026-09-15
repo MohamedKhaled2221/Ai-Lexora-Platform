@@ -79,6 +79,8 @@ class IndexSyncResult:
     points_written: int = 0
     points_deleted: int = 0
     indexed_version: Optional[int] = None
+    embedding_model: Optional[str] = None
+    embedding_dimension: Optional[int] = None
 
 
 class IndexSyncService:
@@ -225,6 +227,8 @@ class IndexSyncService:
             points_written=len(points),
             points_deleted=len(obsolete),
             indexed_version=indexed_version,
+            embedding_model=embedded[0].model,
+            embedding_dimension=embedded[0].dimension,
         )
 
     @staticmethod
@@ -259,6 +263,15 @@ class IndexSyncService:
             **acl,
         )
 
+        # SourcePassage has no section/clause fields. M6 ingestion keeps them
+        # in normalized_data["passage_metadata"], keyed by passage_id; they
+        # matter here because identifier extraction reads the article heading.
+        structure = {
+            str(item.get("passage_id")): item
+            for item in data.get("passage_metadata") or []
+            if isinstance(item, dict) and item.get("passage_id")
+        }
+
         chunks: list[DocumentChunk] = []
         for index, passage in enumerate(record.source_passages, start=1):
             if passage.page is None:
@@ -268,11 +281,15 @@ class IndexSyncService:
                     f"Record {record.record_id} passage {index} has no page; "
                     "refusing to index it with a fabricated citation page."
                 )
+            chunk_id = passage.chunk_id or f"passage_{index:03d}"
+            extra = structure.get(chunk_id, {})
             chunks.append(
                 DocumentChunk(
-                    chunk_id=passage.chunk_id or f"passage_{index:03d}",
+                    chunk_id=chunk_id,
                     text=passage.passage,
                     page=passage.page,
+                    section=extra.get("section"),
+                    clause=extra.get("clause"),
                     **common,
                 )
             )

@@ -12,6 +12,8 @@ from pydantic import (
 from src.schemas import DocumentChunk
 from src.schemas.access_control import ChunkACL
 
+from .index_sync import IndexSyncError
+from .knowledge_sync import KnowledgeSyncService
 from .m1_client import M1Client
 from .service import (
     DocumentIndexingError,
@@ -83,6 +85,10 @@ class DocumentIngestionResult(BaseModel):
 
     status: Literal["indexed"] = "indexed"
 
+    knowledge_record_id: str | None = None
+    """Set when the document was stored as an M6 knowledge record and
+    indexed through index sync; None when it was indexed directly."""
+
 
 class DocumentIngestionService:
     """
@@ -94,6 +100,11 @@ class DocumentIngestionService:
             -> M2 embedding
             -> Qdrant indexing
 
+    When ``knowledge_sync`` is configured, documents M6 can represent (laws,
+    court rulings) take a different last step: M6 canonical record in
+    PostgreSQL -> IndexUpdate -> index sync -> Qdrant. They are never also
+    indexed directly, so no document is indexed twice.
+
     Search/RAG remains a separate M2 -> M3 -> M4 flow.
     """
 
@@ -102,9 +113,11 @@ class DocumentIngestionService:
         *,
         m1_client: M1Client,
         indexing_service: DocumentIndexingService,
+        knowledge_sync: KnowledgeSyncService | None = None,
     ) -> None:
         self.m1_client = m1_client
         self.indexing_service = indexing_service
+        self.knowledge_sync = knowledge_sync
 
     @staticmethod
     def _stamp(
@@ -170,6 +183,18 @@ class DocumentIngestionService:
             acl,
         )
 
+        if (
+            self.knowledge_sync is not None
+            and stamped_chunks
+            and self.knowledge_sync.supports(
+                stamped_chunks[0].document_type
+            )
+        ):
+            return await self._ingest_via_knowledge_sync(
+                m1_result,
+                stamped_chunks,
+            )
+
         try:
             indexing_result = await asyncio.to_thread(
                 self.indexing_service.index_document,
@@ -212,6 +237,47 @@ class DocumentIngestionService:
             embedding_dimension=(
                 indexing_result.embedding_dimension
             ),
+        )
+
+    async def _ingest_via_knowledge_sync(
+        self,
+        m1_result,
+        stamped_chunks: list[DocumentChunk],
+    ) -> DocumentIngestionResult:
+        try:
+            sync_result = await asyncio.to_thread(
+                self.knowledge_sync.sync_document,
+                stamped_chunks,
+                title=m1_result.source_file,
+            )
+
+        except IndexSyncError as exc:
+            raise DocumentIndexingError(str(exc)) from exc
+
+        except Exception as exc:
+            raise DocumentIndexingRuntimeError(
+                "The knowledge-base sync runtime failed."
+            ) from exc
+
+        if sync_result.outcome != "applied" or not sync_result.points_written:
+            # A fresh upsert always bumps the version, so a skip here means
+            # something other than this request already moved the record on.
+            raise DocumentIndexingError(
+                "Knowledge-base sync did not index this document "
+                f"(outcome={sync_result.outcome})."
+            )
+
+        return DocumentIngestionResult(
+            document_id=m1_result.document_id,
+            source_file=m1_result.source_file,
+            file_type=m1_result.file_type,
+            document_type=m1_result.document_type,
+            language=m1_result.language,
+            pages=m1_result.n_pages,
+            chunks_indexed=sync_result.points_written,
+            embedding_model=sync_result.embedding_model,
+            embedding_dimension=sync_result.embedding_dimension,
+            knowledge_record_id=sync_result.record_id,
         )
 
     async def aclose(self) -> None:
