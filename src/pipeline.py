@@ -41,7 +41,7 @@ class M3RetrievalPipeline:
         candidate_top_k: int = 20,
         final_top_k: int = 5,
         reranker_model_name: str = "BAAI/bge-reranker-v2-m3",
-        use_mock_fallback: bool = True,
+        use_mock_fallback: bool = False,
         reranker_local_files_only: bool = True,
         keyword_backend: KeywordBackend = "sparse",
     ):
