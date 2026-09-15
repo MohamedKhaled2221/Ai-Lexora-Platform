@@ -47,6 +47,11 @@ EXPECTED_INDEXED_FIELDS = {
     "date_ref",
     "money_no",
     "money_ref",
+    # M6 knowledge-record lifecycle, written by index sync: record_id scopes a
+    # record's points for delete/re-sync, validity_status feeds the optional
+    # status filter.
+    "record_id",
+    "validity_status",
 }
 
 

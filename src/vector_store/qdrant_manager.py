@@ -127,6 +127,17 @@ ACL_PAYLOAD_FIELDS = (
 """Access-control payload keys, indexed as KEYWORD so every ACL condition is a
 flat exact match."""
 
+LIFECYCLE_PAYLOAD_FIELDS = (
+    "record_id",
+    "validity_status",
+)
+"""M6 knowledge-record keys written by :mod:`src.indexing.index_sync`.
+
+``record_id`` addresses every point belonging to one canonical record, so a
+delete or re-sync is one filtered operation. ``validity_status`` carries M6's
+``current`` / ``superseded`` / ``review_required``. Points indexed by the
+document pipeline have neither key."""
+
 IDENTIFIER_PAYLOAD_FIELDS = (
     "article_no",
     "article_ref",
@@ -289,6 +300,7 @@ class QdrantVectorStore:
             "document_id",
             *ACL_PAYLOAD_FIELDS,
             *IDENTIFIER_PAYLOAD_FIELDS,
+            *LIFECYCLE_PAYLOAD_FIELDS,
         ]
         for field in payload_fields:
             try:
@@ -337,6 +349,84 @@ class QdrantVectorStore:
 
         logger.info(f"Successfully upserted {total} points into '{self.collection_name}'.")
 
+    @staticmethod
+    def _record_filter(record_id: str) -> Filter:
+        if not record_id or not str(record_id).strip():
+            # A blank key would make the delete below match nothing at best;
+            # refuse rather than guess what the caller meant.
+            raise ValueError("record_id must not be empty")
+
+        return Filter(
+            must=[
+                FieldCondition(
+                    key="record_id",
+                    match=MatchValue(value=str(record_id)),
+                )
+            ]
+        )
+
+    def delete_record_points(self, record_id: str) -> None:
+        """
+        Delete every point belonging to one M6 knowledge record.
+
+        Scoped by ``record_id`` only, never by a caller-built filter, so this
+        cannot be turned into a bulk delete. Idempotent: deleting a record
+        with no points is a no-op.
+        """
+        self.client.delete(
+            collection_name=self.collection_name,
+            points_selector=qmodels.FilterSelector(
+                filter=self._record_filter(record_id)
+            ),
+            wait=True,
+        )
+
+    def list_record_point_ids(self, record_id: str) -> List[str]:
+        """Ids of every point belonging to one M6 knowledge record."""
+        ids: List[str] = []
+        offset = None
+        while True:
+            points, offset = self.client.scroll(
+                collection_name=self.collection_name,
+                scroll_filter=self._record_filter(record_id),
+                limit=256,
+                offset=offset,
+                with_payload=False,
+                with_vectors=False,
+            )
+            ids.extend(str(point.id) for point in points)
+            if offset is None:
+                return ids
+
+    def delete_point_ids(self, point_ids: List[str]) -> None:
+        """Delete specific points by id. Used to drop obsolete record passages."""
+        if not point_ids:
+            return
+        self.client.delete(
+            collection_name=self.collection_name,
+            points_selector=qmodels.PointIdsList(points=list(point_ids)),
+            wait=True,
+        )
+
+    def get_record_version(self, record_id: str) -> Optional[int]:
+        """
+        Return the ``record_version`` currently indexed for a record, or None
+        when the record has no points. Used to ignore stale sync events.
+        """
+        points, _ = self.client.scroll(
+            collection_name=self.collection_name,
+            scroll_filter=self._record_filter(record_id),
+            limit=1,
+            with_payload=["record_version"],
+            with_vectors=False,
+        )
+
+        if not points:
+            return None
+
+        version = (points[0].payload or {}).get("record_version")
+        return int(version) if version is not None else None
+
     def build_qdrant_filter(
         self,
         access: AccessScope,
@@ -349,6 +439,8 @@ class QdrantVectorStore:
         extra_filters: Optional[
             Dict[str, Any]
         ] = None,
+        validity_statuses: Optional[List[str]] = None,
+        include_unversioned_points: bool = False,
     ) -> Filter:
         """
         Build the Qdrant filter for one query.
@@ -460,6 +552,38 @@ class QdrantVectorStore:
                     must_conditions.append(
                         FieldCondition(key=k, match=MatchValue(value=str(v)))
                     )
+
+        if validity_statuses is not None:
+            if not validity_statuses:
+                # An empty allow-list would match nothing. That is almost
+                # certainly a misconfiguration, not a request for no results.
+                raise ValueError(
+                    "validity_statuses must be None (no status filter) or a "
+                    "non-empty list of allowed statuses."
+                )
+
+            status_condition = FieldCondition(
+                key="validity_status",
+                match=MatchAny(any=list(validity_statuses)),
+            )
+
+            if include_unversioned_points:
+                # Nested OR inside the top-level AND: still narrows the access
+                # scope, never widens it.
+                must_conditions.append(
+                    Filter(
+                        should=[
+                            status_condition,
+                            qmodels.IsEmptyCondition(
+                                is_empty=qmodels.PayloadField(
+                                    key="validity_status"
+                                )
+                            ),
+                        ]
+                    )
+                )
+            else:
+                must_conditions.append(status_condition)
 
         # Always a real Filter: must_conditions can never be empty, because
         # the access conditions are unconditional.
