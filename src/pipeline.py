@@ -157,6 +157,41 @@ class M3RetrievalPipeline:
 
         return output_evidence, latency_ms
 
+    def search_candidates(
+        self,
+        query: ProcessedQuery,
+        candidate_top_k: Optional[int] = None,
+    ) -> Tuple[list, float]:
+        """
+        Ranked candidate chunks for a search listing, not for an answer.
+
+        Same hybrid search, reranker and post-retrieval scope check as
+        :meth:`run`, but keeps the whole candidate window instead of cutting
+        to ``final_top_k``: a result list needs more than the handful of
+        chunks an LLM prompt uses. Returns (chunks, latency_ms).
+        """
+        start_time = time.perf_counter()
+        window = candidate_top_k or self.candidate_top_k
+
+        candidates = self.hybrid_searcher.search(
+            query=query,
+            candidate_top_k=window,
+        )
+
+        ranked = self.reranker.rerank(
+            query_text=query.normalized_text or query.text_original,
+            candidates=candidates,
+            top_k=window,
+        )
+
+        self._assert_within_scope(
+            access=query.filters.access,
+            candidates=ranked,
+            query_id=query.query_id,
+        )
+
+        return ranked, (time.perf_counter() - start_time) * 1000.0
+
     def retrieval_config(self) -> Dict[str, Any]:
         """The settings that determine a ranking, for logs and benchmarks."""
         # getattr throughout: tests swap in searcher/reranker doubles, and a

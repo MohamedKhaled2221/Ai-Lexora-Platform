@@ -60,6 +60,67 @@ class RawRAGAnswerRequest(BaseModel):
     )
 
 
+class RAGSearchRequest(BaseModel):
+    """
+    Request for ranked document search (M2 -> M3, no LLM).
+
+    Same ``filters`` shape as ``/ask``, so a caller that already scopes
+    ``/ask`` to a user's ``document_ids`` can send the same filters here.
+    """
+
+    model_config = ConfigDict(
+        extra="forbid"
+    )
+
+    query: Annotated[
+        str,
+        StringConstraints(
+            strip_whitespace=True,
+            min_length=1,
+            max_length=4000,
+        ),
+    ]
+
+    filters: QueryFilters = Field(
+        default_factory=QueryFilters
+    )
+
+    page: int = Field(default=1, ge=1)
+
+    page_size: int = Field(default=10, ge=1, le=50)
+
+
+class RAGSearchHit(BaseModel):
+    """One document in the results, represented by its best-matching chunk."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    document_id: str
+    score: float
+    snippet: str
+    chunk_id: str
+    page: int | None = None
+    section: str | None = None
+    matched_chunks: int = Field(..., ge=1)
+
+
+class RAGSearchResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    query_id: str
+    hits: List[RAGSearchHit]
+    total: int = Field(
+        ...,
+        ge=0,
+        description=(
+            "Documents found within the ranked candidate window "
+            "(at most 100 chunks), not every document in the corpus."
+        ),
+    )
+    page: int
+    page_size: int
+
+
 class RAGAnswerRequest(BaseModel):
     """
     Request contract for M3 -> M4 RAG generation.
