@@ -15,15 +15,18 @@ public sealed class LexoraDocumentQuestionService
     private readonly HttpClient _httpClient;
     private readonly IDocumentRepository _documents;
     private readonly ILogger<LexoraDocumentQuestionService> _logger;
+    private readonly IConfiguration _configuration;
 
     public LexoraDocumentQuestionService(
         HttpClient httpClient,
         IDocumentRepository documents,
-        ILogger<LexoraDocumentQuestionService> logger)
+        ILogger<LexoraDocumentQuestionService> logger,
+        IConfiguration configuration)
     {
         _httpClient = httpClient;
         _documents = documents;
         _logger = logger;
+        _configuration = configuration;
     }
 
     public async Task<DocumentQuestionResult> AskAsync(
@@ -46,7 +49,7 @@ public sealed class LexoraDocumentQuestionService
                 $"Question must be {MaxQuestionLength} characters or fewer.",
                 nameof(question));
         }
-        
+
         var ownedDocuments =
             await _documents.GetAllOwnedAsync(
                 userId,
@@ -75,15 +78,38 @@ public sealed class LexoraDocumentQuestionService
 
         try
         {
-            response = await _httpClient.PostAsJsonAsync(
-                "/api/v1/rag/ask",
+            using var httpRequest = new HttpRequestMessage(
+                HttpMethod.Post,
+                "/api/v1/rag/ask");
+
+            var clientId =
+                _configuration["AiService:ClientId"]
+                ?? "client_test";
+
+            var confidentialityCeiling =
+                _configuration["AiService:ConfidentialityCeiling"]
+                ?? "privileged";
+
+            httpRequest.Headers.Add(
+                "X-Client-Id",
+                clientId);
+
+            httpRequest.Headers.Add(
+                "X-Confidentiality-Ceiling",
+                confidentialityCeiling);
+
+            httpRequest.Content = JsonContent.Create(
                 request,
-                JsonOptions,
+                options: JsonOptions);
+
+            response = await _httpClient.SendAsync(
+                httpRequest,
                 cancellationToken);
         }
         catch (HttpRequestException exception)
         {
             _logger.LogWarning(
+                exception,
                 "AI RAG service could not be reached for an authorized-library request");
 
             throw new AiQuestionAnsweringException(
@@ -95,6 +121,7 @@ public sealed class LexoraDocumentQuestionService
             when (!cancellationToken.IsCancellationRequested)
         {
             _logger.LogWarning(
+                exception,
                 "AI RAG service timed out for an authorized-library request");
 
             throw new AiQuestionAnsweringException(
@@ -110,10 +137,14 @@ public sealed class LexoraDocumentQuestionService
                 var upstreamStatus =
                     (int)response.StatusCode;
 
+                var errorBody = await response.Content.ReadAsStringAsync(
+                    cancellationToken);
+
                 _logger.LogWarning(
                     "AI RAG service returned status {StatusCode} "
-                    + "for an authorized-library request",
-                    upstreamStatus);
+                    + "for an authorized-library request. Response: {ResponseBody}",
+                    upstreamStatus,
+                    errorBody);
 
                 var downstreamStatus =
                     upstreamStatus == StatusCodes.Status503ServiceUnavailable
@@ -136,6 +167,10 @@ public sealed class LexoraDocumentQuestionService
             }
             catch (JsonException exception)
             {
+                _logger.LogWarning(
+                    exception,
+                    "AI RAG service returned an invalid JSON response");
+
                 throw new AiQuestionAnsweringException(
                     "The AI service returned an invalid response.",
                     StatusCodes.Status502BadGateway,
@@ -143,6 +178,10 @@ public sealed class LexoraDocumentQuestionService
             }
             catch (NotSupportedException exception)
             {
+                _logger.LogWarning(
+                    exception,
+                    "AI RAG service returned an unsupported response format");
+
                 throw new AiQuestionAnsweringException(
                     "The AI service returned an unsupported response.",
                     StatusCodes.Status502BadGateway,

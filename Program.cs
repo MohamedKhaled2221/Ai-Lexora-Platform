@@ -92,17 +92,39 @@ builder.Services.AddScoped<IContractAnalysisService, LexoraContractAnalysisServi
 builder.Services.AddSingleton<IAnalysisWorkQueue, AnalysisWorkQueue>();
 builder.Services.AddHostedService<AnalysisBackgroundService>();
 
-// Search (placeholder: in-memory keyword matching over extracted text).
-// Swap for embeddings + vector DB later — SearchController doesn't change.
-builder.Services.AddScoped<ISearchService, KeywordSearchService>();
+// Search — now backed by the AI-Lexora Python RAG service's ranked search
+// endpoint (M2 embedding -> M3 Qdrant vector retrieval, no LLM call).
+// SearchController doesn't change. To fall back to the offline placeholder
+// (e.g. the AI service isn't running locally), comment the block below and
+// uncomment: builder.Services.AddScoped<ISearchService, KeywordSearchService>();
+builder.Services.AddHttpClient<LexoraRagSearchService>(
+    (sp, client) =>
+    {
+        var config = sp.GetRequiredService<IConfiguration>();
+
+        var baseUrl =
+            config["AiService:BaseUrl"]
+            ?? "http://localhost:8000";
+
+        var timeoutSeconds =
+            config.GetValue<int?>("AiService:SearchTimeoutSeconds")
+            ?? config.GetValue<int?>("AiService:TimeoutSeconds")
+            ?? 60;
+
+        client.BaseAddress = new Uri(baseUrl);
+        client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
+    });
+
+builder.Services.AddScoped<ISearchService>(
+    sp => sp.GetRequiredService<LexoraRagSearchService>());
 
 // Document Generator (placeholder: one built-in template, token substitution).
 builder.Services.AddScoped<IDocumentGenerationService, TemplateDocumentGenerationService>();
 builder.Services.AddScoped<IGeneratedDocumentRepository, GeneratedDocumentRepository>();
 
-// Chatbot — now backed by the AI-Lexora Python RAG service (Search still
-// uses its own placeholder for now). Swapping back to the placeholder for
-// local dev without the AI service running is a one-line change below.
+// Chatbot — now backed by the AI-Lexora Python RAG service (as is Search,
+// above). Swapping back to the placeholder for local dev without the AI
+// service running is a one-line change below.
 builder.Services.AddScoped<IChatRepository, ChatRepository>();
 // Package 1 document ingestion:
 // Backend document -> main AI API -> M1 -> M2 -> Qdrant.

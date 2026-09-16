@@ -38,19 +38,19 @@ public class ExceptionHandlingMiddleware
         }
         catch (AiDocumentIndexingException exception)
         {
-           _logger.LogWarning(
-               "Document AI indexing failed with response status "
-               + "{StatusCode}. TraceId: {TraceId}",
-                exception.ResponseStatusCode,
-                context.TraceIdentifier);
+            _logger.LogWarning(
+                "Document AI indexing failed with response status "
+                + "{StatusCode}. TraceId: {TraceId}",
+                 exception.ResponseStatusCode,
+                 context.TraceIdentifier);
 
-           await WriteErrorAsync(
-               context,
-               exception.ResponseStatusCode,
-               "Document indexing failed",
-               "The document could not be prepared for AI search.");
-       }
-       catch (AiQuestionAnsweringException exception)
+            await WriteErrorAsync(
+                context,
+                exception.ResponseStatusCode,
+                "Document indexing failed",
+                "The document could not be prepared for AI search.");
+        }
+        catch (AiQuestionAnsweringException exception)
         {
             _logger.LogWarning(
                 "Authorized-library AI question answering failed "
@@ -64,6 +64,19 @@ public class ExceptionHandlingMiddleware
                 exception.ResponseStatusCode,
                 "AI question answering failed",
                 "The authorized document library could not be queried.");
+        }
+        catch (AiSearchException exception)
+        {
+            _logger.LogWarning(
+                "AI search failed with response status {StatusCode}. TraceId: {TraceId}",
+                exception.ResponseStatusCode,
+                context.TraceIdentifier);
+
+            await WriteErrorAsync(
+                context,
+                exception.ResponseStatusCode,
+                "Search failed",
+                "The document library could not be searched.");
         }
         catch (Exception exception)
         {

@@ -64,6 +64,68 @@ public sealed class LexoraCitation
     [JsonPropertyName("section")]
     public string? Section { get; set; }
 }
+/// <summary>
+/// Wire-format DTOs for the AI-Lexora Python ranked-search endpoint
+/// (POST /api/v1/rag/search). Same filters shape as /ask, but no LLM call:
+/// each hit is a document ranked by its best-matching chunk.
+/// </summary>
+public sealed class LexoraSearchRequest
+{
+    [JsonPropertyName("query")]
+    public string Query { get; set; } = string.Empty;
+
+    [JsonPropertyName("filters")]
+    public LexoraQueryFilters? Filters { get; set; }
+
+    [JsonPropertyName("page")]
+    public int Page { get; set; } = 1;
+
+    [JsonPropertyName("page_size")]
+    public int PageSize { get; set; } = 10;
+}
+
+public sealed class LexoraSearchResponse
+{
+    [JsonPropertyName("query_id")]
+    public string QueryId { get; set; } = string.Empty;
+
+    [JsonPropertyName("hits")]
+    public List<LexoraSearchHit> Hits { get; set; } = new();
+
+    [JsonPropertyName("total")]
+    public int Total { get; set; }
+
+    [JsonPropertyName("page")]
+    public int Page { get; set; }
+
+    [JsonPropertyName("page_size")]
+    public int PageSize { get; set; }
+}
+
+public sealed class LexoraSearchHit
+{
+    [JsonPropertyName("document_id")]
+    public string DocumentId { get; set; } = string.Empty;
+
+    [JsonPropertyName("score")]
+    public double Score { get; set; }
+
+    [JsonPropertyName("snippet")]
+    public string Snippet { get; set; } = string.Empty;
+
+    [JsonPropertyName("chunk_id")]
+    public string ChunkId { get; set; } = string.Empty;
+
+    [JsonPropertyName("page")]
+    public int? Page { get; set; }
+
+    [JsonPropertyName("section")]
+    public string? Section { get; set; }
+
+    [JsonPropertyName("matched_chunks")]
+    public int MatchedChunks { get; set; }
+}
+
 public sealed class LexoraDocumentIngestionResponse
 {
     [JsonPropertyName("document_id")]
