@@ -20,8 +20,12 @@ from src.api.identity import (
 )
 from src.api.schemas import (
     RAGAnswerRequest,
+    RAGSearchHit,
+    RAGSearchRequest,
+    RAGSearchResponse,
     RawRAGAnswerRequest,
 )
+from src.retrieval.reranker import RerankerUnavailable
 from src.orchestration import (
     CitationValidationError,
     M2EmbeddingContractError,
@@ -309,6 +313,111 @@ async def answer_raw_rag(
                 "for retrieval."
             ),
         ) from exc
+@router.post(
+    "/search",
+    response_model=RAGSearchResponse,
+)
+async def search_documents(
+    request_body: RAGSearchRequest,
+    request: Request,
+    service: RawRAGServiceDependency,
+    identity: CallerIdentityDependency,
+) -> RAGSearchResponse:
+    """
+    Ranked document search: M2 processing/embedding -> M3 retrieval.
+
+    No LLM call. Each document appears once, ranked by its best chunk, which
+    is also its snippet. Access is scoped from the authenticated caller exactly
+    as on /ask, and a client-supplied scope is refused.
+    """
+
+    reject_client_supplied_access(
+        request_body.filters,
+        request,
+        field_path="filters.access",
+    )
+
+    scoped_filters = apply_access_scope(
+        request_body.filters,
+        identity,
+    )
+
+    try:
+        result = await service.asearch(
+            query=request_body.query,
+            filters=scoped_filters,
+            page=request_body.page,
+            page_size=request_body.page_size,
+        )
+
+    except M2QueryValidationError as exc:
+        _log_raw_rag_failure(request=request, exc=exc,
+                             failure_stage="query_processing")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The search query is invalid.",
+        ) from exc
+
+    except M2EmbeddingContractError as exc:
+        _log_raw_rag_failure(request=request, exc=exc,
+                             failure_stage="embedding_validation")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=(
+                "The local embedding runtime produced an invalid "
+                "query embedding."
+            ),
+        ) from exc
+
+    except (M2QueryRuntimeError, RerankerUnavailable) as exc:
+        _log_raw_rag_failure(request=request, exc=exc,
+                             failure_stage="retrieval_runtime")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="The local search runtime is currently unavailable.",
+        ) from exc
+
+    except ValueError as exc:
+        _log_raw_rag_failure(request=request, exc=exc,
+                             failure_stage="retrieval")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The search query is invalid for retrieval.",
+        ) from exc
+
+    logger.info(
+        "rag_search_completed",
+        extra={
+            "request_id": _get_request_id(request),
+            "query_id": result.query_id,
+            "retrieval_ms": round(result.retrieval_ms, 2),
+            "candidate_chunk_count": result.candidate_chunk_count,
+            "document_count": result.total,
+            "page": result.page,
+            "status": "success",
+        },
+    )
+
+    return RAGSearchResponse(
+        query_id=result.query_id,
+        hits=[
+            RAGSearchHit(
+                document_id=hit.document_id,
+                score=hit.score,
+                snippet=hit.snippet,
+                chunk_id=hit.chunk_id,
+                page=hit.page,
+                section=hit.section,
+                matched_chunks=hit.matched_chunks,
+            )
+            for hit in result.hits
+        ],
+        total=result.total,
+        page=result.page,
+        page_size=result.page_size,
+    )
+
+
 @router.post(
     "/answer",
     response_model=AIResponse,
