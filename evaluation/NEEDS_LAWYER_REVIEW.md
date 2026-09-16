@@ -2,7 +2,7 @@
 
 Generated 2026-09-08 against live `legal_documents_v2` (1945 points).
 
-**4 of 37 cases** are flagged. The other 33 are factual or structural (e.g. "does this chunk contain the text of Article 9") and were verified by reading the chunk directly - those need no legal sign-off.
+**4 of 62 cases** are flagged (`confidence: "needs_lawyer"` in `benchmark_cases_v2.json`). The count was 37 when this file was written; the 4 `identifier_date` cases and the 21 cases added on 2026-09-15 are all self-verified. The other 58 are factual or structural (e.g. "does this chunk contain the text of Article 9") and were verified by reading the chunk directly - those need no legal sign-off.
 
 Everything below is a judgment about legal correctness or completeness, which is not mine to make.
 

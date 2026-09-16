@@ -16,6 +16,11 @@ from src.vector_store.qdrant_manager import (
     DEFAULT_COLLECTION_NAME,
     QdrantVectorStore,
 )
+from src.indexing.index_sync import IndexSyncService
+from src.indexing.knowledge_sync import (
+    KnowledgeSyncService,
+    postgres_repository_factory,
+)
 from src.indexing import (
     DocumentIndexingService,
     DocumentIngestionService,
@@ -99,6 +104,25 @@ class RAGRuntimeSettings(BaseSettings):
     strict_offline: bool = True
     reranker_local_files_only: bool = True
     reranker_use_mock_fallback: bool = False
+
+    min_dense_score: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+    )
+    """RAG_MIN_DENSE_SCORE. Abstain when the top dense cosine is below this.
+    Off by default; see ``hybrid_search.MEASURED_MIN_DENSE_SCORE``."""
+
+    validity_status_filter: list[str] | None = None
+    """RAG_VALIDITY_STATUS_FILTER, e.g. ``["current"]``. Off by default."""
+
+    include_unversioned_points: bool = False
+    """RAG_INCLUDE_UNVERSIONED_POINTS. Only meaningful with the status filter."""
+
+    knowledge_sync_enabled: bool = False
+    """RAG_KNOWLEDGE_SYNC_ENABLED. Store uploaded laws and court rulings as M6
+    records in PostgreSQL (DATABASE_URL) and index them through index sync.
+    Off by default; when on, startup fails if the database is unreachable."""
 
     @model_validator(mode="after")
     def validate_runtime(
@@ -214,6 +238,13 @@ def build_rag_service(
         keyword_backend=(
             settings.keyword_backend
         ),
+        min_dense_score=settings.min_dense_score,
+        allowed_validity_statuses=(
+            settings.validity_status_filter
+        ),
+        include_unversioned_points=(
+            settings.include_unversioned_points
+        ),
     )
 
     orchestration_service = (
@@ -302,6 +333,7 @@ def build_raw_rag_service(
 def build_document_ingestion_service(
     rag_service: M3M4RAGService,
     raw_rag_service: M2M3M4RAGService,
+    settings: RAGRuntimeSettings | None = None,
 ) -> DocumentIngestionService:
     """
     Build the M1 -> M2 -> Qdrant document-ingestion
@@ -352,7 +384,20 @@ def build_document_ingestion_service(
         vector_store=vector_store,
     )
 
+    settings = settings or RAGRuntimeSettings()
+    knowledge_sync = None
+
+    if settings.knowledge_sync_enabled:
+        knowledge_sync = KnowledgeSyncService(
+            repository_factory=postgres_repository_factory(),
+            index_sync=IndexSyncService(
+                embedding_service=embedding_service,
+                vector_store=vector_store,
+            ),
+        )
+
     return DocumentIngestionService(
         m1_client=M1Client(),
         indexing_service=indexing_service,
+        knowledge_sync=knowledge_sync,
     )

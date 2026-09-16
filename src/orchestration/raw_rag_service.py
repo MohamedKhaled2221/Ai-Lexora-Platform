@@ -1,5 +1,11 @@
 import asyncio
+from dataclasses import dataclass
 from typing import Protocol
+
+from src.retrieval.document_search import (
+    DocumentSearchHit,
+    group_by_document,
+)
 
 from src.orchestration.rag_service import (
     M3M4RAGService,
@@ -47,6 +53,21 @@ class M2QueryRuntimeError(RuntimeError):
     Raised when the local M2 query runtime fails
     unexpectedly.
     """
+
+
+MAX_SEARCH_CANDIDATES = 100
+"""Upper bound on chunks ranked for one search page request."""
+
+
+@dataclass(frozen=True)
+class DocumentSearchResult:
+    query_id: str
+    hits: list[DocumentSearchHit]
+    total: int
+    page: int
+    page_size: int
+    retrieval_ms: float
+    candidate_chunk_count: int
 
 
 class M2M3M4RAGService:
@@ -207,6 +228,67 @@ class M2M3M4RAGService:
             .aanswer_with_metrics(
                 processed_query
             )
+        )
+
+    def search(
+        self,
+        *,
+        query: str,
+        filters: QueryFilters | None = None,
+        page: int = 1,
+        page_size: int = 10,
+    ) -> DocumentSearchResult:
+        """
+        Ranked documents for a search page: M2 -> M3 retrieval only, no LLM.
+
+        The candidate window grows with the requested page so later pages
+        have documents to show, capped at MAX_SEARCH_CANDIDATES chunks. The
+        total therefore counts documents found within that window, not every
+        document that mentions the query.
+        """
+        if page < 1 or page_size < 1:
+            raise ValueError("page and page_size must be positive")
+
+        processed_query = self._prepare_processed_query(
+            question=query,
+            filters=filters,
+        )
+
+        retrieval = self.rag_service.retrieval_pipeline
+        window = min(
+            MAX_SEARCH_CANDIDATES,
+            max(
+                retrieval.candidate_top_k,
+                page * page_size * 3,
+            ),
+        )
+
+        chunks, retrieval_ms = retrieval.search_candidates(
+            processed_query,
+            candidate_top_k=window,
+        )
+
+        documents = group_by_document(chunks)
+        start = (page - 1) * page_size
+
+        return DocumentSearchResult(
+            query_id=processed_query.query_id,
+            hits=documents[start:start + page_size],
+            total=len(documents),
+            page=page,
+            page_size=page_size,
+            retrieval_ms=retrieval_ms,
+            candidate_chunk_count=len(chunks),
+        )
+
+    async def asearch(
+        self,
+        **kwargs,
+    ) -> DocumentSearchResult:
+        # Embedding and retrieval are both blocking model/database calls.
+        return await asyncio.to_thread(
+            self.search,
+            **kwargs,
         )
 
     def _prepare_processed_query(

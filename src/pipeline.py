@@ -1,6 +1,6 @@
 import time
 import logging
-from typing import Optional, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple
 
 from src.schemas.access_control import (
     AccessScope,
@@ -41,9 +41,12 @@ class M3RetrievalPipeline:
         candidate_top_k: int = 20,
         final_top_k: int = 5,
         reranker_model_name: str = "BAAI/bge-reranker-v2-m3",
-        use_mock_fallback: bool = True,
+        use_mock_fallback: bool = False,
         reranker_local_files_only: bool = True,
         keyword_backend: KeywordBackend = "sparse",
+        min_dense_score: Optional[float] = None,
+        allowed_validity_statuses: Optional[Sequence[str]] = None,
+        include_unversioned_points: bool = False,
     ):
         self.vector_store = vector_store or QdrantVectorStore()
         self.candidate_top_k = candidate_top_k
@@ -59,6 +62,9 @@ class M3RetrievalPipeline:
             vector_store=self.vector_store,
             rrf_k=60,
             keyword_backend=keyword_backend,
+            min_dense_score=min_dense_score,
+            allowed_validity_statuses=allowed_validity_statuses,
+            include_unversioned_points=include_unversioned_points,
         )
         self.reranker = BGEReranker(
             model_name=reranker_model_name,
@@ -127,7 +133,90 @@ class M3RetrievalPipeline:
             f"Retrieved {len(evidence_items)} evidence chunks for M4."
         )
 
+        # Structured record of what this answer was grounded on and under
+        # which retrieval settings. Identifiers and scores only: no chunk text
+        # and no client id, so the log never restates content.
+        logger.info(
+            "m3_retrieval_completed",
+            extra={
+                "query_id": query.query_id,
+                "latency_ms": round(latency_ms, 2),
+                "retrieval_config": self.retrieval_config(),
+                "evidence": [
+                    {
+                        "document_id": chunk.get("document_id"),
+                        "chunk_id": chunk.get("chunk_id"),
+                        "score": chunk.get("score"),
+                        "rrf_score": chunk.get("rrf_score"),
+                        "matched_by": chunk.get("matched_by"),
+                    }
+                    for chunk in reranked_chunks
+                ],
+            },
+        )
+
         return output_evidence, latency_ms
+
+    def search_candidates(
+        self,
+        query: ProcessedQuery,
+        candidate_top_k: Optional[int] = None,
+    ) -> Tuple[list, float]:
+        """
+        Ranked candidate chunks for a search listing, not for an answer.
+
+        Same hybrid search, reranker and post-retrieval scope check as
+        :meth:`run`, but keeps the whole candidate window instead of cutting
+        to ``final_top_k``: a result list needs more than the handful of
+        chunks an LLM prompt uses. Returns (chunks, latency_ms).
+        """
+        start_time = time.perf_counter()
+        window = candidate_top_k or self.candidate_top_k
+
+        candidates = self.hybrid_searcher.search(
+            query=query,
+            candidate_top_k=window,
+        )
+
+        ranked = self.reranker.rerank(
+            query_text=query.normalized_text or query.text_original,
+            candidates=candidates,
+            top_k=window,
+        )
+
+        self._assert_within_scope(
+            access=query.filters.access,
+            candidates=ranked,
+            query_id=query.query_id,
+        )
+
+        return ranked, (time.perf_counter() - start_time) * 1000.0
+
+    def retrieval_config(self) -> Dict[str, Any]:
+        """The settings that determine a ranking, for logs and benchmarks."""
+        # getattr throughout: tests swap in searcher/reranker doubles, and a
+        # log line must never be the thing that fails a request.
+        searcher = self.hybrid_searcher
+        reranker = self.reranker
+        config: Dict[str, Any] = {
+            "collection": getattr(self.vector_store, "collection_name", None),
+            "keyword_backend": self.keyword_backend,
+            "candidate_top_k": self.candidate_top_k,
+            "final_top_k": self.final_top_k,
+        }
+        for name in (
+            "rrf_k",
+            "dense_weight",
+            "keyword_weight",
+            "identifier_weight",
+            "min_dense_score",
+            "allowed_validity_statuses",
+            "include_unversioned_points",
+        ):
+            config[name] = getattr(searcher, name, None)
+        config["reranker_model"] = getattr(reranker, "model_name", None)
+        config["reranker_loaded"] = getattr(reranker, "model", None) is not None
+        return config
 
     def _assert_within_scope(
         self,

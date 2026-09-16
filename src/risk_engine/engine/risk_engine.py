@@ -146,6 +146,14 @@ def create_risk(
         confidence=clause.confidence,
         review_status=review_status,
 
+        # Frontend location metadata
+        source_section_id=clause.source_section_id,
+        source_chunk_id=clause.source_chunk_id,
+        page_start=clause.page_start,
+        page_end=clause.page_end,
+        bbox=clause.bbox,
+        bboxes=clause.bboxes,
+
         # Rule provenance
         rule_id=rule["rule_id"],
         rule_type=rule["rule_type"],

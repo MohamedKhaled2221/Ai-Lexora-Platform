@@ -147,3 +147,26 @@ def test_production_default_forbids_fallback():
     from src.api.runtime import RAGRuntimeSettings
 
     assert RAGRuntimeSettings().reranker_use_mock_fallback is False
+
+
+def test_constructor_defaults_forbid_fallback():
+    """
+    Pin the constructor defaults too, not just the API runtime default.
+
+    Scripts and demos build BGEReranker / M3RetrievalPipeline directly. With a
+    True default, any such caller that omitted the flag silently served
+    heuristic scores.
+    """
+    import inspect
+
+    from src.pipeline import M3RetrievalPipeline
+
+    for target in (BGEReranker.__init__, M3RetrievalPipeline.__init__):
+        default = inspect.signature(target).parameters["use_mock_fallback"].default
+        assert default is False, f"{target.__qualname__} defaults to {default!r}"
+
+
+def test_reranker_without_flag_fails_loud():
+    """Omitting the flag entirely must behave like use_mock_fallback=False."""
+    with pytest.raises(RerankerUnavailable):
+        BGEReranker(model_name=MISSING_MODEL, local_files_only=True)
