@@ -1,0 +1,109 @@
+{
+  "cases": [
+    {
+      "case_id": "en_termination_article",
+      "category": "english",
+      "query": "What are the termination conditions under Article 69?",
+      "expected_language": "en",
+      "expected_identifiers": {
+        "article_numbers": ["69"],
+        "case_numbers": [],
+        "dates": [],
+        "monetary_values": [],
+        "party_names": [],
+        "named_legal_terms": ["termination"]
+      },
+      "expected_variant_contains": ["إنهاء العقد"]
+    },
+    {
+      "case_id": "ar_force_majeure_article",
+      "category": "arabic",
+      "query": "هل تنطبق القوة القاهرة في المادة ٦٩؟",
+      "expected_language": "ar",
+      "expected_identifiers": {
+        "article_numbers": ["٦٩"],
+        "case_numbers": [],
+        "dates": [],
+        "monetary_values": [],
+        "party_names": [],
+        "named_legal_terms": ["القوة القاهرة"]
+      },
+      "expected_variant_contains": ["force majeure"]
+    },
+    {
+      "case_id": "egyptian_termination_article",
+      "category": "egyptian_arabic",
+      "query": "إيه شروط فسخ العقد في المادة ١٥٧؟",
+      "expected_language": "ar",
+      "expected_identifiers": {
+        "article_numbers": ["١٥٧"],
+        "case_numbers": [],
+        "dates": [],
+        "monetary_values": [],
+        "party_names": [],
+        "named_legal_terms": ["فسخ العقد"]
+      },
+      "expected_variant_contains": ["termination"]
+    },
+    {
+      "case_id": "mixed_force_majeure_case",
+      "category": "mixed",
+      "query": "هل force majeure ينطبق في Case 123/2025؟",
+      "expected_language": "ar-en",
+      "expected_identifiers": {
+        "article_numbers": [],
+        "case_numbers": ["123/2025"],
+        "dates": [],
+        "monetary_values": [],
+        "party_names": [],
+        "named_legal_terms": ["force majeure"]
+      },
+      "expected_variant_contains": ["القوة القاهرة"]
+    },
+    {
+      "case_id": "en_company_money_case",
+      "category": "identifiers",
+      "query": "Does Acme Egypt LLC owe EGP 250,000 in Case 123/2025?",
+      "expected_language": "en",
+      "expected_identifiers": {
+        "article_numbers": [],
+        "case_numbers": ["123/2025"],
+        "dates": [],
+        "monetary_values": ["EGP 250,000"],
+        "party_names": ["Acme Egypt LLC"],
+        "named_legal_terms": []
+      },
+      "expected_variant_contains": []
+    },
+    {
+      "case_id": "ar_company_case_date_money",
+      "category": "identifiers",
+      "query": "شركة النيل للمقاولات في القضية رقم ١٢٣/٢٠٢٥ بتاريخ ٩ سبتمبر ٢٠٢٦ بمبلغ ٢٥٠٬٠٠٠ جنيه مصري.",
+      "expected_language": "ar",
+      "expected_identifiers": {
+        "article_numbers": [],
+        "case_numbers": ["١٢٣/٢٠٢٥"],
+        "dates": ["٩ سبتمبر ٢٠٢٦"],
+        "monetary_values": ["٢٥٠٬٠٠٠ جنيه مصري"],
+        "party_names": ["شركة النيل للمقاولات"],
+        "named_legal_terms": []
+      },
+      "expected_variant_contains": []
+    },
+    {
+      "case_id": "unknown_numeric_only",
+      "category": "unknown",
+      "query": "٦٩ 123",
+      "expected_language": "unknown",
+      "expected_identifiers": {
+        "article_numbers": [],
+        "case_numbers": [],
+        "dates": [],
+        "monetary_values": [],
+        "party_names": [],
+        "named_legal_terms": []
+      },
+      "expected_variant_contains": []
+    }
+  ]
+}
