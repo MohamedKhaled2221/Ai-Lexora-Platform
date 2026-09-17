@@ -270,7 +270,13 @@ class P3ProvenanceValidator:
             }
 
             for source_id in transformation.source_ids:
-                if source_id not in known_source_ids:
+                if (
+                    source_id not in known_source_ids
+                    and not self._is_template_source_id(
+                        source_id,
+                        manifest.template_id,
+                    )
+                ):
                     provenance_errors.append(
                         f"AI transformation "
                         f"{transformation.transformation_id!r} "
@@ -402,9 +408,9 @@ class P3ProvenanceValidator:
             reference.source_type
             == DraftSourceType.TEMPLATE
         ):
-            if (
-                reference.source_id
-                != manifest.template_id
+            if not self._is_template_source_id(
+                reference.source_id,
+                manifest.template_id,
             ):
                 errors.append(
                     f"Section {section.section_id!r} "
@@ -543,3 +549,15 @@ class P3ProvenanceValidator:
         )
 
         return errors
+    
+    @staticmethod
+    def _is_template_source_id(
+        source_id: str,
+        template_id: str,
+    ) -> bool:
+        return (
+            source_id == template_id
+            or source_id.startswith(
+                template_id + "::"
+            )
+        )

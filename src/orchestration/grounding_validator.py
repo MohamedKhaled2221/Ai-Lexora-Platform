@@ -784,6 +784,22 @@ class P3GroundingValidator:
         section: DraftSection,
         sources: Sequence[TrustedSourceText],
     ) -> bool:
+        """
+        Validate deterministic assembly from trusted source
+        contributions in their declared order.
+
+        TrustedSourceText strips boundary whitespace, so the
+        validator cannot rely on trailing spaces in individual
+        source fragments. It therefore accepts three strict,
+        deterministic composition forms:
+
+        1. whitespace-separated contributions;
+        2. direct concatenation;
+        3. punctuation-aware concatenation.
+
+        No source may be reordered, omitted, or supplemented.
+        """
+
         if not sources:
             return False
 
@@ -798,22 +814,78 @@ class P3GroundingValidator:
             for source in sources
         ]
 
-        # Single source: strict normalized equality.
+        # Single source remains strict equality.
         if len(normalized_sources) == 1:
             return (
                 candidate
                 == normalized_sources[0]
             )
 
-        # Multiple deterministic contributions:
-        # every contribution must account for the entire
-        # section in declared order.
-        combined = " ".join(
-            normalized_sources
+        # Existing deterministic behavior.
+        combined_with_spaces = (
+            self._normalize_text(
+                " ".join(
+                    normalized_sources
+                )
+            )
         )
 
-        return candidate == combined
+        # Supports source boundaries where no separator
+        # should exist.
+        combined_exact = (
+            self._normalize_text(
+                "".join(
+                    normalized_sources
+                )
+            )
+        )
 
+        # Reconstruct normal punctuation boundaries after
+        # TrustedSourceText has stripped fragment whitespace.
+        no_space_before = set(
+            ".,;:!?%…،؛؟)]}»"
+        )
+
+        no_space_after = set(
+            "([{«"
+        )
+
+        composed = normalized_sources[0]
+
+        for fragment in normalized_sources[1:]:
+
+            if not fragment:
+                continue
+
+            if (
+                fragment[0]
+                in no_space_before
+            ):
+                composed += fragment
+
+            elif (
+                composed
+                and composed[-1]
+                in no_space_after
+            ):
+                composed += fragment
+
+            else:
+                composed += (
+                    " " + fragment
+                )
+
+        combined_punctuation_aware = (
+            self._normalize_text(
+                composed
+            )
+        )
+
+        return candidate in {
+            combined_with_spaces,
+            combined_exact,
+            combined_punctuation_aware,
+        }
     def _normalize_text(
         self,
         value: str,

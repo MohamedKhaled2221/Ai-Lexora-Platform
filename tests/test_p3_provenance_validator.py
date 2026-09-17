@@ -36,7 +36,34 @@ def clause_source(
         source_version=version,
     )
 
+def test_section_scoped_template_source_id_is_valid():
+    section = DraftSection(
+        section_id="party",
+        text="Party:",
+        source_references=[
+            SourceReference(
+                source_type=(
+                    DraftSourceType.TEMPLATE
+                ),
+                source_id=(
+                    "template-nda"
+                    "::section-1"
+                    "::part-1"
+                ),
+                source_version="1.0",
+            )
+        ],
+    )
 
+    report = P3ProvenanceValidator().validate(
+        make_draft(
+            sections=[section],
+        ),
+        make_manifest(),
+    )
+
+    assert report.structure_valid is True
+    assert report.provenance_valid is True
 def make_draft(
     *,
     draft_id: str = "draft-001",

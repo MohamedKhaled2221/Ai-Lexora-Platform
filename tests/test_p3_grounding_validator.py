@@ -120,7 +120,74 @@ def make_draft(
         sections=[section],
     )
 
+def test_multiple_sources_preserve_punctuation():
+    section = DraftSection(
+        section_id="employee",
+        text="Employee: Ahmed.",
+        source_references=[
+            SourceReference(
+                source_type=(
+                    DraftSourceType.TEMPLATE
+                ),
+                source_id="template-nda",
+                source_version="1.0",
+            ),
+            SourceReference(
+                source_type=(
+                    DraftSourceType.USER_INPUT
+                ),
+                source_id="employee_name",
+            ),
+            SourceReference(
+                source_type=(
+                    DraftSourceType.TEMPLATE
+                ),
+                source_id=(
+                    "template-nda"
+                    "::section-1"
+                    "::part-2"
+                ),
+                source_version="1.0",
+            ),
+        ],
+    )
 
+    context = P3GroundingContext(
+        sources=[
+            TrustedSourceText(
+                source_type=(
+                    DraftSourceType.TEMPLATE
+                ),
+                source_id="template-nda",
+                source_version="1.0",
+                text="Employee: ",
+            ),
+            TrustedSourceText(
+                source_type=(
+                    DraftSourceType.TEMPLATE
+                ),
+                source_id=(
+                    "template-nda"
+                    "::section-1"
+                    "::part-2"
+                ),
+                source_version="1.0",
+                text=".",
+            ),
+        ]
+    )
+
+    report = P3GroundingValidator().validate(
+        draft=make_draft(section),
+        manifest=make_manifest(
+            user_fields={
+                "employee_name": "Ahmed"
+            }
+        ),
+        context=context,
+    )
+
+    assert report.grounding_valid is True
 def clause_context(
     text="The recipient shall keep the information confidential.",
 ):
