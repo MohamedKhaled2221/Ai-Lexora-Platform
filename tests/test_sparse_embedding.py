@@ -198,6 +198,13 @@ def test_processed_query_sparse_embedding_is_populated():
     assert embedded.sparse_embedding == (
         embedded.processed_query.sparse_embedding
     )
+    assert embedded.processed_query.embedding == (
+        embedded.embedding
+    )
+
+    assert len(
+        embedded.processed_query.embedding
+    ) == embedded.dimension
 
 
 def test_query_is_encoded_once_not_twice():

@@ -113,13 +113,23 @@ Current embedding model:
 
 The deployment may configure this as a local filesystem path.
 
-Current M2 dense-vector contract:
+Current M2 embedding contract:
 
-- dimension: `1024`
-- dense output only
-- optional explicit L2 normalization enabled by default
+- dense dimension: `1024`
+- dense BGE-M3 vector is always produced
+- sparse/lexical BGE-M3 weights are produced when
+  `return_sparse` is enabled
+- dense and sparse query representations come from the same
+  local BGE-M3 forward pass
+- the dense vector is stored in both
+  `EmbeddedQuery.embedding` and
+  `ProcessedQuery.embedding`
+- the sparse vector is stored in both
+  `EmbeddedQuery.sparse_embedding` and
+  `ProcessedQuery.sparse_embedding`
+- optional explicit L2 normalization is enabled by default
 - CPU or CUDA runtime
-- FP16 enabled only when CUDA is selected
+- FP16 is enabled only when CUDA is selected
 
 M2 validates:
 
@@ -170,6 +180,7 @@ ProcessedQuery
 ├── normalized_text
 ├── language
 ├── embedding
+├── sparse_embedding
 ├── filters
 ├── query_variants
 └── identifiers

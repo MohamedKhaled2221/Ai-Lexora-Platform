@@ -479,7 +479,38 @@ def test_embed_processed_query_uses_normalized_text():
     assert result.dimension == 3
     assert len(result.embedding) == 3
 
+def test_embed_processed_query_populates_processed_query_embedding():
+    model = FakeModel()
 
+    service = make_service(
+        model=model
+    )
+
+    query = ProcessedQuery(
+        query_id="q_dense_contract",
+        text_original="Article 157 termination",
+        normalized_text="Article 157 termination",
+        language="en",
+    )
+
+    result = service.embed_processed_query(
+        query
+    )
+
+    assert result.embedding
+
+    assert (
+        result.processed_query.embedding
+        == result.embedding
+    )
+
+    assert (
+        len(result.processed_query.embedding)
+        == result.dimension
+    )
+
+    # The caller's original object is not mutated.
+    assert query.embedding == []
 def test_auto_device_uses_cpu_when_cuda_unavailable(
     monkeypatch,
 ):

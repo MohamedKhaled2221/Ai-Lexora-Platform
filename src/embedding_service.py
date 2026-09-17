@@ -846,13 +846,19 @@ class EmbeddingService:
         query: ProcessedQuery,
     ) -> EmbeddedQuery:
         """
-        Produce the complete M2 query handoff object.
+        Produce the complete M2 query handoff.
 
-        The sparse weights are written onto the returned ProcessedQuery as
-        well as the envelope. ProcessedQuery.sparse_embedding has been
-        declared since the original M2 contract but was never populated, so
-        M3 had no sparse query vector to search with even though the model
-        had computed one.
+        The dense embedding is exposed in both places:
+
+        - EmbeddedQuery.embedding for backward compatibility with
+        existing orchestration code;
+        - ProcessedQuery.embedding because ProcessedQuery is the
+        stable M2 -> M3 retrieval contract.
+
+        The sparse representation is mirrored in the same way.
+
+        Dense and sparse representations come from the same local
+        BGE-M3 forward pass.
         """
         text = (
             query.normalized_text
@@ -867,9 +873,13 @@ class EmbeddingService:
 
         return EmbeddedQuery(
             processed_query=query.model_copy(
-                update={"sparse_embedding": sparse},
+                update={
+                    "embedding": list(vector),
+                    "sparse_embedding": sparse,
+                },
+                deep=True,
             ),
-            embedding=vector,
+            embedding=list(vector),
             model=self.model_name,
             dimension=len(vector),
             sparse_embedding=sparse,
