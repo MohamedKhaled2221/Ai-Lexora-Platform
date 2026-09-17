@@ -191,11 +191,32 @@ class TestHandoffs:
 
     def test_m5_to_m1_handoff(self):
         clause = _make_clause()
+
+        template_requirement = TemplateClauseRequirement(
+            template_id="TMPL-EMP-EG",
+            document_type=DocumentType.EMPLOYMENT_CONTRACT,
+            jurisdiction=Jurisdiction.EG,
+            required_clauses=[clause.clause_id],
+            section_placeholders={
+                "section_termination": "{{TERMINATION_CLAUSE}}",
+            },
+            template_structure="{{TERMINATION_CLAUSE}}",
+        )
+
         handoff = M5ToM1Handoff(
             clauses=[clause],
+            template_requirement=template_requirement,
             source_metadata={"jurisdiction": "EG"},
         )
+
         assert len(handoff.clauses) == 1
+        assert (
+            handoff.template_requirement.template_id
+            == "TMPL-EMP-EG"
+        )
+        assert handoff.template_requirement.required_clauses == [
+            clause.clause_id
+        ]
 
     def test_m5_to_m4_handoff(self):
         handoff = M5ToM4Handoff(

@@ -638,7 +638,24 @@ class TestRequiredClauseRules:
         )
         assert report.is_complete is False
         assert "CLZ-TERM-KSA-001" in report.included_prohibited
+    def test_validate_completeness_fails_without_template(
+        self,
+        populated_library,
+    ):
+        engine = RequiredClauseEngine(populated_library)
 
+        report = engine.validate_completeness(
+            ["CLZ-TERM-EG-001"],
+            DocumentType.EMPLOYMENT_CONTRACT,
+            Jurisdiction.EG,
+        )
+
+        assert report.is_complete is False
+        assert report.template_id == "unknown"
+        assert any(
+            "No template found" in warning
+            for warning in report.warnings
+        )
 
 # ──────────────────────────────────────────────
 # M5 Service Integration Tests
@@ -649,14 +666,42 @@ class TestM5Service:
     @pytest.fixture
     def service(self, populated_library) -> M5ClauseService:
         """Create M5 service with populated library."""
+        populated_library.add_clause(
+            _make_clause(
+                clause_id="CLZ-DATA-EG-001",
+                type=ClauseType.DATA_PROTECTION,
+                document_types=[
+                    DocumentType.EMPLOYMENT_CONTRACT
+                ],
+            )
+        )
+        populated_library.add_clause(
+            _make_clause(
+                clause_id="CLZ-CONF-EMP-EG-001",
+                type=ClauseType.CONFIDENTIALITY,
+                document_types=[
+                    DocumentType.EMPLOYMENT_CONTRACT
+                ],
+            )
+        )
         engine = RequiredClauseEngine(populated_library)
         template = TemplateClauseRequirement(
             template_id="TMPL-EMP-EG",
             document_type=DocumentType.EMPLOYMENT_CONTRACT,
             jurisdiction=Jurisdiction.EG,
             required_clauses=["CLZ-TERM-EG-001"],
-            optional_clauses=["CLZ-CONF-EG-001"],
+            optional_clauses=["CLZ-CONF-EMP-EG-001"],
             prohibited_clauses=["CLZ-TERM-KSA-001"],
+            conditional_clauses=[
+                ConditionalClause(
+                    clause_id="CLZ-DATA-EG-001",
+                    condition="handles_personal_data",
+                    description=(
+                        "Required when the employment relationship "
+                        "involves personal-data processing"
+                    ),
+                )
+            ],
         )
         engine.add_template(template)
 
@@ -672,6 +717,19 @@ class TestM5Service:
         )
         assert len(handoff.clauses) >= 1
         assert handoff.source_metadata["jurisdiction"] == "EG"
+        assert (
+            handoff.template_requirement.document_type
+            == DocumentType.EMPLOYMENT_CONTRACT
+        )
+
+        assert (
+            handoff.template_requirement.jurisdiction
+            == Jurisdiction.EG
+        )
+
+        assert "CLZ-TERM-EG-001" in (
+            handoff.template_requirement.required_clauses
+        )
 
     def test_get_provenance_rules(self, service):
         handoff = service.get_provenance_rules()
@@ -688,7 +746,7 @@ class TestM5Service:
 
     def test_validate_clause_set_missing_required(self, service):
         report = service.validate_clause_set(
-            ["CLZ-CONF-EG-001"],
+            ["CLZ-CONF-EMP-EG-001"],
             DocumentType.EMPLOYMENT_CONTRACT,
             Jurisdiction.EG,
         )
@@ -708,7 +766,195 @@ class TestM5Service:
         assert result.resolved is False
         assert result.requires_lawyer_input is True
 
+    def test_validate_clause_set_fails_without_template(
+        self,
+        populated_library,
+    ):
+        service = M5ClauseService(
+            clause_library=populated_library,
+            required_clause_engine=RequiredClauseEngine(
+                populated_library
+            ),
+        )
 
+        report = service.validate_clause_set(
+            ["CLZ-TERM-EG-001"],
+            DocumentType.EMPLOYMENT_CONTRACT,
+            Jurisdiction.EG,
+        )
+
+        assert report.valid is False
+        assert any(
+            "No template found" in error
+            for error in report.errors
+        )
+    def test_conditional_clause_not_selected_when_condition_inactive(
+        self,
+        service,
+    ):
+        handoff = service.get_clauses_for_document(
+            DocumentType.EMPLOYMENT_CONTRACT,
+            Jurisdiction.EG,
+        )
+
+        clause_ids = {
+            clause.clause_id
+            for clause in handoff.clauses
+        }
+
+        assert "CLZ-DATA-EG-001" not in clause_ids
+    def test_conditional_clause_selected_when_condition_active(
+        self,
+        service,
+    ):
+        handoff = service.get_clauses_for_document(
+            DocumentType.EMPLOYMENT_CONTRACT,
+            Jurisdiction.EG,
+            active_conditions=["handles_personal_data"],
+        )
+
+        clause_ids = {
+            clause.clause_id
+            for clause in handoff.clauses
+        }
+
+        assert "CLZ-DATA-EG-001" in clause_ids
+
+        assert handoff.source_metadata["active_conditions"] == [
+            "handles_personal_data"
+        ]
+
+        assert handoff.source_metadata["conditional_count"] == 1
+    def test_validate_clause_set_requires_active_conditional_clause(
+        self,
+        service,
+    ):
+        report = service.validate_clause_set(
+            ["CLZ-TERM-EG-001"],
+            DocumentType.EMPLOYMENT_CONTRACT,
+            Jurisdiction.EG,
+            active_conditions=["handles_personal_data"],
+        )
+
+        assert report.valid is False
+        assert "CLZ-DATA-EG-001" in (
+            report.completeness.missing_required
+        )
+    def test_validate_clause_set_accepts_active_conditional_clause(
+        self,
+        service,
+    ):
+        report = service.validate_clause_set(
+            [
+                "CLZ-TERM-EG-001",
+                "CLZ-DATA-EG-001",
+            ],
+            DocumentType.EMPLOYMENT_CONTRACT,
+            Jurisdiction.EG,
+            active_conditions=["handles_personal_data"],
+        )
+
+        assert report.valid is True
+        assert report.completeness.missing_required == []
+    def test_handoff_rejects_clause_with_wrong_document_type(
+        self,
+        populated_library,
+    ):
+        bad_clause = _make_clause(
+            clause_id="CLZ-BAD-DOC-EG-001",
+            type=ClauseType.CONFIDENTIALITY,
+            document_types=[DocumentType.NDA],
+        )
+
+        populated_library.add_clause(bad_clause)
+
+        engine = RequiredClauseEngine(populated_library)
+
+        engine.add_template(
+            TemplateClauseRequirement(
+                template_id="TMPL-EMP-EG-BAD-DOC",
+                document_type=DocumentType.EMPLOYMENT_CONTRACT,
+                jurisdiction=Jurisdiction.EG,
+                optional_clauses=[
+                    "CLZ-BAD-DOC-EG-001"
+                ],
+            )
+        )
+
+        service = M5ClauseService(
+            clause_library=populated_library,
+            required_clause_engine=engine,
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="not compatible with document type",
+        ):
+            service.get_clauses_for_document(
+                DocumentType.EMPLOYMENT_CONTRACT,
+                Jurisdiction.EG,
+            )
+    def test_handoff_rejects_clause_with_wrong_jurisdiction(
+        self,
+        populated_library,
+    ):
+        bad_clause = _make_clause(
+            clause_id="CLZ-BAD-KSA-001",
+            jurisdiction=Jurisdiction.KSA,
+            document_types=[
+                DocumentType.EMPLOYMENT_CONTRACT
+            ],
+        )
+
+        populated_library.add_clause(bad_clause)
+
+        engine = RequiredClauseEngine(populated_library)
+
+        engine.add_template(
+            TemplateClauseRequirement(
+                template_id="TMPL-EMP-EG-BAD-JUR",
+                document_type=(
+                    DocumentType.EMPLOYMENT_CONTRACT
+                ),
+                jurisdiction=Jurisdiction.EG,
+                optional_clauses=[
+                    "CLZ-BAD-KSA-001"
+                ],
+            )
+        )
+
+        service = M5ClauseService(
+            clause_library=populated_library,
+            required_clause_engine=engine,
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="not compatible with jurisdiction",
+        ):
+            service.get_clauses_for_document(
+                DocumentType.EMPLOYMENT_CONTRACT,
+                Jurisdiction.EG,
+            )
+    def test_handoff_accepts_applicable_clauses(
+        self,
+        service,
+    ):
+        handoff = service.get_clauses_for_document(
+            DocumentType.EMPLOYMENT_CONTRACT,
+            Jurisdiction.EG,
+        )
+
+        for clause in handoff.clauses:
+            assert (
+                DocumentType.EMPLOYMENT_CONTRACT
+                in clause.document_types
+            )
+
+            assert clause.jurisdiction in {
+                Jurisdiction.EG,
+                Jurisdiction.INTERNATIONAL,
+            }
 # ──────────────────────────────────────────────
 # Seed Data Loading Test
 # ──────────────────────────────────────────────
@@ -762,3 +1008,15 @@ class TestSeedDataLoading:
         assert "{{CONFIDENTIALITY_CLAUSE}}" in source_meta["template_structure"]
         assert "section_placeholders" in source_meta
         assert source_meta["section_placeholders"].get("section_confidentiality") == "{{CONFIDENTIALITY_CLAUSE}}"
+        requirement = handoff.template_requirement
+
+        assert (
+            requirement.section_placeholders[
+                "section_confidentiality"
+            ]
+            == "{{CONFIDENTIALITY_CLAUSE}}"
+        )
+
+        assert "{{CONFIDENTIALITY_CLAUSE}}" in (
+            requirement.template_structure
+        )

@@ -626,6 +626,13 @@ class M5ToM1Handoff(BaseModel):
         default_factory=list,
         description="قرارات التوافق المطبقة",
     )
+    template_requirement: TemplateClauseRequirement = Field(
+        ...,
+        description=(
+            "Authoritative M5 template clause requirements "
+            "for this document type and jurisdiction"
+        ),
+    )
     source_metadata: dict[str, Any] = Field(
         default_factory=dict,
         description="بيانات مصدرية",

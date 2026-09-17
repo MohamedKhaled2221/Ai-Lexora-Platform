@@ -211,6 +211,7 @@ class RequiredClauseEngine:
         clause_ids: list[str],
         document_type: DocumentType,
         jurisdiction: Jurisdiction,
+        active_conditions: list[str] | None = None,
     ) -> CompletenessReport:
         """
         فحص اكتمال البنود لنوع عقد وولاية قضائية.
@@ -226,7 +227,7 @@ class RequiredClauseEngine:
         if not template:
             return CompletenessReport(
                 template_id="unknown",
-                is_complete=True,
+                is_complete=False,
                 warnings=[
                     "No template found for "
                     f"{document_type.value}/{jurisdiction.value}"
@@ -234,10 +235,26 @@ class RequiredClauseEngine:
             )
 
         provided_set = set(clause_ids)
+        active_condition_set = set(active_conditions or [])
+
+        conditional_required = [
+            conditional.clause_id
+            for conditional in template.conditional_clauses
+            if conditional.condition in active_condition_set
+        ]
+
+        effective_required = list(
+            dict.fromkeys(
+                [
+                    *template.required_clauses,
+                    *conditional_required,
+                ]
+            )
+        )
 
         missing_required = [
             req_id
-            for req_id in template.required_clauses
+            for req_id in effective_required
             if req_id not in provided_set
         ]
 

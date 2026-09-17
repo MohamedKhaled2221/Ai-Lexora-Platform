@@ -123,6 +123,7 @@ class M5ClauseService:
         self,
         document_type: DocumentType,
         jurisdiction: Jurisdiction,
+        active_conditions: list[str] | None = None,
     ) -> M5ToM1Handoff:
         """
         استرجاع البنود المعتمدة لنوع عقد وولاية قضائية.
@@ -132,7 +133,18 @@ class M5ClauseService:
         - قرارات التوافق المطبقة
         - البيانات المصدرية
         """
+        template_requirement = (
+            self.required_clause_engine.find_template(
+                document_type,
+                jurisdiction,
+            )
+        )
 
+        if template_requirement is None:
+            raise ValueError(
+                "No M5 template requirement found for "
+                f"{document_type.value}/{jurisdiction.value}"
+            )
         # Get required and optional clauses
         required = self.required_clause_engine.get_required_clauses(
             document_type, jurisdiction
@@ -140,13 +152,66 @@ class M5ClauseService:
         optional = self.required_clause_engine.get_optional_clauses(
             document_type, jurisdiction
         )
+        conditional = (
+            self.required_clause_engine.get_conditional_clauses(
+                document_type,
+                jurisdiction,
+                active_conditions=active_conditions,
+            )
+        )
 
-        all_clauses = required + optional
+        all_clauses_by_id = {
+            clause.clause_id: clause
+            for clause in [
+                *required,
+                *optional,
+                *conditional,
+            ]
+        }
+
+        all_clauses = list(all_clauses_by_id.values())
+        self._validate_clause_applicability(
+            all_clauses,
+            document_type,
+            jurisdiction,
+        )
 
         # Filter to only usable clauses
         usable_clauses = [
-            c for c in all_clauses if c.is_usable()
+            clause
+            for clause in all_clauses
+            if clause.is_usable()
         ]
+        usable_clause_ids = {
+            clause.clause_id
+            for clause in usable_clauses
+        }
+
+        active_condition_set = set(active_conditions or [])
+
+        active_conditional_ids = {
+            conditional.clause_id
+            for conditional in template_requirement.conditional_clauses
+            if conditional.condition in active_condition_set
+        }
+
+        effective_required_ids = {
+            *template_requirement.required_clauses,
+            *active_conditional_ids,
+        }
+
+        missing_or_unusable_required = sorted(
+            clause_id
+            for clause_id in effective_required_ids
+            if clause_id not in usable_clause_ids
+        )
+
+        if missing_or_unusable_required:
+            raise ValueError(
+                "Cannot build M5 -> M1 handoff because required "
+                "clauses are missing or unusable: "
+                + ", ".join(missing_or_unusable_required)
+            )
 
         # Get applicable compatibility rules
         compatibility_decisions = self._get_applicable_rules(
@@ -180,11 +245,16 @@ class M5ClauseService:
             "insertion_map": insertion_map,
             "template_structure": template_structure,
             "section_placeholders": section_placeholders,
+            "active_conditions": list(active_conditions or []),
+            "conditional_count": len(
+                [clause for clause in conditional if clause.is_usable()]
+            ),
         }
 
         return M5ToM1Handoff(
             clauses=usable_clauses,
             compatibility_decisions=compatibility_decisions,
+            template_requirement=template_requirement,
             source_metadata=source_metadata,
         )
 
@@ -262,6 +332,7 @@ class M5ClauseService:
         clause_ids: list[str],
         document_type: DocumentType,
         jurisdiction: Jurisdiction,
+        active_conditions: list[str] | None = None,
     ) -> ValidationReport:
         """
         فحص شامل لمجموعة بنود.
@@ -283,7 +354,10 @@ class M5ClauseService:
         # Check completeness
         completeness = (
             self.required_clause_engine.validate_completeness(
-                clause_ids, document_type, jurisdiction
+                clause_ids,
+                document_type,
+                jurisdiction,
+                active_conditions=active_conditions,
             )
         )
 
@@ -377,7 +451,48 @@ class M5ClauseService:
     # ──────────────────────────────────────────
     # Internal Helpers
     # ──────────────────────────────────────────
+    def _validate_clause_applicability(
+        self,
+        clauses: list[ApprovedClause],
+        document_type: DocumentType,
+        jurisdiction: Jurisdiction,
+    ) -> None:
+        """
+        Fail closed when a template references a clause that is
+        not applicable to the requested document/jurisdiction.
 
+        This deliberately checks clause-to-document applicability
+        only. It does not reject pairwise incompatibilities between
+        optional alternatives in the handoff.
+        """
+
+        errors: list[str] = []
+
+        for clause in clauses:
+            if not self.compatibility_engine.check_document_compatibility(
+                clause,
+                document_type,
+            ):
+                errors.append(
+                    f"Clause {clause.clause_id} is not compatible "
+                    f"with document type {document_type.value}"
+                )
+
+            if not self.compatibility_engine.check_jurisdiction_compatibility(
+                clause,
+                jurisdiction,
+            ):
+                errors.append(
+                    f"Clause {clause.clause_id} "
+                    f"({clause.jurisdiction.value}) is not compatible "
+                    f"with jurisdiction {jurisdiction.value}"
+                )
+
+        if errors:
+            raise ValueError(
+                "Invalid M5 template clause configuration: "
+                + "; ".join(errors)
+            )
     def _get_applicable_rules(
         self,
         clauses: list[ApprovedClause],
