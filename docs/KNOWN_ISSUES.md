@@ -129,8 +129,12 @@ before revisiting.
 
 ## ISSUE-3: Arabic thousands separator defeats monetary extraction
 
-**Status:** open, not fixed. One character class in M2; needs an M2 sign-off,
-not a unilateral patch.
+**Status:** resolved in M2.
+
+`IdentifierPreserver.NUMBER` now accepts both the ASCII
+thousands separator `,` and Arabic U+066C `٬`, and the
+money extractor supports currency-code prefixes. The
+historical notes below describe the pre-fix behavior.
 **Severity:** medium — every genuine monetary amount in the corpus is
 unreachable by exact value lookup, and was briefly indexed *wrongly*.
 **Owner:** unassigned (M2 owns the pattern; M3 consumes it).

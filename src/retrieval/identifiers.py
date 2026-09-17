@@ -63,7 +63,7 @@ import re
 from typing import Any, Dict, Iterable, List, Optional, Sequence
 
 from src.schemas.m2_contract import IdentifierSet
-
+import unicodedata
 # Arabic-Indic (U+0660-0669) and Extended/Persian Arabic-Indic (U+06F0-06F9)
 # digits both appear in Egyptian legal PDFs, sometimes in the same document.
 # Normalizing to ASCII at both ends is what lets "المادة ١٥" and "Article 15"
@@ -383,45 +383,102 @@ def money_ref(document_id: str, money_value: str) -> str:
     """
     return f"{document_id}:m{money_value}"
 
+def normalize_preserved_text(
+    raw: str | None,
+) -> str | None:
+    """
+    Conservatively normalize text that M2 already preserved.
 
+    M3 does not re-extract party names or legal terms.
+    It only normalizes them enough for deterministic lookup.
+    """
+
+    if raw is None:
+        return None
+
+    value = unicodedata.normalize(
+        "NFKC",
+        str(raw),
+    )
+
+    value = " ".join(
+        value.split()
+    ).strip()
+
+    if not value:
+        return None
+
+    return value.casefold()
 def normalize_identifier_set(
     identifiers: Optional[IdentifierSet],
 ) -> Dict[str, List[str]]:
     """
-    Normalize an M2 ``IdentifierSet`` into query-side lookup tokens.
+    Normalize the IdentifierSet already produced by M2.
 
-    Consumes what M2 already produced; extracts nothing itself. Returns a dict
-    with ``article_numbers``, ``case_numbers``, ``dates`` and ``money_values``
-    keys holding deduplicated, order-preserving token lists (empty lists when
-    there is nothing to match).
+    M3 does not perform query-side identifier extraction.
 
-    ``party_names`` is deliberately left unconsumed. M2 populates it as an
-    empty list on every query -- ``extract_identifiers`` has no party
-    extraction -- so wiring it would add a retriever input that is always
-    empty, which reads as coverage and is not.
+    Articles, cases, dates and monetary values use their
+    structured normalization rules.
+
+    Party names and named legal terms receive only
+    conservative text normalization.
     """
 
     articles: List[str] = []
     cases: List[str] = []
     dates: List[str] = []
     money: List[str] = []
+    party_names: List[str] = []
+    named_legal_terms: List[str] = []
 
     if identifiers is not None:
+
         articles = _dedupe(
             normalize_article_number(value)
-            for value in (identifiers.article_numbers or [])
+            for value in (
+                identifiers.article_numbers
+                or []
+            )
         )
+
         cases = _dedupe(
             normalize_case_number(value)
-            for value in (identifiers.case_numbers or [])
+            for value in (
+                identifiers.case_numbers
+                or []
+            )
         )
+
         dates = _dedupe(
             normalize_date(value)
-            for value in (identifiers.dates or [])
+            for value in (
+                identifiers.dates
+                or []
+            )
         )
+
         money = _dedupe(
             normalize_money(value)
-            for value in (identifiers.monetary_values or [])
+            for value in (
+                identifiers.monetary_values
+                or []
+            )
+        )
+
+        party_names = _dedupe(
+            normalize_preserved_text(value)
+            for value in (
+                identifiers.party_names
+                or []
+            )
+        )
+
+        named_legal_terms = _dedupe(
+            normalize_preserved_text(value)
+            for value in (
+                identifiers.named_legal_terms
+                or []
+            )
         )
 
     return {
@@ -429,8 +486,10 @@ def normalize_identifier_set(
         "case_numbers": cases,
         "dates": dates,
         "money_values": money,
+        "party_names": party_names,
+        "named_legal_terms":
+            named_legal_terms,
     }
-
 
 def _dedupe(values: Iterable[Optional[str]]) -> List[str]:
     """Drop ``None`` and duplicates while preserving first-seen order."""
@@ -475,12 +534,29 @@ def extract_from_text(
     parts = [part for part in (section, clause, text) if part]
     combined = "\n".join(parts)
 
-    found: IdentifierSet = processor.extract_identifiers(combined)
-    normalized = normalize_identifier_set(found)
+    found: IdentifierSet = (
+        processor.extract_identifiers(
+            combined
+        )
+    )
 
-    article_numbers = normalized["article_numbers"]
+    normalized = normalize_identifier_set(
+        found
+    )
+
+    article_numbers = normalized[
+        "article_numbers"
+    ]
+
     dates = normalized["dates"]
-    money_values = normalized["money_values"]
+
+    money_values = normalized[
+        "money_values"
+    ]
+
+    party_names = normalized[
+        "party_names"
+    ]
 
     return {
         "article_no": article_numbers,
@@ -497,6 +573,7 @@ def extract_from_text(
         "date_ref": [date_ref(document_id, value) for value in dates],
         "money_no": money_values,
         "money_ref": [money_ref(document_id, value) for value in money_values],
+        "party_name": party_names,
     }
 
 

@@ -52,6 +52,7 @@ EXPECTED_INDEXED_FIELDS = {
     # status filter.
     "record_id",
     "validity_status",
+    "party_name",
 }
 
 

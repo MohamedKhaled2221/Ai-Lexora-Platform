@@ -133,8 +133,9 @@ def test_arabic_currency_words_and_digits_fold():
 
 def test_arabic_thousands_separator_is_folded():
     """
-    U+066C is what the real corpus uses. This layer handles it; M2's extractor
-    does not, which is ISSUE-3 -- see the module docstring.
+    M2 and M3 both support the Arabic thousands
+    separator U+066C. M3 still normalizes it so
+    index/query lookup tokens remain identical.
     """
     assert normalize_money("2٬450٬000 جنيه") == "EGP:2450000"
 
@@ -150,11 +151,9 @@ def test_amount_without_currency_is_not_a_monetary_value():
 
 def test_zero_amounts_are_refused():
     """
-    The guard that keeps ISSUE-3 from writing wrong data rather than no data.
-
-    M2 truncates ``2٬450٬000 جنيه`` to ``"000 جنيه"``. Without this, that
-    becomes EGP:0 -- and becomes the *same* key on three unrelated contracts,
-    silently joining them.
+    Zero monetary values are still refused because they
+    are not useful legal amount identifiers and can be
+    produced by malformed/OCR text.
     """
     assert normalize_money("000 جنيه") is None
     assert normalize_money("0 EGP") is None
@@ -180,16 +179,38 @@ def test_m2_date_and_money_fields_are_consumed_not_reimplemented():
     assert normalized["money_values"] == ["USD:50000"]
 
 
-def test_party_names_is_deliberately_not_consumed():
+def test_party_names_and_named_legal_terms_are_consumed_from_m2():
     """
-    M2 populates party_names as an empty list on every query -- it has no
-    party extraction. Wiring it would add a retriever input that is always
-    empty, which reads as coverage and is not.
+    M3 consumes M2-preserved values rather than
+    re-extracting them.
     """
-    processed = QueryProcessor().process("claim by Blue Nile Engineering Supplies")
-    assert processed.identifiers.party_names == []
-    assert "party_names" not in normalize_identifier_set(processed.identifiers)
 
+    processed = (
+        QueryProcessor().process(
+            "What happened in Case 123/2025 "
+            "under Article 157 for "
+            "Acme Egypt LLC concerning "
+            "force majeure?"
+        )
+    )
+
+    normalized = (
+        normalize_identifier_set(
+            processed.identifiers
+        )
+    )
+
+    assert normalized[
+        "party_names"
+    ] == [
+        "acme egypt llc"
+    ]
+
+    assert normalized[
+        "named_legal_terms"
+    ] == [
+        "force majeure"
+    ]
 
 def test_compound_keys_disambiguate_across_documents():
     """

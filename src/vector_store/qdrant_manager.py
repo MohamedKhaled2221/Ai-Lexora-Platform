@@ -131,6 +131,13 @@ LIFECYCLE_PAYLOAD_FIELDS = (
     "record_id",
     "validity_status",
 )
+VALID_LIFECYCLE_STATUSES = frozenset(
+    {
+        "current",
+        "superseded",
+        "review_required",
+    }
+)
 """M6 knowledge-record keys written by :mod:`src.indexing.index_sync`.
 
 ``record_id`` addresses every point belonging to one canonical record, so a
@@ -146,6 +153,7 @@ IDENTIFIER_PAYLOAD_FIELDS = (
     "date_ref",
     "money_no",
     "money_ref",
+    "party_name",
 )
 """Normalized legal-identifier keys, indexed as KEYWORD for *exact* matching.
 
@@ -554,36 +562,68 @@ class QdrantVectorStore:
                     )
 
         if validity_statuses is not None:
-            if not validity_statuses:
-                # An empty allow-list would match nothing. That is almost
-                # certainly a misconfiguration, not a request for no results.
+
+            normalized_statuses = list(
+                dict.fromkeys(
+                    str(status)
+                    .strip()
+                    .lower()
+                    for status
+                    in validity_statuses
+                    if str(status).strip()
+                )
+            )
+
+            if not normalized_statuses:
                 raise ValueError(
-                    "validity_statuses must be None (no status filter) or a "
-                    "non-empty list of allowed statuses."
+                    "validity_statuses must be None "
+                    "or a non-empty list."
+                )
+
+            invalid_statuses = sorted(
+                set(normalized_statuses)
+                - VALID_LIFECYCLE_STATUSES
+            )
+
+            if invalid_statuses:
+                raise ValueError(
+                    "Unsupported validity_status "
+                    "value(s): "
+                    + ", ".join(
+                        invalid_statuses
+                    )
                 )
 
             status_condition = FieldCondition(
                 key="validity_status",
-                match=MatchAny(any=list(validity_statuses)),
+                match=MatchAny(
+                    any=normalized_statuses
+                ),
             )
 
             if include_unversioned_points:
-                # Nested OR inside the top-level AND: still narrows the access
-                # scope, never widens it.
+
                 must_conditions.append(
                     Filter(
                         should=[
                             status_condition,
                             qmodels.IsEmptyCondition(
-                                is_empty=qmodels.PayloadField(
-                                    key="validity_status"
+                                is_empty=(
+                                    qmodels.PayloadField(
+                                        key=(
+                                            "validity_status"
+                                        )
+                                    )
                                 )
                             ),
                         ]
                     )
                 )
+
             else:
-                must_conditions.append(status_condition)
+                must_conditions.append(
+                    status_condition
+                )
 
         # Always a real Filter: must_conditions can never be empty, because
         # the access conditions are unconditional.
@@ -698,8 +738,18 @@ class QdrantVectorStore:
         case_numbers: Optional[List[str]] = None,
         dates: Optional[List[str]] = None,
         date_refs: Optional[List[str]] = None,
-        money_values: Optional[List[str]] = None,
-        money_refs: Optional[List[str]] = None,
+        money_values: Optional[
+            List[str]
+        ] = None,
+
+        money_refs: Optional[
+            List[str]
+        ] = None,
+
+        party_names: Optional[
+            List[str]
+        ] = None,
+
         top_k: int = 20,
     ) -> List[Dict[str, Any]]:
         """
@@ -740,13 +790,38 @@ class QdrantVectorStore:
         should_conditions = []
 
         for field, values in (
-            ("article_ref", article_refs),
-            ("article_no", article_numbers),
-            ("case_no", case_numbers),
-            ("date_ref", date_refs),
-            ("date_no", dates),
-            ("money_ref", money_refs),
-            ("money_no", money_values),
+            (
+                "article_ref",
+                article_refs,
+            ),
+            (
+                "article_no",
+                article_numbers,
+            ),
+            (
+                "case_no",
+                case_numbers,
+            ),
+            (
+                "date_ref",
+                date_refs,
+            ),
+            (
+                "date_no",
+                dates,
+            ),
+            (
+                "money_ref",
+                money_refs,
+            ),
+            (
+                "money_no",
+                money_values,
+            ),
+            (
+                "party_name",
+                party_names,
+            ),
         ):
             if values:
                 should_conditions.append(

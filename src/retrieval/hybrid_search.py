@@ -5,6 +5,7 @@ from rank_bm25 import BM25Okapi
 
 from src.vector_store.qdrant_manager import (
     QdrantVectorStore,
+    VALID_LIFECYCLE_STATUSES,
     to_sparse_vector,
 )
 from src.retrieval.identifiers import (
@@ -110,7 +111,71 @@ def tokenize_text(text: str) -> List[str]:
     text_clean = re.sub(r'[^\w\s]', ' ', text.lower())
     return [t for t in text_clean.split() if t]
 
+def build_retrieval_text(
+    query: ProcessedQuery,
+) -> str:
+    """
+    Build lexical/reranker text strictly from M2-owned
+    outputs.
 
+    M3 does not translate, extract entities, or invent
+    query variants.
+
+    It consumes:
+    - normalized text;
+    - M2 controlled query variants;
+    - M2 preserved party names;
+    - M2 named legal terms.
+    """
+
+    normalized_identifiers = (
+        normalize_identifier_set(
+            query.identifiers
+        )
+    )
+
+    candidates = [
+        (
+            query.normalized_text
+            or query.text_original
+        ),
+        *query.query_variants,
+        *normalized_identifiers[
+            "party_names"
+        ],
+        *normalized_identifiers[
+            "named_legal_terms"
+        ],
+    ]
+
+    seen: set[str] = set()
+    parts: list[str] = []
+
+    for value in candidates:
+
+        cleaned = " ".join(
+            str(value or "").split()
+        ).strip()
+
+        if not cleaned:
+            continue
+
+        dedupe_key = cleaned.casefold()
+
+        if dedupe_key in seen:
+            continue
+
+        seen.add(
+            dedupe_key
+        )
+
+        parts.append(
+            cleaned
+        )
+
+    return "\n".join(
+        parts
+    )
 class HybridSearcher:
     """
     Hybrid search: dense vector retrieval fused with keyword retrieval via
@@ -158,11 +223,49 @@ class HybridSearcher:
         measured value, its trade-off, and why it is a partial filter that
         stays off by default."""
 
-        self.allowed_validity_statuses = (
-            list(allowed_validity_statuses)
-            if allowed_validity_statuses is not None
-            else None
-        )
+        if allowed_validity_statuses is None:
+
+            self.allowed_validity_statuses = (
+                None
+            )
+
+        else:
+
+            normalized_statuses = list(
+                dict.fromkeys(
+                    str(status)
+                    .strip()
+                    .lower()
+                    for status
+                    in allowed_validity_statuses
+                    if str(status).strip()
+                )
+            )
+
+            if not normalized_statuses:
+                raise ValueError(
+                    "allowed_validity_statuses "
+                    "must be None or a "
+                    "non-empty list"
+                )
+
+            invalid_statuses = sorted(
+                set(normalized_statuses)
+                - VALID_LIFECYCLE_STATUSES
+            )
+
+            if invalid_statuses:
+                raise ValueError(
+                    "Unsupported validity_status "
+                    "value(s): "
+                    + ", ".join(
+                        invalid_statuses
+                    )
+                )
+
+            self.allowed_validity_statuses = (
+                normalized_statuses
+            )
         """Restrict retrieval to these ``validity_status`` payload values
         (M6's ``current`` / ``superseded`` / ``review_required``). ``None``
         applies no status condition, which is today's behaviour: no point in
@@ -322,18 +425,16 @@ class HybridSearcher:
         Four identifier kinds feed this path -- articles, case numbers, dates
         and monetary values -- and all four take the same bare/compound switch.
 
-        A caveat that belongs here rather than in a release note: the
-        **monetary path is wired but unverified against this corpus**, because
-        ``QueryProcessor.MONEY_RE`` matches ASCII ``,`` only and the real
-        Egyptian amounts in the collection are written with U+066C ARABIC
-        THOUSANDS SEPARATOR. ``2٬450٬000 جنيه`` therefore extracts as
-        ``"000 جنيه"`` -- a truncation, upstream of anything this module can
-        reach. :func:`normalize_money` folds U+066C so the layer is correct the
-        moment extraction is, but until M2's pattern is widened the money keys
-        written at index time describe the wrong amounts. Tracked in
-        ``docs/KNOWN_ISSUES.md`` as ISSUE-3; not worked around here, because a
-        second extraction pattern in this module is precisely the drift the
-        module docstring of ``identifiers`` argues against.
+       
+        Party names are treated as entity-like exact lookup
+        tokens.
+
+        Named legal terms and controlled query variants are
+        not treated as exact identifiers because concepts such
+        as force majeure or arbitration can occur across many
+        documents. They participate through lexical retrieval
+        and final reranking instead.
+
         """
 
         normalized = normalize_identifier_set(query.identifiers)
@@ -342,8 +443,19 @@ class HybridSearcher:
         case_numbers = normalized["case_numbers"]
         dates = normalized["dates"]
         money_values = normalized["money_values"]
+        party_names = normalized[
+            "party_names"
+        ]
 
-        if not any((article_numbers, case_numbers, dates, money_values)):
+        if not any(
+            (
+                article_numbers,
+                case_numbers,
+                dates,
+                money_values,
+                party_names,
+            )
+        ):
             return []
 
         scoped_document_ids = query.filters.document_ids
@@ -395,6 +507,7 @@ class HybridSearcher:
             money_values=money_values,
             money_refs=money_refs,
             top_k=top_k,
+            party_names=party_names,
         )
 
         # Exact matching is boolean, so Qdrant returned these in scroll order --
@@ -526,8 +639,9 @@ class HybridSearcher:
 
         return self._bm25_search(
             query_text=(
-                query.normalized_text
-                or query.text_original
+                build_retrieval_text(
+                    query
+                )
             ),
             chunks=all_chunks,
             top_k=top_k,

@@ -102,7 +102,38 @@ def test_empty_status_allow_list_is_rejected(store):
     with pytest.raises(ValueError):
         store.build_qdrant_filter(access=access_scope(), validity_statuses=[])
 
-
+def test_unknown_lifecycle_status_is_rejected(
+    store,
+):
+    with pytest.raises(
+        ValueError,
+        match=(
+            "Unsupported "
+            "validity_status"
+        ),
+    ):
+        HybridSearcher(
+            store,
+            allowed_validity_statuses=[
+                "currnet"
+            ],
+        )
+def test_vector_store_rejects_unknown_lifecycle_status(
+    store,
+):
+    with pytest.raises(
+        ValueError,
+        match=(
+            "Unsupported "
+            "validity_status"
+        ),
+    ):
+        store.build_qdrant_filter(
+            access=access_scope(),
+            validity_statuses=[
+                "currnet"
+            ],
+        )
 # ------------------------------------------------------- dense-score gate
 
 
@@ -163,6 +194,19 @@ def test_pipeline_logs_config_and_selected_evidence_without_text(store, caplog):
     assert record.retrieval_config["min_dense_score"] == 0.2
     assert record.retrieval_config["allowed_validity_statuses"] == ["current"]
     assert record.retrieval_config["dense_weight"] == 0.9
+    assert (
+        record.retrieval_config[
+            "reranker_local_files_only"
+        ]
+        is True
+    )
+
+    assert (
+        record.retrieval_config[
+            "reranker_use_mock_fallback"
+        ]
+        is True
+    )
     logged_ids = {(e["document_id"], e["chunk_id"]) for e in record.evidence}
     assert logged_ids == {(e.document_id, e.chunk_id) for e in evidence.retrieved_evidence}
     assert all("text" not in e and "client_id" not in e for e in record.evidence)

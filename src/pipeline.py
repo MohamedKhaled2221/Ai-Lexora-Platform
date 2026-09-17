@@ -13,6 +13,7 @@ from src.vector_store.qdrant_manager import QdrantVectorStore
 from src.retrieval.hybrid_search import (
     HybridSearcher,
     KeywordBackend,
+    build_retrieval_text,
 )
 from src.retrieval.reranker import BGEReranker
 
@@ -90,7 +91,11 @@ class M3RetrievalPipeline:
         )
 
         # Step 2: BGE Rerank top candidates
-        query_text_for_reranker = query.normalized_text or query.text_original
+        query_text_for_reranker = (
+            build_retrieval_text(
+                query
+            )
+        )
         reranked_chunks = self.reranker.rerank(
             query_text=query_text_for_reranker,
             candidates=candidates,
@@ -179,7 +184,11 @@ class M3RetrievalPipeline:
         )
 
         ranked = self.reranker.rerank(
-            query_text=query.normalized_text or query.text_original,
+            query_text=(
+                build_retrieval_text(
+                    query
+                )
+            ),
             candidates=candidates,
             top_k=window,
         )
@@ -216,6 +225,21 @@ class M3RetrievalPipeline:
             config[name] = getattr(searcher, name, None)
         config["reranker_model"] = getattr(reranker, "model_name", None)
         config["reranker_loaded"] = getattr(reranker, "model", None) is not None
+        config[
+            "reranker_local_files_only"
+        ] = getattr(
+            reranker,
+            "local_files_only",
+            None,
+        )
+
+        config[
+            "reranker_use_mock_fallback"
+        ] = getattr(
+            reranker,
+            "use_mock_fallback",
+            None,
+        )
         return config
 
     def _assert_within_scope(
