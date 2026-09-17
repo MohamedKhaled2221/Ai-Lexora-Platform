@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
   generateBackendDocument,
-  generateContract as generateContractRequest,
   getGeneratorTemplates,
   reviewContract as reviewContractRequest,
 } from "./apiClient.js";
@@ -94,7 +93,7 @@ const contractCatalog = [
   {
     id: "nda",
     label: "Non-Disclosure Agreement (NDA)",
-    templates: [{ id: "mutual-nda", label: "Mutual NDA", fields: [["parties", "Parties", true], ["purpose", "Permitted Purpose", true], ["confidentialInfo", "Confidential Information", true], ["duration", "Confidentiality Period", true], ["exceptions", "Exceptions", true], ["governingLaw", "Applicable Law", true]] }],
+    templates: [{ id: "mutual-nda", label: "Mutual NDA", fields: [["PartyAName", "Party A Name", true], ["PartyBName", "Party B Name", true], ["EffectiveDate", "Effective Date", true], ["DurationYears", "Duration (Years)", true]] }],
   },
   {
     id: "loan",
@@ -190,8 +189,8 @@ function ContractEditor({ value, onChange, editorRef, direction }) {
 
 export function ContractGenerationPage() {
   const storedDraft = getStoredDraft();
-  const [contractType, setContractType] = useState(storedDraft?.contractType || "employment");
-  const [templateId, setTemplateId] = useState(storedDraft?.templateId || "standard-employment");
+  const [contractType, setContractType] = useState(storedDraft?.contractType || "nda");
+  const [templateId, setTemplateId] = useState(storedDraft?.templateId || "mutual-nda");
   const [contractData, setContractData] = useState(storedDraft?.contractData || {});
   const [instructions, setInstructions] = useState(storedDraft?.instructions || "");
   const [contractText, setContractText] = useState(storedDraft?.contractText || "");
@@ -287,7 +286,15 @@ export function ContractGenerationPage() {
   }
 
   function buildGenerationRequest() {
-    return { contractType: selectedType.label, template: selectedTemplate.label, contractData, additionalInstructions: instructions };
+    const backendTemplate = backendTemplates.find((item) => item.key === "nda");
+    if (!backendTemplate || selectedTemplate.id !== "mutual-nda") return null;
+
+    return {
+      templateKey: backendTemplate.key,
+      fields: Object.fromEntries(
+        backendTemplate.requiredFields.map((field) => [field, contractData[field] || ""]),
+      ),
+    };
   }
 
   function changeStatus(nextStatus) {
@@ -310,8 +317,23 @@ export function ContractGenerationPage() {
     setError("");
     setSuggestion("");
     try {
-      const response = await generateContractRequest(buildGenerationRequest());
-      const generated = response.answer || response.message || "";
+      const generationRequest = buildGenerationRequest();
+      if (!generationRequest) {
+        throw new Error("اختر قالب NDA المدعوم من Backend لإنشاء الملف.");
+      }
+
+      const backendTemplate = backendTemplates.find((item) => item.key === generationRequest.templateKey);
+      const missingBackendFields = (backendTemplate?.requiredFields || [])
+        .filter((field) => !String(generationRequest.fields[field] || "").trim());
+      if (missingBackendFields.length) {
+        throw new Error(`أكمل حقول Backend المطلوبة: ${missingBackendFields.join(", ")}.`);
+      }
+
+      const response = await generateBackendDocument(
+        generationRequest.templateKey,
+        generationRequest.fields,
+      );
+      const generated = await response.blob.text();
       if (!generated) throw new Error("empty-response");
       setContractText(generated);
       setStatus("تم الإنشاء بالذكاء الاصطناعي");
@@ -398,23 +420,21 @@ export function ContractGenerationPage() {
   }
 
   async function downloadBackendContract() {
-    const template = backendTemplates.find((item) => item.key === "nda");
-    if (!template) {
+    const generationRequest = buildGenerationRequest();
+    if (!generationRequest) {
       setError("قالب NDA غير متاح من Backend حاليًا.");
       return;
     }
 
     try {
-      const result = await generateBackendDocument("nda", {
-        PartyAName: contractData.parties || contractData.employerName || "Party A",
-        PartyBName: contractData.confidentialInfo || contractData.client || "Party B",
-        EffectiveDate: contractData.startDate || new Date().toISOString().slice(0, 10),
-        DurationYears: contractData.duration || "1",
-      });
+      const result = await generateBackendDocument(
+        generationRequest.templateKey,
+        generationRequest.fields,
+      );
       const url = URL.createObjectURL(result.blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "nda-generated.txt";
+      link.download = result.fileName;
       link.click();
       URL.revokeObjectURL(url);
       setError("");
@@ -478,7 +498,7 @@ export function ContractGenerationPage() {
       <div className="contract-workspace">
         <form className="contract-panel contract-form-panel" onSubmit={generateContract}>
           <div className="panel-heading"><div><p className="eyebrow">01 / الإعداد</p><h2>بيانات العقد</h2></div></div>
-          <label>نوع العقد<select value={contractType} onChange={(event) => { setContractType(event.target.value); setContractData({}); setError(""); }}>{contractCatalog.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
+          <label>نوع العقد<select value={contractType} onChange={(event) => { setContractType(event.target.value); setContractData({}); setError(""); }}>{contractCatalog.filter((item) => item.id === "nda").map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
           <label>قالب العقد<select value={selectedTemplate.id} onChange={(event) => { setTemplateId(event.target.value); setContractData({}); setError(""); }}>{selectedType.templates.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
           <div className="contract-metadata">
             <h3>بيانات التعريف</h3>

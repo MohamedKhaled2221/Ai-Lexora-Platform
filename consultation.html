@@ -112,7 +112,7 @@
         <div class="timeline-item"><strong>3</strong><span>إرسال سؤال قانوني إلى المساعد أو البحث بالمصادر.</span></div>
         <div class="quick-actions">
           <button class="ghost-btn" type="button" data-check-health>Health</button>
-          <button class="primary-btn" type="button" data-check-ready>Readiness</button>
+          <button class="primary-btn" type="button" data-check-ready>فحص الخدمات التابعة</button>
         </div>
       </aside>
     </section>
@@ -128,37 +128,8 @@
       <div data-react-widget="document-library"></div>
     </section>
 
-    <section class="case-detail-section file-search-widget" id="file-search">
-      <div class="react-widget legal-agent-widget">
-        <div class="table-header">
-          <div>
-            <p class="eyebrow">البحث داخل المستندات</p>
-            <h2>البحث داخل ملفات المحامي</h2>
-            <p>File Search للعثور على كلمة أو جملة داخل ملفاتك محليًا، مع تمييز النص المطابق. لا يولّد إجابة تحليلية ولا يرسل البحث إلى Legal AI.</p>
-          </div>
-        </div>
-
-        <form class="assistant-form" data-file-search-form>
-          <label class="assistant-composer-label">ملفات البحث
-            <div class="assistant-composer file-search-actions">
-              <input type="file" aria-label="اختيار ملفات للبحث المحلي" multiple accept=".txt,.md,.csv,.json,.pdf,.doc,.docx" data-search-files>
-              <button class="ghost-btn" type="button" data-clear-search-files>مسح الملفات</button>
-            </div>
-          </label>
-
-          <label>كلمة أو جملة البحث
-            <input type="search" name="searchTerm" placeholder="مثال: الإخطار الكتابي أو مدة العقد" required>
-          </label>
-
-          <div class="attachment-list" data-search-file-list aria-label="ملفات البحث المختارة"></div>
-          <button class="submit-btn" type="submit">بحث داخل الملفات</button>
-        </form>
-
-        <div class="agent-result file-search-results" data-file-search-output data-state="waiting" role="status" aria-live="polite">
-          <h3>ارفع ملف وابدأ البحث</h3>
-          <p>يدعم البحث داخل TXT وMD وCSV وJSON وPDF وDOCX. ملفات DOC القديمة غير قابلة للقراءة الموثوقة داخل المتصفح.</p>
-        </div>
-      </div>
+    <section class="case-detail-section" id="legal-research">
+      <div data-react-widget="legal-assistant" data-mode="search"></div>
     </section>
   </main>
 

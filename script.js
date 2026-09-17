@@ -354,7 +354,7 @@ document.querySelectorAll("[data-check-health]").forEach((button) => {
       showToast("FastAPI متصل.", "success");
     } catch (error) {
       setStatusCard(card, "error", "غير متصل", error.message);
-      renderJson(output, { error: error.message, apiBase: API_BASE });
+      renderJson(output, { error: error.message, apiBase: API_BASE, endpoint: "/health" });
       showToast("تعذر الاتصال بالباك اند.", "error");
     } finally {
       button.disabled = false;
@@ -370,19 +370,21 @@ document.querySelectorAll("[data-check-ready]").forEach((button) => {
     setStatusCard(card, "loading", "جاري الفحص", "بنراجع خدمات الذكاء الاصطناعي والفهرسة.");
 
     try {
-      const payload = await requestApi("/ready");
+      const payload = await requestApi("/health");
       renderJson(output, payload);
-      const ready = payload.status === "ready";
+      const ready = payload.status === "ok";
       setStatusCard(
         card,
         ready ? "ready" : "error",
-        ready ? "جاهز" : "غير جاهز",
-        payload.detail || "كل مكونات الذكاء الاصطناعي جاهزة."
+        ready ? "جاهز" : "يحتاج مراجعة",
+        payload.dependencies
+          ? "تم فحص قاعدة البيانات وخدمات Backend التابعة."
+          : "تعذر تأكيد حالة Backend."
       );
-      showToast(ready ? "النظام جاهز." : "النظام يحتاج تشغيل مكونات.", ready ? "success" : "error");
+      showToast(ready ? "النظام جاهز." : "النظام يحتاج مراجعة.", ready ? "success" : "error");
     } catch (error) {
       setStatusCard(card, "error", "غير جاهز", error.message);
-      renderJson(output, { error: error.message, apiBase: API_BASE });
+      renderJson(output, { error: error.message, apiBase: API_BASE, endpoint: "/health" });
       showToast("فحص الجاهزية فشل.", "error");
     } finally {
       button.disabled = false;

@@ -204,6 +204,41 @@ export async function requestApi(path, options = {}) {
   return request(path, options);
 }
 
+export async function checkBackendHealth() {
+  const response = await fetch(`${API_BASE}/health`);
+  const payload = await parseResponse(response);
+
+  if (!response.ok) {
+    const error = new Error(getUserErrorMessage({
+      status: response.status,
+      message: extractErrorMessage(payload, response.status),
+    }));
+    error.status = response.status;
+    throw error;
+  }
+
+  return payload;
+}
+
+export async function getChatConversations() {
+  return requestApi("/api/chatbot/conversations");
+}
+
+export async function createChatConversation() {
+  return requestApi("/api/chatbot/conversations", { method: "POST" });
+}
+
+export async function getChatMessages(conversationId) {
+  return requestApi(`/api/chatbot/conversations/${conversationId}/messages`);
+}
+
+export async function sendChatMessage(conversationId, content) {
+  return requestApi(`/api/chatbot/conversations/${conversationId}/messages`, {
+    method: "POST",
+    body: JSON.stringify({ content }),
+  });
+}
+
 export async function getGeneratorTemplates() {
   return requestApi("/api/document-generator/templates");
 }
@@ -229,9 +264,12 @@ export async function generateBackendDocument(templateKey, fields) {
     throw error;
   }
 
+  const contentDisposition = response.headers.get("Content-Disposition") || "";
+  const filenameMatch = contentDisposition.match(/filename\*?=(?:UTF-8''|\")?([^\";]+)/i);
+
   return {
     blob: await response.blob(),
-    fileName: response.headers.get("Content-Disposition") || "generated-contract.txt",
+    fileName: filenameMatch?.[1] ? decodeURIComponent(filenameMatch[1].trim()) : "generated-contract.txt",
   };
 }
 
@@ -362,6 +400,16 @@ export async function uploadDocument(file, type = "Contract") {
   return normalizeDocument(response);
 }
 
+export async function startContractAnalysis(documentId) {
+  return requestApi(`/api/documents/${documentId}/analysis`, {
+    method: "POST",
+  });
+}
+
+export async function getContractAnalysis(documentId) {
+  return requestApi(`/api/documents/${documentId}/analysis`);
+}
+
 export async function listDocuments() {
   const response = await requestApi("/api/documents?page=1&pageSize=100");
   const documents = Array.isArray(response?.items) ? response.items : [];
@@ -424,17 +472,7 @@ export async function askDocuments(question, documentIds = []) {
 }
 
 export async function generateContract(request) {
-  const data = request?.contractData || {};
-  const prompt = [
-    "اكتب مسودة عقد قانونية باللغة المناسبة للبيانات التالية.",
-    `نوع العقد: ${request?.contractType || "غير محدد"}`,
-    `القالب: ${request?.template || "غير محدد"}`,
-    `البيانات: ${JSON.stringify(data)}`,
-    `تعليمات إضافية: ${request?.additionalInstructions || "لا توجد"}`,
-    "أخرج نص العقد فقط مع عناوين واضحة، واذكر أن الناتج مسودة تحتاج مراجعة قانونية.",
-  ].join("\n");
-
-  return askDocuments(prompt);
+  return generateBackendDocument(request.templateKey, request.fields);
 }
 
 export async function reviewContract(contractText, action) {

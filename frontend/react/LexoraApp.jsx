@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import {
   askDocuments,
-  checkPackage2Health,
-  checkPackage2Readiness,
+  checkBackendHealth,
+  createChatConversation,
   deleteDocument as deleteBackendDocument,
   downloadDocument as downloadBackendDocument,
+  getChatConversations,
+  getChatMessages,
+  getContractAnalysis,
   requestApi,
+  sendChatMessage,
+  startContractAnalysis,
   uploadDocument,
 } from "./apiClient.js";
 import {
@@ -118,19 +123,17 @@ export function BackendStatusWidget() {
   });
   const [loading, setLoading] = useState("");
 
-  async function check(path) {
-    setLoading(path);
-    setResult({ status: "loading", endpoint: path });
+  async function check() {
+    setLoading("/health");
+    setResult({ status: "loading", endpoint: "/health" });
 
     try {
-      const payload = path === "/health"
-        ? await checkPackage2Health()
-        : await checkPackage2Readiness();
+      const payload = await checkBackendHealth();
       setResult(payload);
     } catch (error) {
       setResult({
         status: "error",
-        endpoint: path,
+        endpoint: "/health",
         message: "تعذر الاتصال بالخدمة حاليًا. حاول مرة أخرى بعد قليل.",
       });
     } finally {
@@ -139,7 +142,7 @@ export function BackendStatusWidget() {
   }
 
   const isReady = result.status === "ready" || result.status === "ok";
-  const isError = result.status === "error" || result.status === "not_ready";
+  const isError = result.status === "error" || result.status === "not_ready" || result.status === "degraded";
 
   return (
     <div className="react-widget">
@@ -159,17 +162,9 @@ export function BackendStatusWidget() {
           className="ghost-btn"
           type="button"
           disabled={loading === "/health"}
-          onClick={() => check("/health")}
+          onClick={() => check()}
         >
-          فحص التشغيل
-        </button>
-        <button
-          className="primary-btn"
-          type="button"
-          disabled={loading === "/ready"}
-          onClick={() => check("/ready")}
-        >
-          فحص الجاهزية
+          فحص حالة Backend
         </button>
       </div>
 
@@ -320,9 +315,12 @@ function ChatBubble({ message }) {
 
 export function ChatbotWidget() {
   const [messages, setMessages] = useState([]);
+  const [conversations, setConversations] = useState([]);
+  const [conversationId, setConversationId] = useState(null);
   const [question, setQuestion] = useState("");
   const [attachments, setAttachments] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [conversationLoading, setConversationLoading] = useState(true);
   const [error, setError] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [menuOpen, setMenuOpen] = useAttachmentMenu();
@@ -330,7 +328,76 @@ export function ChatbotWidget() {
   const imageInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const recognitionRef = useRef(null);
-  const { documents, selectedIds } = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  const conversationLoadPromiseRef = useRef(null);
+  const { documents } = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadConversationData() {
+      const existing = await getChatConversations();
+      const conversationsList = Array.isArray(existing) ? existing : [];
+      const conversation = conversationsList.length
+        ? conversationsList[0]
+        : await createChatConversation();
+      const history = await getChatMessages(conversation.id);
+      return {
+        conversations: conversationsList.length ? conversationsList : [conversation],
+        conversation,
+        history: Array.isArray(history) ? history : [],
+      };
+    }
+
+    setConversationLoading(true);
+    conversationLoadPromiseRef.current ||= loadConversationData();
+    conversationLoadPromiseRef.current
+      .then(({ conversations: loadedConversations, conversation, history }) => {
+        if (!active) return;
+        setConversations(loadedConversations);
+        setConversationId(conversation.id);
+        setMessages(history);
+      })
+      .catch((requestError) => {
+        if (active) setError(requestError.message || "تعذر تحميل المحادثات.");
+      })
+      .finally(() => {
+        if (active) setConversationLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function selectConversation(nextConversationId) {
+    setConversationLoading(true);
+    setError("");
+    try {
+      const history = await getChatMessages(nextConversationId);
+      setConversationId(nextConversationId);
+      setMessages(Array.isArray(history) ? history : []);
+    } catch (requestError) {
+      setError(requestError.message || "تعذر تحميل رسائل المحادثة.");
+    } finally {
+      setConversationLoading(false);
+    }
+  }
+
+  async function startNewConversation() {
+    setConversationLoading(true);
+    setError("");
+    try {
+      const conversation = await createChatConversation();
+      setConversations((current) => [conversation, ...current]);
+      setConversationId(conversation.id);
+      setMessages([]);
+      setQuestion("");
+      setAttachments([]);
+    } catch (requestError) {
+      setError(requestError.message || "تعذر إنشاء محادثة جديدة.");
+    } finally {
+      setConversationLoading(false);
+    }
+  }
 
   function addFiles(fileList, source) {
     const files = Array.from(fileList || []);
@@ -386,11 +453,15 @@ export function ChatbotWidget() {
       for (const attachment of attachments) {
         await uploadDocument(attachment.file, "Contract");
       }
-      const response = await askDocuments(text, selectedIds);
+      if (!conversationId) {
+        throw new Error("لم يتم إنشاء محادثة بعد. حاول مرة أخرى.");
+      }
+
+      const response = await sendChatMessage(conversationId, text);
       setMessages((current) => [...current, {
-        role: "assistant",
-        content: response.answer || "لم تصل إجابة قابلة للعرض.",
-        citations: response.citations || [],
+        ...response,
+        role: response.role || "assistant",
+        content: response.content || "لم تصل إجابة قابلة للعرض.",
       }]);
       setAttachments([]);
       window.dispatchEvent(new CustomEvent("lexora:documents-changed"));
@@ -413,9 +484,21 @@ export function ChatbotWidget() {
       </header>
       <div className="chat-layout">
         <aside className="chat-sidebar">
-          <button className="new-chat-button" type="button" onClick={() => { setMessages([]); setQuestion(""); setAttachments([]); setError(""); }}><span>+</span> محادثة جديدة</button>
-          <div className="chat-sidebar-section"><small>المحادثة الحالية</small><div className="chat-sidebar-current">محادثة قانونية جديدة</div></div>
-          <div className="chat-sidebar-note"><strong>ملاحظة</strong><span>سجل المحادثات سيُربط لاحقًا بخدمة الـ Backend.</span></div>
+          <button className="new-chat-button" type="button" disabled={conversationLoading} onClick={() => void startNewConversation()}><span>+</span> محادثة جديدة</button>
+          <div className="chat-sidebar-section">
+            <small>المحادثات</small>
+            {conversations.map((conversation) => (
+              <button
+                className={`chat-sidebar-current${conversation.id === conversationId ? " active" : ""}`}
+                type="button"
+                key={conversation.id}
+                onClick={() => void selectConversation(conversation.id)}
+              >
+                محادثة #{conversation.id}
+              </button>
+            ))}
+          </div>
+          <div className="chat-sidebar-note"><strong>ملاحظة</strong><span>المحادثات محفوظة عبر Backend.</span></div>
         </aside>
         <section className="chat-main">
           <div className="chat-messages" aria-live="polite">
@@ -456,42 +539,181 @@ function HighlightedText({ text }) {
 export function FileAnalysisWidget() {
   const [file, setFile] = useState(null);
   const [text, setText] = useState("");
-  const [status, setStatus] = useState("idle");
-  const [error, setError] = useState("");
+  const [previewStatus, setPreviewStatus] = useState("idle");
+  const [analysisStatus, setAnalysisStatus] = useState("idle");
+  const [analysis, setAnalysis] = useState(null);
+  const [analysisError, setAnalysisError] = useState("");
+  const [documentId, setDocumentId] = useState(null);
+  const analysisRunRef = useRef(0);
+  const pollTimerRef = useRef(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => () => {
+    mountedRef.current = false;
+    analysisRunRef.current += 1;
+    if (pollTimerRef.current) window.clearTimeout(pollTimerRef.current);
+  }, []);
+
+  function isActiveRun(runId) {
+    return mountedRef.current && analysisRunRef.current === runId;
+  }
+
+  function waitForNextPoll(runId) {
+    return new Promise((resolve) => {
+      pollTimerRef.current = window.setTimeout(() => {
+        pollTimerRef.current = null;
+        resolve(isActiveRun(runId));
+      }, 2000);
+    });
+  }
+
+  async function pollContractAnalysis(nextDocumentId, runId) {
+    const maxAttempts = 30;
+
+    for (let attempt = 0; attempt < maxAttempts && isActiveRun(runId); attempt += 1) {
+      const result = await getContractAnalysis(nextDocumentId);
+      if (!isActiveRun(runId)) return;
+
+      const normalizedStatus = String(result.status || "").toLowerCase();
+      setAnalysis(result);
+
+      if (normalizedStatus === "completed") {
+        setAnalysisStatus("completed");
+        return;
+      }
+
+      if (normalizedStatus === "failed") {
+        setAnalysisStatus("failed");
+        return;
+      }
+
+      if (!["pending", "processing", "running"].includes(normalizedStatus)) {
+        throw new Error(`حالة تحليل غير معروفة: ${result.status || "غير محددة"}`);
+      }
+
+      setAnalysisStatus("processing");
+      if (!(await waitForNextPoll(runId))) return;
+    }
+
+    if (isActiveRun(runId)) {
+      throw new Error("انتهت مهلة انتظار تحليل المستند. حاول تشغيل التحليل مرة أخرى.");
+    }
+  }
 
   async function analyzeFile(selectedFile) {
     if (!selectedFile) return;
+
+    analysisRunRef.current += 1;
+    const runId = analysisRunRef.current;
+    if (pollTimerRef.current) window.clearTimeout(pollTimerRef.current);
+
     setFile(selectedFile);
-    setStatus("loading");
-    setError("");
+    setPreviewStatus("loading");
+    setAnalysisStatus("uploading");
+    setAnalysis(null);
+    setAnalysisError("");
+    setDocumentId(null);
     setText("");
+
+    const previewPromise = import("../utils/documentParser.js")
+      .then((parser) => parser.parseDocumentFile(selectedFile))
+      .then((result) => {
+        if (!isActiveRun(runId)) return;
+        setText(result.text || "");
+        setPreviewStatus(result.text ? "success" : "empty");
+      })
+      .catch((parseError) => {
+        if (!isActiveRun(runId)) return;
+        setPreviewStatus("error");
+        setAnalysisError((current) => current || parseError.message || "تعذر قراءة المعاينة المحلية.");
+      });
+
     try {
-      const parser = await import("../utils/documentParser.js");
-      const result = await parser.parseDocumentFile(selectedFile);
-      setText(result.text || "");
-      setStatus(result.text ? "success" : "empty");
-    } catch (parseError) {
-      setStatus("error");
-      setError(parseError.message || "تعذر قراءة الملف داخل المتصفح.");
+      const uploaded = await uploadDocument(selectedFile, "Contract");
+      if (!isActiveRun(runId)) return;
+
+      const uploadedDocumentId = uploaded?.id;
+      if (!uploadedDocumentId) throw new Error("لم يُرجع الخادم معرف المستند المرفوع.");
+      setDocumentId(uploadedDocumentId);
+
+      const started = await startContractAnalysis(uploadedDocumentId);
+      if (!isActiveRun(runId)) return;
+      setAnalysis(started);
+      setAnalysisStatus("processing");
+
+      await pollContractAnalysis(uploadedDocumentId, runId);
+    } catch (requestError) {
+      if (!isActiveRun(runId)) return;
+      setAnalysisStatus("failed");
+      setAnalysisError(requestError.message || "تعذر تشغيل تحليل المستند.");
     }
+
+    void previewPromise;
   }
+
+  function resetAnalysis() {
+    analysisRunRef.current += 1;
+    if (pollTimerRef.current) window.clearTimeout(pollTimerRef.current);
+    setFile(null);
+    setText("");
+    setPreviewStatus("idle");
+    setAnalysisStatus("idle");
+    setAnalysis(null);
+    setAnalysisError("");
+    setDocumentId(null);
+  }
+
+  const headerStatus = analysisStatus === "completed"
+    ? "ready"
+    : analysisStatus === "failed"
+      ? "error"
+      : "idle";
+  const statusLabel = {
+    idle: "جاهز للبدء",
+    uploading: "جاري رفع المستند",
+    processing: "جاري تحليل العقد",
+    completed: "اكتمل التحليل",
+    failed: "فشل التحليل",
+  }[analysisStatus] || "جاري التحليل";
 
   return (
     <div className="file-analysis-shell">
       <header className="analysis-page-header">
-        <div><p className="eyebrow">Document Intelligence</p><h1>تحليل الملفات</h1><p>حوّل المستند أو الصورة إلى نص قابل للقراءة، ثم راجع الكلمات المهمة بتدرج بصري واضح.</p></div>
-        <StatusPill state={status === "success" ? "ready" : status === "error" ? "error" : "idle"}>{status === "loading" ? "جاري القراءة" : status === "success" ? "تم استخراج النص" : "جاهز للبدء"}</StatusPill>
+        <div><p className="eyebrow">Contract Intelligence</p><h1>تحليل العقود</h1><p>ارفع مستندًا ليحلله Backend، مع إبقاء المعاينة النصية المحلية منفصلة عن نتيجة التحليل.</p></div>
+        <StatusPill state={headerStatus}>{statusLabel}</StatusPill>
       </header>
       <div className="analysis-upload-zone">
         <input id="analysis-file-input" className="visually-hidden" type="file" accept=".pdf,.docx,.txt,.md,.csv,.json,.png,.jpg,.jpeg,.webp" onChange={(event) => { void analyzeFile(event.target.files?.[0]); event.target.value = ""; }} />
-        <label htmlFor="analysis-file-input" className="analysis-dropzone"><span className="analysis-upload-icon">↑</span><strong>{file ? file.name : "ارفع ملفًا للتحليل"}</strong><span>PDF، DOCX، TXT، MD، CSV، JSON والصور</span><small>تتم القراءة محليًا داخل المتصفح في هذه المرحلة</small></label>
-        {file ? <button className="ghost-btn" type="button" onClick={() => { setFile(null); setText(""); setStatus("idle"); setError(""); }}>اختيار ملف آخر</button> : null}
+        <label htmlFor="analysis-file-input" className="analysis-dropzone"><span className="analysis-upload-icon">↑</span><strong>{file ? file.name : "ارفع عقدًا للتحليل"}</strong><span>PDF، DOCX، TXT، MD، CSV، JSON والصور</span><small>يتم رفع الملف وتحليله عبر Backend</small></label>
+        {file ? <button className="ghost-btn" type="button" onClick={resetAnalysis}>اختيار ملف آخر</button> : null}
       </div>
-      <div className="analysis-legend"><span><i className="legend-dot high" />أهمية عالية</span><span><i className="legend-dot medium" />أهمية متوسطة</span><span><i className="legend-dot low" />نص عادي</span></div>
-      {status === "loading" ? <div className="analysis-state">جاري استخراج النص وتحليل الكلمات...</div> : null}
-      {status === "error" ? <div className="agent-error" role="alert"><strong>تعذر قراءة الملف</strong><p>{error}</p></div> : null}
-      {status === "empty" ? <div className="analysis-state">تمت قراءة الملف، لكن لم يتم العثور على نص قابل للعرض.</div> : null}
-      {status === "success" ? <section className="analysis-result"><div className="analysis-result-heading"><div><p className="eyebrow">Extracted Text</p><h2>النص المستخرج</h2></div><span>{text.split(/\s+/).filter(Boolean).length} كلمة</span></div><HighlightedText text={text} /></section> : null}
+      {analysisStatus === "uploading" || analysisStatus === "processing" ? <div className="analysis-state">{analysisStatus === "uploading" ? "جاري رفع المستند وبدء التحليل..." : "جاري تنفيذ التحليل في Backend..."}</div> : null}
+      {analysisStatus === "failed" ? <div className="agent-error" role="alert"><strong>تعذر تحليل المستند</strong><p>{analysis?.errorMessage || analysisError}</p></div> : null}
+      {analysisStatus === "completed" && analysis ? (
+        <section className="analysis-result">
+          <div className="analysis-result-heading"><div><p className="eyebrow">Backend Contract Analysis</p><h2>نتيجة التحليل</h2></div><span>Risk Score: {analysis.riskScore}</span></div>
+          <p><strong>الملخص:</strong> {analysis.summary}</p>
+          <div className="analysis-state"><strong>المستند:</strong> #{documentId}</div>
+          {analysis.riskyClauses?.length ? (
+            <div className="analysis-result">
+              <h3>البنود عالية المخاطر</h3>
+              {analysis.riskyClauses.map((clause, index) => (
+                <article key={`${clause.id || index}-${clause.riskType}`} className="status-card">
+                  <strong>{clause.riskType}</strong>
+                  <p>{clause.clauseText}</p>
+                  <p>{clause.explanation}</p>
+                  {clause.severity ? <span>{clause.severity}</span> : null}
+                  {clause.severityColor ? <span>{clause.severityColor}</span> : null}
+                </article>
+              ))}
+            </div>
+          ) : <div className="analysis-state">لم يتم إرجاع بنود خطرة.</div>}
+        </section>
+      ) : null}
+      {previewStatus === "loading" ? <div className="analysis-state">جاري تجهيز المعاينة المحلية...</div> : null}
+      {previewStatus === "error" ? <div className="analysis-state">تعذر تجهيز المعاينة المحلية، لكن ذلك لا يؤثر على تحليل Backend.</div> : null}
+      {previewStatus === "empty" ? <div className="analysis-state">لم يُعثر على نص للمعاينة المحلية.</div> : null}
+      {previewStatus === "success" ? <section className="analysis-result"><div className="analysis-result-heading"><div><p className="eyebrow">Local Preview</p><h2>معاينة النص</h2></div><span>{text.split(/\s+/).filter(Boolean).length} كلمة</span></div><HighlightedText text={text} /></section> : null}
     </div>
   );
 }
@@ -1018,7 +1240,7 @@ export function LegalAssistantWidget({ mode = "ai" }) {
   const isLowConfidence = confidence !== null && confidence < 60;
   const statusMessage = {
     sending: "جاري إرسال السؤال...",
-    retrieving: "جاري البحث في المستندات المحددة...",
+    retrieving: "جاري البحث في مستندات الحساب...",
     generating: "جاري صياغة الإجابة...",
   }[result.status];
 
@@ -1029,9 +1251,9 @@ export function LegalAssistantWidget({ mode = "ai" }) {
           <p className="eyebrow">AI Agent Workspace</p>
             <h2>{isFullSearch ? "البحث القانوني بالمصادر" : mode === "analysis" ? "تحليل الملفات" : "اسأل المساعد القانوني"}</h2>
           <p>
-           ارفع مستندا ثم اكتب سؤالك بالعربية أو الإنجليزية.
-           يتم رفع المستند وفهرسته أولا، ثم تُولّد الإجابة من
-           المستندات المختارة مع عرض المراجع المرتبطة بها.
+           اكتب سؤالك القانوني بالعربية أو الإنجليزية.
+           تُولّد الإجابة من مستندات حسابك المتاحة في Backend،
+           مع عرض المراجع المرتبطة بها.
           </p>
         </div>
       </div>
@@ -1087,7 +1309,7 @@ export function LegalAssistantWidget({ mode = "ai" }) {
           aria-label="اختيار المستندات"
         >
           <label>
-            المستندات المستخدمة في الإجابة
+            مستندات الحساب المتاحة
 
             <select
               multiple
@@ -1133,7 +1355,7 @@ export function LegalAssistantWidget({ mode = "ai" }) {
                 ? "جاري مزامنة المستندات..."
                 : documents.length === 0
                   ? "لا توجد مستندات متاحة حاليًا."
-                  : `${documents.length} مستند متاح لحسابك`}
+                  : `${documents.length} مستند متاح لحسابك. الاختيار للعرض فقط؛ Backend يحدد نطاق السؤال حسب ملكية الحساب.`}
           </small>
         </div>
 
@@ -1258,7 +1480,7 @@ export function LegalAssistantWidget({ mode = "ai" }) {
           </div>
           {result.question ? <p className="answer-question">السؤال: {result.question}</p> : null}
           <p>{result.answer}</p>
-          {result.query_id ? <small className="answer-query-id">رقم الاستعلام: {result.query_id}</small> : null}
+          {result.queryId ? <small className="answer-query-id">رقم الاستعلام: {result.queryId}</small> : null}
           {confidence !== null ? (
             <div className={`confidence-indicator${isLowConfidence ? " low" : ""}`}>
               <span>درجة الثقة</span>
