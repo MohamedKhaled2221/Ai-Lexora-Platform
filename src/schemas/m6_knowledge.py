@@ -131,7 +131,7 @@ class EvidenceSufficiencyResult(BaseModel):
     missing_information: list[str] = Field(default_factory=list)
     requires_follow_up: bool = False
 
-
+'''
 class Citation(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -141,9 +141,10 @@ class Citation(BaseModel):
     passage: str
     page: int | None = None
     record_id: str | None = None
-
-
+'''
+'''
 class AnswerGenerationRequest(BaseModel):
+
     model_config = ConfigDict(extra="forbid")
 
     query: str
@@ -152,3 +153,4 @@ class AnswerGenerationRequest(BaseModel):
     citations: list[Citation] = Field(default_factory=list)
     follow_up_context: str | None = None
     evidence_sufficiency: EvidenceSufficiencyResult
+'''
