@@ -5,12 +5,11 @@ from uuid import uuid4
 
 from .schemas import (
     AITransformation,
-    ApprovedClause,
     AssembledDraft,
     GenerationManifest,
     GuidedDocumentRequest,
 )
-
+from src.schemas.m5_contract import ApprovedClause
 
 def build_generation_manifest(
     request: GuidedDocumentRequest,

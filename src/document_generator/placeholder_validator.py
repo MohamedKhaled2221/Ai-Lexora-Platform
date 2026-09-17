@@ -1,32 +1,32 @@
 from __future__ import annotations
 
 import re
-
 from typing import Iterable, List
+
+from src.schemas.m5_contract import (
+    ApprovalStatus,
+    ApprovedClause,
+    DocumentType,
+    Jurisdiction,
+    TemplateClauseRequirement,
+)
 
 from .errors import ValidationError
 from .schemas import (
-    ApprovedClause,
     AssembledDraft,
     TemplateDefinition,
 )
-
-
-CLAUSE_MARKER_PATTERN = r"\{\{CLAUSE:[^}]+\}\}"
 
 
 def find_placeholders(
     text: str,
     pattern: str,
 ) -> List[str]:
-    return sorted(set(re.findall(pattern, text)))
 
-
-def find_clause_markers(text: str) -> List[str]:
     return sorted(
         set(
             re.findall(
-                CLAUSE_MARKER_PATTERN,
+                pattern,
                 text,
             )
         )
@@ -37,38 +37,16 @@ def validate_no_unresolved_placeholders(
     text: str,
     template: TemplateDefinition,
 ) -> None:
-    """
-    Validate that normal user/input placeholders were resolved.
-
-    Clause markers are handled separately because they represent
-    approved-clause insertion points.
-    """
 
     unresolved = find_placeholders(
         text,
         template.placeholder_pattern,
     )
 
-    clause_markers = set(
-        find_clause_markers(text)
-    )
-
-    unresolved = [
-        placeholder
-        for placeholder in unresolved
-        if not placeholder.startswith("CLAUSE:")
-    ]
-
     if unresolved:
         raise ValidationError(
             "Unresolved placeholders: "
             + ", ".join(unresolved)
-        )
-
-    if clause_markers:
-        raise ValidationError(
-            "Unresolved clause markers: "
-            + ", ".join(clause_markers)
         )
 
 
@@ -100,46 +78,55 @@ def validate_approved_clause_set(
     expected_document_type: str,
     expected_jurisdiction: str,
 ) -> None:
-    """
-    Validate that every selected clause is approved and compatible
-    with the requested document type and jurisdiction.
-    """
 
-    expected_document_type = (
-        expected_document_type.lower()
-    )
+    try:
+        document_type = DocumentType(
+            expected_document_type
+        )
+    except ValueError as exc:
+        raise ValidationError(
+            "Unsupported M5 document type: "
+            + expected_document_type
+        ) from exc
 
-    expected_jurisdiction = (
-        expected_jurisdiction.lower()
-    )
+    try:
+        jurisdiction = Jurisdiction(
+            expected_jurisdiction
+        )
+    except ValueError as exc:
+        raise ValidationError(
+            "Unsupported M5 jurisdiction: "
+            + expected_jurisdiction
+        ) from exc
 
     for clause in clauses:
 
-        if clause.approval_status != "approved":
+        if (
+            clause.approval_status
+            != ApprovalStatus.APPROVED
+        ):
             raise ValidationError(
-                f"Clause is not approved: "
-                f"{clause.clause_id}"
+                "Clause is not approved: "
+                + clause.clause_id
             )
 
-        supported_document_types = {
-            document_type.lower()
-            for document_type in clause.document_types
-        }
+        if not clause.is_usable():
+            raise ValidationError(
+                "Clause is not currently usable: "
+                + clause.clause_id
+            )
 
-        if (
-            expected_document_type
-            not in supported_document_types
-        ):
+        if document_type not in clause.document_types:
             raise ValidationError(
                 f"Clause {clause.clause_id} incompatible "
                 f"with document type "
                 f"{expected_document_type}"
             )
 
-        if (
-            clause.jurisdiction.lower()
-            != expected_jurisdiction
-        ):
+        if clause.jurisdiction not in {
+            jurisdiction,
+            Jurisdiction.INTERNATIONAL,
+        }:
             raise ValidationError(
                 f"Clause {clause.clause_id} incompatible "
                 f"with jurisdiction "
@@ -149,12 +136,8 @@ def validate_approved_clause_set(
 
 def validate_prohibited_clauses(
     clauses: Iterable[ApprovedClause],
-    template: TemplateDefinition,
+    requirement: TemplateClauseRequirement,
 ) -> None:
-    """
-    Ensure no clause explicitly prohibited by the template
-    has been selected for assembly.
-    """
 
     selected_ids = {
         clause.clause_id
@@ -163,7 +146,8 @@ def validate_prohibited_clauses(
 
     prohibited = [
         clause_id
-        for clause_id in template.prohibited_clauses
+        for clause_id
+        in requirement.prohibited_clauses
         if clause_id in selected_ids
     ]
 
@@ -176,69 +160,51 @@ def validate_prohibited_clauses(
 
 def validate_clause_placement(
     clauses: Iterable[ApprovedClause],
-    template: TemplateDefinition,
+    requirement: TemplateClauseRequirement,
 ) -> None:
-    """
-    Ensure every selected clause has a valid approved
-    insertion point defined by the template.
 
-    The insertion_key comes from the approved clause metadata
-    supplied by M5.
-
-    The template defines the available placement points through
-    section_placeholders.
-    """
-
-    if not template.section_placeholders:
+    if not requirement.section_placeholders:
         raise ValidationError(
-            f"Template {template.template_id} has no "
+            f"Template requirement "
+            f"{requirement.template_id} has no "
             "section_placeholders defined"
         )
 
-    missing_keys = [
-        clause.clause_id
-        for clause in clauses
-        if not clause.insertion_key
-    ]
+    valid_markers = set(
+        requirement.section_placeholders.values()
+    )
 
-    if missing_keys:
-        raise ValidationError(
-            "Missing insertion_key for approved clauses: "
-            + ", ".join(missing_keys)
+    for clause in clauses:
+
+        insertion_key = (
+            clause.metadata.insertion_key
         )
 
-    invalid_keys = [
-        (
-            clause.clause_id,
-            clause.insertion_key,
-        )
-        for clause in clauses
-        if clause.insertion_key
-        not in template.section_placeholders
-    ]
+        if not insertion_key:
+            raise ValidationError(
+                "Missing insertion_key for approved clause: "
+                + clause.clause_id
+            )
 
-    if invalid_keys:
-        details = ", ".join(
-            f"{clause_id} -> {insertion_key}"
-            for clause_id, insertion_key
-            in invalid_keys
-        )
+        if (
+            insertion_key
+            in requirement.section_placeholders
+        ):
+            continue
+
+        if insertion_key in valid_markers:
+            continue
 
         raise ValidationError(
-            "Invalid clause insertion_key(s): "
-            + details
+            f"Invalid clause insertion_key: "
+            f"{clause.clause_id} -> "
+            f"{insertion_key}"
         )
 
 
 def validate_source_traceability(
     draft: AssembledDraft,
 ) -> None:
-    """
-    Every assembled section must have a source identifier.
-
-    Approved-clause sections must additionally retain their
-    clause identity and version.
-    """
 
     for section in draft.sections:
 
@@ -249,7 +215,8 @@ def validate_source_traceability(
             )
 
         if (
-            section.source_type == "approved_clause"
+            section.source_type
+            == "approved_clause"
             and not section.clause_id
         ):
             raise ValidationError(
@@ -258,7 +225,8 @@ def validate_source_traceability(
             )
 
         if (
-            section.source_type == "approved_clause"
+            section.source_type
+            == "approved_clause"
             and not section.clause_version
         ):
             raise ValidationError(

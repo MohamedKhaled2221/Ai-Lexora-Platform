@@ -10,10 +10,12 @@ from .schemas import AssembledDraft, ExportResult
 
 class DocxExporter:
     """
-    Export an AssembledDraft to DOCX.
+    Export the already assembled final text to DOCX.
 
-    The exporter does not generate or modify legal content.
-    It only serializes the already assembled draft sections.
+    The exporter serializes draft.plain_text rather than the
+    provenance section list, because sections are audit/provenance
+    records and may not preserve the exact visual paragraph
+    composition of the template.
     """
 
     def export(
@@ -31,18 +33,10 @@ class DocxExporter:
         try:
             doc = Document()
 
-            for section in sorted(
-                draft.sections,
-                key=lambda section: section.order,
-            ):
-                if section.title:
-                    doc.add_heading(
-                        section.title,
-                        level=2,
-                    )
+            for line in draft.plain_text.splitlines():
 
-                if section.text.strip():
-                    doc.add_paragraph(section.text)
+                if line.strip():
+                    doc.add_paragraph(line)
 
             doc.save(path)
 

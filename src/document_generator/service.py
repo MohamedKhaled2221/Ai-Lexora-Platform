@@ -8,7 +8,6 @@ from .guided_input import validate_guided_input, validate_field_types
 from .manifest import build_generation_manifest
 from .pdf_exporter import PdfExporter
 from .schemas import (
-    ApprovedClause,
     AssembledDraft,
     ClauseDecision,
     GenerationManifest,
@@ -17,7 +16,10 @@ from .schemas import (
 from .template_registry import TemplateRegistry
 from .template_selector import TemplateSelector
 from .validators import DraftValidator
-
+from src.schemas.m5_contract import (
+    ApprovedClause,
+    TemplateClauseRequirement,
+)
 
 class M1DocumentService:
     def __init__(
@@ -38,12 +40,21 @@ class M1DocumentService:
     def build_draft(
         self,
         request: GuidedDocumentRequest,
+        requirement: TemplateClauseRequirement,
         clauses: Iterable[ApprovedClause],
         decisions: Iterable[ClauseDecision] = (),
-    ) -> tuple[AssembledDraft, GenerationManifest]:
+    ) -> tuple[
+        AssembledDraft,
+        GenerationManifest,
+    ]:
 
         template = self.selector.select(request)
-
+        self._validate_requirement_identity(
+            template_id=template.template_id,
+            document_type=request.document_type,
+            jurisdiction=request.jurisdiction,
+            requirement=requirement,
+        )
         validate_guided_input(request, template)
         validate_field_types(request, template)
 
@@ -53,6 +64,7 @@ class M1DocumentService:
         draft = self.assembler.assemble(
             request,
             template,
+            requirement,
             clauses,
             decisions,
         )
@@ -60,6 +72,7 @@ class M1DocumentService:
         result = self.validator.validate(
             draft,
             template,
+            requirement,
             clauses,
             decisions,
         )
@@ -76,7 +89,44 @@ class M1DocumentService:
         )
 
         return draft, manifest
+    @staticmethod
+    def _validate_requirement_identity(
+        *,
+        template_id: str,
+        document_type: str,
+        jurisdiction: str,
+        requirement: TemplateClauseRequirement,
+    ) -> None:
 
+        if requirement.template_id != template_id:
+            raise ValueError(
+                "M1 template and M5 requirement "
+                "template_id mismatch: "
+                f"{template_id} != "
+                f"{requirement.template_id}"
+            )
+
+        if (
+            requirement.document_type.value
+            != document_type
+        ):
+            raise ValueError(
+                "M1 request and M5 requirement "
+                "document_type mismatch: "
+                f"{document_type} != "
+                f"{requirement.document_type.value}"
+            )
+
+        if (
+            requirement.jurisdiction.value
+            != jurisdiction
+        ):
+            raise ValueError(
+                "M1 request and M5 requirement "
+                "jurisdiction mismatch: "
+                f"{jurisdiction} != "
+                f"{requirement.jurisdiction.value}"
+            )
     def export(
         self,
         draft: AssembledDraft,

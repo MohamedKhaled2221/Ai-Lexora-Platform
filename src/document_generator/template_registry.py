@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import json
-from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
 from .errors import TemplateNotFoundError
@@ -9,6 +7,13 @@ from .schemas import TemplateDefinition
 
 
 class TemplateRegistry:
+    """
+    Registry of M1-owned document templates only.
+
+    M5 clause requirements are not loaded here. They arrive
+    separately through TemplateClauseRequirement.
+    """
+
     def __init__(
         self,
         templates: Iterable[TemplateDefinition] = (),
@@ -28,75 +33,6 @@ class TemplateRegistry:
         self._templates[
             (template.template_id, template.version)
         ] = template
-
-    @classmethod
-    def from_json(
-        cls,
-        file_path: str | Path,
-    ) -> "TemplateRegistry":
-        """
-        Load template definitions from M5's
-        template_requirements.json.
-        """
-
-        path = Path(file_path)
-
-        if not path.exists():
-            raise FileNotFoundError(
-                f"Template requirements file not found: {path}"
-            )
-
-        with path.open(
-            "r",
-            encoding="utf-8",
-        ) as file:
-            data = json.load(file)
-
-        templates_data = data.get("templates", [])
-
-        templates: List[TemplateDefinition] = []
-
-        for template_data in templates_data:
-            template = TemplateDefinition(
-                template_id=template_data["template_id"],
-                document_type=template_data["document_type"],
-                jurisdiction=template_data["jurisdiction"],
-                version=template_data.get(
-                    "version",
-                    data.get("version", "1.0.0"),
-                ),
-                active=template_data.get(
-                    "active",
-                    True,
-                ),
-                required_clauses=template_data.get(
-                    "required_clauses",
-                    [],
-                ),
-                optional_clauses=template_data.get(
-                    "optional_clauses",
-                    [],
-                ),
-                prohibited_clauses=template_data.get(
-                    "prohibited_clauses",
-                    [],
-                ),
-                conditional_clauses=template_data.get(
-                    "conditional_clauses",
-                    [],
-                ),
-                section_placeholders=template_data.get(
-                    "section_placeholders",
-                    {},
-                ),
-                template_structure=template_data.get(
-                    "template_structure",
-                ),
-            )
-
-            templates.append(template)
-
-        return cls(templates)
 
     def get(
         self,
@@ -134,6 +70,7 @@ class TemplateRegistry:
     def list_active(
         self,
     ) -> List[TemplateDefinition]:
+
         return [
             template
             for template in self._templates.values()

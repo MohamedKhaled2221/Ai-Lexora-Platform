@@ -11,11 +11,14 @@ from .placeholder_validator import (
     validate_source_traceability,
 )
 from .schemas import (
-    ApprovedClause,
     AssembledDraft,
     ClauseDecision,
     DraftValidationResult,
     TemplateDefinition,
+)
+from src.schemas.m5_contract import (
+    ApprovedClause,
+    TemplateClauseRequirement,
 )
 
 
@@ -24,6 +27,7 @@ class DraftValidator:
         self,
         draft: AssembledDraft,
         template: TemplateDefinition,
+        requirement: TemplateClauseRequirement,
         clauses: Iterable[ApprovedClause],
         decisions: Iterable[ClauseDecision],
     ) -> DraftValidationResult:
@@ -42,15 +46,11 @@ class DraftValidator:
             ),
             lambda: validate_clause_placement(
                 clauses,
-                template,
+                requirement,
             ),
             lambda: validate_required_clauses(
                 clauses,
-                [
-                    d.clause_id
-                    for d in decisions
-                    if d.decision == "required"
-                ],
+                requirement.required_clauses,
             ),
             lambda: validate_no_unresolved_placeholders(
                 draft.plain_text,

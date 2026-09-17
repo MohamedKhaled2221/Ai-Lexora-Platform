@@ -38,15 +38,15 @@ class FieldDefinition(BaseModel):
     options: List[str] = Field(default_factory=list)
 
 
-class ConditionalClause(BaseModel):
+'''class ConditionalClause(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     clause_id: str
     condition: str
     description: Optional[str] = None
+'''
 
-
-class TemplateDefinition(BaseModel):
+'''class TemplateDefinition(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     template_id: str
@@ -90,8 +90,41 @@ class TemplateDefinition(BaseModel):
 
     # Template structure supplied by M5.
     template_structure: Optional[str] = None
+'''
+class TemplateDefinition(BaseModel):
+    """
+    M1-owned document template metadata.
 
+    Clause policy and clause placement rules are intentionally
+    not stored here. Those are supplied by M5 through
+    TemplateClauseRequirement.
+    """
 
+    model_config = ConfigDict(extra="forbid")
+
+    template_id: str
+    version: str
+    document_type: str
+    jurisdiction: str
+
+    language: Literal[
+        "ar",
+        "en",
+        "ar-en",
+        "unknown",
+    ] = "en"
+
+    file_path: Optional[str] = None
+
+    fields: List[FieldDefinition] = Field(
+        default_factory=list
+    )
+
+    placeholder_pattern: str = (
+        r"\{\{([A-Za-z0-9_.:-]+)\}\}"
+    )
+
+    active: bool = True
 class GuidedDocumentRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -112,7 +145,7 @@ class GuidedDocumentRequest(BaseModel):
     )
 
 
-class ApprovedClause(BaseModel):
+'''class ApprovedClause(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     clause_id: str
@@ -158,7 +191,7 @@ class ApprovedClause(BaseModel):
     sequence: int = 0
     required: bool = False
 
-
+'''
 class ClauseDecision(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

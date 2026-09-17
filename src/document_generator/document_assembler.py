@@ -18,7 +18,6 @@ from .placeholder_validator import (
     validate_source_traceability,
 )
 from .schemas import (
-    ApprovedClause,
     AssembledDraft,
     AssembledSection,
     ClauseDecision,
@@ -26,7 +25,10 @@ from .schemas import (
     GuidedDocumentRequest,
     TemplateDefinition,
 )
-
+from src.schemas.m5_contract import (
+    ApprovedClause,
+    TemplateClauseRequirement,
+)
 
 class DocumentAssembler:
     """
@@ -40,6 +42,7 @@ class DocumentAssembler:
         self,
         request: GuidedDocumentRequest,
         template: TemplateDefinition,
+        requirement: TemplateClauseRequirement,
         clauses: Iterable[ApprovedClause],
         decisions: Iterable[ClauseDecision] = (),
     ) -> AssembledDraft:
@@ -49,10 +52,9 @@ class DocumentAssembler:
         # ---------------------------------------------------------
         validate_guided_input(request, template)
         validate_field_types(request, template)
-
-        clauses = sorted(
+        clauses = self._sort_clauses(
             list(clauses),
-            key=lambda clause: clause.sequence,
+            requirement,
         )
 
         decisions = list(decisions)
@@ -68,7 +70,7 @@ class DocumentAssembler:
 
         validate_prohibited_clauses(
             clauses,
-            template,
+            requirement,
         )
 
         # ---------------------------------------------------------
@@ -80,7 +82,7 @@ class DocumentAssembler:
         # ---------------------------------------------------------
         validate_required_clauses(
             clauses,
-            template.required_clauses,
+            requirement.required_clauses,
         )
 
         # ---------------------------------------------------------
@@ -91,7 +93,7 @@ class DocumentAssembler:
         # ---------------------------------------------------------
         validate_clause_placement(
             clauses,
-            template,
+            requirement,
         )
 
         # ---------------------------------------------------------
@@ -172,10 +174,17 @@ class DocumentAssembler:
         # insertion_key must come from the approved contract.
         # We do not invent placement keys.
         # ---------------------------------------------------------
-        self._replace_clause_markers(
+        used_markers = self._replace_clause_markers(
             doc,
             clauses,
+            requirement,
             sections,
+        )
+
+        self._clear_unused_clause_markers(
+            doc,
+            requirement,
+            used_markers,
         )
 
         # ---------------------------------------------------------
@@ -294,7 +303,48 @@ class DocumentAssembler:
             replace,
             text,
         )
+    @staticmethod
+    def _clear_unused_clause_markers(
+        doc: Document,
+        requirement: TemplateClauseRequirement,
+        used_markers: set[str],
+    ) -> None:
 
+        unused_markers = {
+            marker
+            for marker
+            in requirement.section_placeholders.values()
+            if marker not in used_markers
+        }
+
+        if not unused_markers:
+            return
+
+        paragraphs = list(doc.paragraphs)
+
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    paragraphs.extend(
+                        cell.paragraphs
+                    )
+
+        for paragraph in paragraphs:
+
+            text = paragraph.text
+            updated = text
+
+            for marker in unused_markers:
+                updated = updated.replace(
+                    marker,
+                    "",
+                )
+
+            if updated != text:
+                DocumentAssembler._replace_paragraph_text(
+                    paragraph,
+                    updated,
+                )
     @staticmethod
     def _replace_paragraph_text(
         paragraph,
@@ -321,33 +371,33 @@ class DocumentAssembler:
     # CLAUSE PROCESSING
     # =================================================================
 
+    
     @staticmethod
     def _replace_clause_markers(
         doc: Document,
         clauses: Iterable[ApprovedClause],
+        requirement: TemplateClauseRequirement,
         sections: List[AssembledSection],
-    ) -> None:
+    ) -> set[str]:
         """
-        Replace approved-clause insertion markers.
+        Replace approved M5 clause markers in the M1 template.
 
-        Marker format:
+        Placement comes only from the M5
+        TemplateClauseRequirement / ApprovedClause contract.
 
-            {{CLAUSE:<insertion_key>}}
-
-        insertion_key is supplied by the approved template/clause
-        contract. This method never invents one.
-
-        If an approved clause does not have an insertion_key, assembly
-        fails instead of guessing where the clause should be placed.
+        Assembly fails closed if a selected approved clause does
+        not have a valid placement marker or if that marker is not
+        present in the M1 document template.
         """
 
-        for clause in clauses:
+        used_markers: set[str] = set()
 
-            if not clause.insertion_key:
-                raise ValidationError(
-                    "Missing insertion_key for approved clause: "
-                    + clause.clause_id
-                )
+        for index, clause in enumerate(clauses):
+
+            marker = DocumentAssembler._resolve_marker(
+                clause,
+                requirement,
+            )
 
             clause_text = DocumentAssembler._get_clause_text(
                 clause
@@ -359,24 +409,16 @@ class DocumentAssembler:
                     + clause.clause_id
                 )
 
-            token = (
-                "{{CLAUSE:"
-                + clause.insertion_key
-                + "}}"
-            )
-
             replaced_any = False
 
-            # -----------------------------------------------------
-            # Search normal paragraphs
-            # -----------------------------------------------------
+            # Normal paragraphs
             for paragraph in doc.paragraphs:
 
-                if token not in paragraph.text:
+                if marker not in paragraph.text:
                     continue
 
                 new_text = paragraph.text.replace(
-                    token,
+                    marker,
                     clause_text,
                 )
 
@@ -387,19 +429,17 @@ class DocumentAssembler:
 
                 replaced_any = True
 
-            # -----------------------------------------------------
-            # Search table paragraphs
-            # -----------------------------------------------------
+            # Table paragraphs
             for table in doc.tables:
                 for row in table.rows:
                     for cell in row.cells:
                         for paragraph in cell.paragraphs:
 
-                            if token not in paragraph.text:
+                            if marker not in paragraph.text:
                                 continue
 
                             new_text = paragraph.text.replace(
-                                token,
+                                marker,
                                 clause_text,
                             )
 
@@ -410,24 +450,69 @@ class DocumentAssembler:
 
                             replaced_any = True
 
-            # -----------------------------------------------------
-            # Create provenance section
-            # -----------------------------------------------------
-            if replaced_any:
-
-                sections.append(
-                    AssembledSection(
-                        section_id=f"clause-{clause.clause_id}",
-                        title=clause.type,
-                        text=clause_text,
-                        order=100000 + clause.sequence,
-                        source_type="approved_clause",
-                        source_id=clause.clause_id,
-                        clause_id=clause.clause_id,
-                        clause_version=clause.version,
-                    )
+            if not replaced_any:
+                raise ValidationError(
+                    f"Approved placement marker "
+                    f"{marker} for clause "
+                    f"{clause.clause_id} "
+                    f"was not found in M1 template "
+                    f"{requirement.template_id}"
                 )
 
+            used_markers.add(marker)
+
+            sections.append(
+                AssembledSection(
+                    section_id=(
+                        f"clause-{clause.clause_id}"
+                    ),
+                    title=clause.type.value,
+                    text=clause_text,
+                    order=100000 + index,
+                    source_type="approved_clause",
+                    source_id=clause.clause_id,
+                    clause_id=clause.clause_id,
+                    clause_version=clause.version,
+                )
+            )
+
+        return used_markers
+    @staticmethod
+    def _resolve_marker(
+        clause: ApprovedClause,
+        requirement: TemplateClauseRequirement,
+    ) -> str:
+
+        insertion_key = (
+            clause.metadata.insertion_key
+        )
+
+        if not insertion_key:
+            raise ValidationError(
+                "Missing insertion_key for approved clause: "
+                + clause.clause_id
+            )
+
+        marker = (
+            requirement.section_placeholders.get(
+                insertion_key
+            )
+        )
+
+        if marker:
+            return marker
+
+        if (
+            insertion_key
+            in requirement.section_placeholders.values()
+        ):
+            return insertion_key
+
+        raise ValidationError(
+            f"No approved placement marker for clause "
+            f"{clause.clause_id}: "
+            f"{insertion_key}"
+        )
     @staticmethod
     def _get_clause_text(
         clause: ApprovedClause,
@@ -479,3 +564,49 @@ class DocumentAssembler:
                             final_parts.append(text)
 
         return "\n".join(final_parts)
+    @staticmethod
+    def _sort_clauses(
+        clauses: list[ApprovedClause],
+        requirement: TemplateClauseRequirement,
+    ) -> list[ApprovedClause]:
+
+        placement_order = {
+            key: index
+            for index, key in enumerate(
+                requirement.section_placeholders.keys()
+            )
+        }
+
+        marker_order = {
+            marker: index
+            for index, marker in enumerate(
+                requirement.section_placeholders.values()
+            )
+        }
+
+        def sort_key(
+            clause: ApprovedClause,
+        ) -> tuple[int, str]:
+
+            insertion_key = (
+                clause.metadata.insertion_key
+                or ""
+            )
+
+            index = placement_order.get(
+                insertion_key,
+                marker_order.get(
+                    insertion_key,
+                    10**9,
+                ),
+            )
+
+            return (
+                index,
+                clause.clause_id,
+            )
+
+        return sorted(
+            clauses,
+            key=sort_key,
+        )
