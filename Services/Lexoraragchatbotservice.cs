@@ -15,10 +15,11 @@ namespace LegalAssistant.Api.Services;
 /// already catches that and returns a 502 with a clear message rather than
 /// crashing the request.
 /// </summary>
-public sealed class LexoraRagChatbotService : IChatbotService
+public sealed class LexoraRagChatbotService : IChatbotService, IConfiguration
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-
+    private readonly string _clientId;
+    private readonly string _confidentialityCeiling;
     private readonly HttpClient _httpClient;
     private readonly ILogger<LexoraRagChatbotService> _logger;
 
@@ -26,6 +27,15 @@ public sealed class LexoraRagChatbotService : IChatbotService
     {
         _httpClient = httpClient;
         _logger = logger;
+        _clientId =
+            configuration["AiService:ClientId"]?.Trim()
+            ?? throw new InvalidOperationException(
+                "AiService:ClientId is not configured.");
+
+        _confidentialityCeiling =
+            configuration["AiService:ConfidentialityCeiling"]?.Trim()
+            ?? throw new InvalidOperationException(
+                "AiService:ConfidentialityCeiling is not configured.");
     }
 
     public async Task<string> ReplyAsync(IReadOnlyList<ChatTurn> history, CancellationToken cancellationToken = default)
@@ -34,16 +44,40 @@ public sealed class LexoraRagChatbotService : IChatbotService
         if (string.IsNullOrWhiteSpace(lastUserMessage))
             throw new InvalidOperationException("No user message to answer.");
 
-        var requestBody = new LexoraAskRequest
+        var requestBody = new LexoraP4ChatRequest
         {
             Question = lastUserMessage,
-            Filters = new LexoraQueryFilters()
-        };
+            Filters = new LexoraQueryFilters(),
+            SafeContext = history
+                .Take(Math.Max(0, history.Count - 1))
+                .Where(turn =>
+                    !string.IsNullOrWhiteSpace(turn.Content)
+                    && (
+                        turn.Role == ChatMessageRoles.User
+                        || turn.Role == ChatMessageRoles.Assistant
+                    ))
+                .TakeLast(12)
+                .Select(turn => new LexoraSafeContextTurn
+                {
+                    Role = turn.Role == ChatMessageRoles.User
+                        ? "user"
+                        : "assistant",
+                    Text = turn.Content
+                })
+                .ToList()
+        }; 
 
         HttpResponseMessage response;
         try
         {
-            response = await _httpClient.PostAsJsonAsync("/api/v1/rag/ask", requestBody, JsonOptions, cancellationToken);
+            response = await _httpClient.PostAsJsonAsync("/api/v1/p4/chat", requestBody, JsonOptions, cancellationToken);
+            httpRequest.Headers.Add(
+                "X-Client-Id",
+                _clientId);
+
+            httpRequest.Headers.Add(
+                "X-Confidentiality-Ceiling",
+                _confidentialityCeiling);
         }
         catch (HttpRequestException ex)
         {

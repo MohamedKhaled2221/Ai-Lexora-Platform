@@ -42,7 +42,14 @@ from src.api.document_routes import (
 from src.api.m4_p3_p4_routes import (
     router as m4_p3_p4_router,
 )
+from src.api.package_routes import (
+    router as package_router,
+)
 
+from src.api.package_runtime import (
+    build_p3_api_runtime,
+    build_p4_chat_service,
+)
 
 def create_app(
     *,
@@ -73,6 +80,8 @@ def create_app(
         ]
         | None
     ) = None,
+    p3_generation_runtime_factory=None,
+    p4_chat_service_factory=None,
 ) -> FastAPI:
     security_settings = (
         api_security_settings
@@ -110,9 +119,21 @@ def create_app(
             else None
         ),
         lifespan=create_lifespan(
-            rag_service_factory,
-            raw_rag_service_factory,
-            document_ingestion_service_factory,
+            rag_service_factory=(
+                rag_service_factory
+            ),
+            raw_rag_service_factory=(
+                raw_rag_service_factory
+            ),
+            document_ingestion_service_factory=(
+                document_ingestion_service_factory
+            ),
+            p3_generation_runtime_factory=(
+                p3_generation_runtime_factory
+            ),
+            p4_chat_service_factory=(
+                p4_chat_service_factory
+            ),
         ),
     )
 
@@ -156,7 +177,9 @@ def create_app(
         m4_p3_p4_router
     )
 
-
+    app.include_router(
+        package_router
+    )
     return app
 
 
@@ -171,5 +194,11 @@ app = create_app(
     ),
     document_ingestion_service_factory=(
         build_document_ingestion_service
+    ),
+    p3_generation_runtime_factory=(
+        build_p3_api_runtime
+    ),
+    p4_chat_service_factory=(
+        build_p4_chat_service
     ),
 )

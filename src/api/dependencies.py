@@ -31,6 +31,12 @@ from src.orchestration.m5_grounding_adapter import (
 from src.orchestration.p3_m5_service import (
     P3M5ValidationService,
 )
+from src.api.package_runtime import (
+    P3APIRuntime,
+)
+from src.orchestration.p4_chat_service import (
+    P4ChatService,
+)
 def get_document_ingestion_service(
     request: Request,
 ) -> DocumentIngestionService:
@@ -183,3 +189,50 @@ def get_p3_m5_validation_service(
             get_p3_m4_orchestrator()
         ),
     )
+def get_p3_generation_runtime(
+    request: Request,
+) -> P3APIRuntime:
+
+    runtime = getattr(
+        request.app.state,
+        "p3_generation_runtime",
+        None,
+    )
+
+    if runtime is None:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_503_SERVICE_UNAVAILABLE
+            ),
+            detail=(
+                "Package 3 generation is not "
+                "configured with approved M1 "
+                "templates."
+            ),
+        )
+
+    return runtime
+
+
+def get_p4_chat_service(
+    request: Request,
+) -> P4ChatService:
+
+    service = getattr(
+        request.app.state,
+        "p4_chat_service",
+        None,
+    )
+
+    if service is None:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_503_SERVICE_UNAVAILABLE
+            ),
+            detail=(
+                "Package 4 chat runtime "
+                "is not initialized."
+            ),
+        )
+
+    return service

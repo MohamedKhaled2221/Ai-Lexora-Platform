@@ -31,7 +31,78 @@ from src.schemas.p3_generation_contract import (
     GenerationManifest,
 )
 
+from src.document_generator.schemas import (
+    GuidedDocumentRequest,
+)
+from src.schemas.p3_generation_contract import (
+    ValidatedDraft,
+)
+from src.schemas.p4_chat_contract import (
+    ResponseLanguage,
+    SafeContextTurn,
+)
 
+
+class P3GenerateRequest(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid"
+    )
+
+    request: GuidedDocumentRequest
+
+    clause_language: Literal[
+        "ar",
+        "en",
+    ] = "en"
+
+    export_docx: bool = True
+
+
+class P3GenerateResponse(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid"
+    )
+
+    validated_draft: ValidatedDraft
+
+    selected_clause_ids: List[str]
+
+    export_allowed: bool
+
+    m5_resolved_clause_count: int
+
+    docx_generated: bool = False
+
+    docx_file_name: str | None = None
+
+
+class P4ChatRequest(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid"
+    )
+
+    question: Annotated[
+        str,
+        StringConstraints(
+            strip_whitespace=True,
+            min_length=1,
+            max_length=4000,
+        ),
+    ]
+
+    filters: QueryFilters = Field(
+        default_factory=QueryFilters
+    )
+
+    response_language: (
+        ResponseLanguage | None
+    ) = None
+
+    safe_context: List[
+        SafeContextTurn
+    ] = Field(
+        default_factory=list
+    )
 # =========================================================
 # Existing P1/P2 RAG API contracts
 # =========================================================

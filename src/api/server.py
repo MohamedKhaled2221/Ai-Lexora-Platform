@@ -10,7 +10,14 @@ from src.api.runtime import (
     build_rag_service,
     build_raw_rag_service,
 )
+from src.api.package_routes import (
+    router as package_router,
+)
 
+from src.api.package_runtime import (
+    build_p3_api_runtime,
+    build_p4_chat_service,
+)
 
 logging_settings = (
     APILoggingSettings()
@@ -30,5 +37,11 @@ app = create_app(
     ),
     document_ingestion_service_factory=(
         build_document_ingestion_service
+    ),
+    p3_generation_runtime_factory=(
+        build_p3_api_runtime
+    ),
+    p4_chat_service_factory=(
+        build_p4_chat_service
     ),
 )

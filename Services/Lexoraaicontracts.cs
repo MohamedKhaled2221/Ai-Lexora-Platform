@@ -158,3 +158,23 @@ public sealed class LexoraDocumentIngestionResponse
     [JsonPropertyName("status")]
     public string Status { get; set; } = string.Empty;
 }
+public sealed class LexoraP4ChatRequest
+{
+    [JsonPropertyName("question")]
+    public string Question { get; set; } = string.Empty;
+
+    [JsonPropertyName("filters")]
+    public LexoraQueryFilters Filters { get; set; } = new();
+
+    [JsonPropertyName("safe_context")]
+    public List<LexoraSafeContextTurn> SafeContext { get; set; } = new();
+}
+
+public sealed class LexoraSafeContextTurn
+{
+    [JsonPropertyName("role")]
+    public string Role { get; set; } = string.Empty;
+
+    [JsonPropertyName("text")]
+    public string Text { get; set; } = string.Empty;
+}
