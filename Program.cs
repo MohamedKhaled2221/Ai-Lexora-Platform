@@ -129,8 +129,7 @@ builder.Services.AddHttpClient<LexoraDocumentIndexingService>(
     });
 
 builder.Services.AddScoped<ILexoraDocumentIndexingService>(
-    sp => sp.GetRequiredService
-        LexoraDocumentIndexingService > ());
+    sp => sp.GetRequiredService<LexoraDocumentIndexingService>());
 builder.Services.AddHttpClient<LexoraRagChatbotService>((sp, client) =>
 {
     var config = sp.GetRequiredService<IConfiguration>();
@@ -164,8 +163,7 @@ builder.Services.AddHttpClient<LexoraDocumentQuestionService>(
     });
 
 builder.Services.AddScoped<ILexoraDocumentQuestionService>(
-    sp => sp.GetRequiredService
-        LexoraDocumentQuestionService > ());
+    sp => sp.GetRequiredService<LexoraDocumentQuestionService>());
 builder.Services.AddScoped<IChatbotService>(sp => sp.GetRequiredService<LexoraRagChatbotService>());
 // To fall back to the offline placeholder instead (e.g. the AI service isn't
 // running locally), comment the two lines above and uncomment this one:
