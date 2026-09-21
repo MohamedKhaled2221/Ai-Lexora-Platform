@@ -1,6 +1,9 @@
+const currentOrigin = typeof window !== "undefined" ? window.location?.origin : "";
+const isLikelyDevServer = /^https?:\/\/(localhost|127\.0\.0\.1):(5500|5173|4173|3000|8080)$/.test(currentOrigin || "");
+const inferredBackendApiBase = currentOrigin && !isLikelyDevServer ? currentOrigin : "http://localhost:50662";
 const configuredApiBase =
-  window.LEXORA_API_BASE || import.meta.env.VITE_LEXORA_API_BASE;
-export const API_BASE = (configuredApiBase || "http://localhost:50662").replace(/\/$/, "");
+  window.LEXORA_API_BASE || import.meta.env.VITE_LEXORA_API_BASE || inferredBackendApiBase;
+export const API_BASE = configuredApiBase.replace(/\/$/, "");
 const configuredM1ApiBase =
   window.LEXORA_M1_API_BASE || import.meta.env.VITE_LEXORA_M1_API_BASE;
 export const M1_API_BASE = (configuredM1ApiBase || "http://localhost:8001").replace(/\/$/, "");
@@ -11,8 +14,8 @@ const ACCESS_TOKEN_KEY = "lexora-access-token";
 const REFRESH_TOKEN_KEY = "lexora-refresh-token";
 const USER_KEY = "lexora-user";
 
-if (!configuredApiBase) {
-  console.warn("Lexora API base is not configured; using local backend:", API_BASE);
+if (!window.LEXORA_API_BASE && !import.meta.env.VITE_LEXORA_API_BASE) {
+  console.info("Using inferred Lexora API base:", API_BASE);
 }
 
 function extractErrorMessage(payload, status) {
