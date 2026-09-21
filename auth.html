@@ -62,7 +62,13 @@
             <small id="login-email-error" class="field-error">أدخل بريدًا إلكترونيًا صالحًا.</small>
           </label>
           <label>كلمة المرور
-            <input id="login-password" type="password" aria-describedby="login-password-error" placeholder="••••••••" required>
+            <div class="password-field">
+              <input id="login-password" type="password" aria-describedby="login-password-error" placeholder="••••••••" required>
+              <button class="password-toggle-btn" type="button" aria-label="إظهار كلمة المرور" aria-pressed="false" title="إظهار كلمة المرور">
+                <svg class="eye-icon eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+                <svg class="eye-icon eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.7 10.7A3 3 0 0 0 13.3 13.3M9.1 5.7A12.8 12.8 0 0 1 12 5c6.5 0 10 7 10 7a16.2 16.2 0 0 1-4.4 5.5M6.1 6.1A16.5 16.5 0 0 0 2 12s3.5 7 10 7a11.2 11.2 0 0 0 6.2-2.1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
             <small id="login-password-error" class="field-error">أدخل كلمة المرور.</small>
           </label>
           <label>الدور
@@ -85,7 +91,13 @@
             <small id="register-email-error" class="field-error">أدخل بريدًا إلكترونيًا صالحًا.</small>
           </label>
           <label>كلمة المرور المؤقتة
-            <input id="register-password" type="password" aria-describedby="register-password-error" placeholder="8 أحرف على الأقل" required minlength="8">
+            <div class="password-field">
+              <input id="register-password" type="password" aria-describedby="register-password-error" placeholder="8 أحرف على الأقل" required minlength="8">
+              <button class="password-toggle-btn" type="button" aria-label="إظهار كلمة المرور" aria-pressed="false" title="إظهار كلمة المرور">
+                <svg class="eye-icon eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+                <svg class="eye-icon eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.7 10.7A3 3 0 0 0 13.3 13.3M9.1 5.7A12.8 12.8 0 0 1 12 5c6.5 0 10 7 10 7a16.2 16.2 0 0 1-4.4 5.5M6.1 6.1A16.5 16.5 0 0 0 2 12s3.5 7 10 7a11.2 11.2 0 0 0 6.2-2.1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
             <small id="register-password-error" class="field-error">يجب أن تتكون كلمة المرور من 8 أحرف على الأقل.</small>
           </label>
           <label>الدور

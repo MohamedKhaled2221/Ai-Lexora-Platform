@@ -163,6 +163,33 @@ function setupAccountControls() {
   });
 }
 
+function setupPasswordVisibilityToggles() {
+  document.querySelectorAll(".password-toggle-btn").forEach((button) => {
+    const field = button.closest(".password-field");
+    const input = field?.querySelector("input");
+
+    if (!field || !input) return;
+
+    const syncButtonState = () => {
+      const isVisible = input.type === "text";
+      button.classList.toggle("is-visible", isVisible);
+      button.setAttribute("aria-label", isVisible ? "إخفاء كلمة المرور" : "إظهار كلمة المرور");
+      button.setAttribute("aria-pressed", String(isVisible));
+      button.title = isVisible ? "إخفاء كلمة المرور" : "إظهار كلمة المرور";
+    };
+
+    button.addEventListener("click", () => {
+      input.type = input.type === "password" ? "text" : "password";
+      syncButtonState();
+      input.focus();
+      const end = input.value.length;
+      input.setSelectionRange(end, end);
+    });
+
+    syncButtonState();
+  });
+}
+
 function setupDashboardSidebarDrawer() {
   const layout = document.querySelector(".app-layout");
   const sidebar = document.querySelector(".sidebar");
@@ -273,6 +300,7 @@ function updateNavbarMode() {
 
 setupNavbarMenu();
 setupAccountControls();
+setupPasswordVisibilityToggles();
 setupConsultationAiComposer();
 setupDashboardSidebarDrawer();
 updateNavbarMode();
