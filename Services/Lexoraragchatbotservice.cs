@@ -15,7 +15,7 @@ namespace LegalAssistant.Api.Services;
 /// already catches that and returns a 502 with a clear message rather than
 /// crashing the request.
 /// </summary>
-public sealed class LexoraRagChatbotService : IChatbotService, IConfiguration
+public sealed class LexoraRagChatbotService : IChatbotService
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private readonly string _clientId;
@@ -23,7 +23,7 @@ public sealed class LexoraRagChatbotService : IChatbotService, IConfiguration
     private readonly HttpClient _httpClient;
     private readonly ILogger<LexoraRagChatbotService> _logger;
 
-    public LexoraRagChatbotService(HttpClient httpClient, ILogger<LexoraRagChatbotService> logger)
+    public LexoraRagChatbotService(HttpClient httpClient, ILogger<LexoraRagChatbotService> logger, IConfiguration configuration)
     {
         _httpClient = httpClient;
         _logger = logger;
@@ -70,14 +70,13 @@ public sealed class LexoraRagChatbotService : IChatbotService, IConfiguration
         HttpResponseMessage response;
         try
         {
-            response = await _httpClient.PostAsJsonAsync("/api/v1/p4/chat", requestBody, JsonOptions, cancellationToken);
-            httpRequest.Headers.Add(
-                "X-Client-Id",
-                _clientId);
-
-            httpRequest.Headers.Add(
-                "X-Confidentiality-Ceiling",
-                _confidentialityCeiling);
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/p4/chat")
+            {
+                Content = JsonContent.Create(requestBody, options: JsonOptions)
+            };
+            httpRequest.Headers.Add("X-Client-Id", _clientId);
+            httpRequest.Headers.Add("X-Confidentiality-Ceiling", _confidentialityCeiling);
+            response = await _httpClient.SendAsync(httpRequest, cancellationToken);
         }
         catch (HttpRequestException ex)
         {

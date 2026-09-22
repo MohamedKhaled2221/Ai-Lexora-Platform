@@ -27,9 +27,7 @@ document.querySelectorAll("[data-react-widget]").forEach((element) => {
 
   element.dataset.reactMounted = "true";
 
-  createRoot(element).render(
-    <React.StrictMode>
-      <Widget {...element.dataset} />
-    </React.StrictMode>,
-  );
+ createRoot(element).render(
+  <Widget {...element.dataset} />,
+);
 });

@@ -1944,6 +1944,7 @@ textarea {
 .highlighted-document-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 2.1; color: var(--ink); }
 .highlighted-document-text mark { margin-inline: 1px; padding: 1px 3px; border-radius: 3px; color: inherit; background: transparent; }
 .highlighted-document-text mark.importance-high { background: color-mix(in srgb, #d94b45 28%, transparent); text-decoration: underline; text-decoration-color: #d94b45; text-decoration-thickness: 2px; }
+.highlighted-document-text mark.importance-critical { background: color-mix(in srgb, #7a1f1a 38%, transparent); text-decoration: underline; text-decoration-color: #7a1f1a; text-decoration-thickness: 3px; }
 .highlighted-document-text mark.importance-medium { background: color-mix(in srgb, #d99d2b 27%, transparent); }.highlighted-document-text mark.importance-low { background: color-mix(in srgb, #38a169 14%, transparent); }
 
 @media (max-width: 1180px) and (min-width: 761px) {

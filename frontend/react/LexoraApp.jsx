@@ -525,15 +525,69 @@ export function ChatbotWidget() {
   );
 }
 
-function importanceForToken(token) {
-  const normalized = token.toLowerCase();
-  if (/\b(article|section|المادة|البند|القانون|عقد|contract|agreement|shall|يجب|يلتزم|يحظر|لا يجوز|تعويض|غرامة|termination|confidential)\b/i.test(normalized)) return "high";
-  if (/\b(may|must|unless|within|before|after|only|يجوز|خلال|قبل|بعد|فقط|شرط|مدة|تاريخ|مبلغ)\b/i.test(normalized)) return "medium";
-  return "low";
+function normalizeForMatch(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
 }
 
-function HighlightedText({ text }) {
-  return <div className="highlighted-document-text">{text.split(/(\s+)/).map((part, index) => part.trim() ? <mark className={`importance-${importanceForToken(part)}`} key={`${part}-${index}`}>{part}</mark> : part)}</div>;
+function buildRiskSegments(text, riskyClauses) {
+  const normalizedText = normalizeForMatch(text);
+
+  if (!riskyClauses || !riskyClauses.length) {
+    return [{ text: normalizedText, severity: null }];
+  }
+
+  const candidates = riskyClauses
+    .map((clause) => ({
+      needle: normalizeForMatch(clause.clauseText).toLowerCase(),
+      severity: (clause.severity || "").toLowerCase() || null,
+    }))
+    .filter((item) => item.needle.length >= 8)
+    .sort((a, b) => b.needle.length - a.needle.length);
+
+  const lowerText = normalizedText.toLowerCase();
+  const ranges = [];
+
+  for (const candidate of candidates) {
+    let searchFrom = 0;
+    while (searchFrom <= lowerText.length) {
+      const foundAt = lowerText.indexOf(candidate.needle, searchFrom);
+      if (foundAt === -1) break;
+      const end = foundAt + candidate.needle.length;
+      const overlaps = ranges.some((range) => foundAt < range.end && end > range.start);
+      if (!overlaps) ranges.push({ start: foundAt, end, severity: candidate.severity });
+      searchFrom = end;
+    }
+  }
+
+  if (!ranges.length) return [{ text: normalizedText, severity: null }];
+
+  ranges.sort((a, b) => a.start - b.start);
+
+  const segments = [];
+  let cursor = 0;
+  for (const range of ranges) {
+    if (range.start > cursor) segments.push({ text: normalizedText.slice(cursor, range.start), severity: null });
+    segments.push({ text: normalizedText.slice(range.start, range.end), severity: range.severity });
+    cursor = range.end;
+  }
+  if (cursor < normalizedText.length) segments.push({ text: normalizedText.slice(cursor), severity: null });
+
+  return segments;
+}
+
+function HighlightedText({ text, riskyClauses }) {
+  const segments = buildRiskSegments(text, riskyClauses);
+  return (
+    <div className="highlighted-document-text">
+      {segments.map((segment, index) =>
+        segment.severity ? (
+          <mark className={`importance-${segment.severity}`} key={`seg-${index}`}>{segment.text}</mark>
+        ) : (
+          <span key={`seg-${index}`}>{segment.text}</span>
+        ),
+      )}
+    </div>
+  );
 }
 
 export function FileAnalysisWidget() {
@@ -629,24 +683,29 @@ export function FileAnalysisWidget() {
       });
 
     try {
-      const uploaded = await uploadDocument(selectedFile, "Contract");
-      if (!isActiveRun(runId)) return;
+const uploaded = await uploadDocument(selectedFile, "Contract");
+console.log("STEP 1: upload done", uploaded, "runId", runId, "isActive", isActiveRun(runId));
+if (!isActiveRun(runId)) { console.log("STEP 1b: run not active, returning"); return; }
 
-      const uploadedDocumentId = uploaded?.id;
-      if (!uploadedDocumentId) throw new Error("لم يُرجع الخادم معرف المستند المرفوع.");
-      setDocumentId(uploadedDocumentId);
+const uploadedDocumentId = uploaded?.id;
+console.log("STEP 2: documentId is", uploadedDocumentId);
+if (!uploadedDocumentId) throw new Error("لم يُرجع الخادم معرف المستند المرفوع.");
+setDocumentId(uploadedDocumentId);
 
-      const started = await startContractAnalysis(uploadedDocumentId);
+console.log("STEP 3: calling startContractAnalysis now");
+const started = await startContractAnalysis(uploadedDocumentId);
+console.log("STEP 4: analysis started", started);
       if (!isActiveRun(runId)) return;
       setAnalysis(started);
       setAnalysisStatus("processing");
 
       await pollContractAnalysis(uploadedDocumentId, runId);
     } catch (requestError) {
-      if (!isActiveRun(runId)) return;
-      setAnalysisStatus("failed");
-      setAnalysisError(requestError.message || "تعذر تشغيل تحليل المستند.");
-    }
+  console.log("STEP ERROR: caught exception:", requestError);
+  if (!isActiveRun(runId)) { console.log("STEP ERROR: run not active"); return; }
+  setAnalysisStatus("failed");
+  setAnalysisError(requestError.message || "تعذر تشغيل تحليل المستند.");
+}
 
     void previewPromise;
   }
@@ -713,7 +772,7 @@ export function FileAnalysisWidget() {
       {previewStatus === "loading" ? <div className="analysis-state">جاري تجهيز المعاينة المحلية...</div> : null}
       {previewStatus === "error" ? <div className="analysis-state">تعذر تجهيز المعاينة المحلية، لكن ذلك لا يؤثر على تحليل Backend.</div> : null}
       {previewStatus === "empty" ? <div className="analysis-state">لم يُعثر على نص للمعاينة المحلية.</div> : null}
-      {previewStatus === "success" ? <section className="analysis-result"><div className="analysis-result-heading"><div><p className="eyebrow">Local Preview</p><h2>معاينة النص</h2></div><span>{text.split(/\s+/).filter(Boolean).length} كلمة</span></div><HighlightedText text={text} /></section> : null}
+      {previewStatus === "success" ? <section className="analysis-result"><div className="analysis-result-heading"><div><p className="eyebrow">Local Preview</p><h2>معاينة النص</h2></div><span>{text.split(/\s+/).filter(Boolean).length} كلمة</span></div>{analysisStatus === "completed" && analysis?.riskyClauses?.length ? <HighlightedText text={text} riskyClauses={analysis.riskyClauses} /> : <div className="highlighted-document-text"><span>{text}</span></div>}</section> : null}
     </div>
   );
 }

@@ -52,14 +52,36 @@ RULES = [
         "monetary amount should be reviewed, particularly where the amount "
         "may be excessively high."
     ),
-    "required_terms": ["penalty"],
+
+    # ---------------------------------------------------------
+    # بدايه التعديل الاول
+    # ---------------------------------------------------------
+    # "required_terms": ["penalty"],
+    # "forbidden_terms": [
+    #     "no penalty",
+    #     "no penalties",
+    #     "without penalty",
+    #     "penalty shall not apply",
+    #     "penalties shall not apply",
+    # ],
+    # ---------------------------------------------------------
+    # نص التعديل الاول 
+    # ---------------------------------------------------------
+        "required_terms": ["penalty", "غرامة", "شرط جزائي"],
     "forbidden_terms": [
         "no penalty",
         "no penalties",
         "without penalty",
         "penalty shall not apply",
         "penalties shall not apply",
+        "بدون غرامة",
+        "دون غرامة",
+        "لا توجد غرامة",
     ],
+    # ---------------------------------------------------------
+    # نهايه نص التعديل الاول
+    # ---------------------------------------------------------
+
     "risk_terms": [],
     "legal_reference": {
         "article": "224",
@@ -204,7 +226,29 @@ RULES = [
         "interest conditions should be reviewed."
     ),
     "required_terms": [],
-    "forbidden_terms": [
+    # ---------------------------------------------------------
+    # بدايه التعديل الثاني      
+    # --------------------------------------------------------
+    # "forbidden_terms": [
+    #     "no penalty",
+    #     "no penalties",
+    #     "without penalty",
+    #     "no interest",
+    #     "without interest",
+    #     "no late payment",
+    #     "without late payment",
+    # ],
+    # "risk_terms": [
+    #     "penalty",
+    #     "late payment",
+    #     "delay",
+    #     "interest",
+    # ],
+
+    # ---------------------------------------------------------
+    # بدايه نص التعديل 
+    # ---------------------------------------------------------
+        "forbidden_terms": [
         "no penalty",
         "no penalties",
         "without penalty",
@@ -212,13 +256,25 @@ RULES = [
         "without interest",
         "no late payment",
         "without late payment",
+        "بدون غرامة",
+        "دون غرامة",
+        "بدون فائدة",
+        "دون فائدة",
     ],
     "risk_terms": [
         "penalty",
         "late payment",
         "delay",
         "interest",
+        "غرامة",
+        "تأخير في السداد",
+        "تأخير السداد",
+        "تأخير",
+        "فائدة",
     ],
+    # ---------------------------------------------------------
+    # نهايه نص التعديل
+    # --------------------------------------------------------- 
     "legal_reference": None,
 },
 
@@ -330,11 +386,31 @@ RULES = [
         "required_terms": [],
         "forbidden_terms": [],
 
-        "risk_terms": [
+        # ---------------------------------------------------------
+        # بدايه التعديل الثالث
+        # --------------------------------------------------------- 
+
+        # "risk_terms": [
+        #     "immediately",
+        #     "at any time",
+        #     "without cause",
+        # ],
+        # ---------------------------------------------------------
+        # نص التعديل الثالث
+        # --------------------------------------------------------- 
+                "risk_terms": [
             "immediately",
             "at any time",
             "without cause",
+            "فورا",
+            "فوريا",
+            "في أي وقت",
+            "دون سبب",
+            "بدون سبب",
         ],
+        # ---------------------------------------------------------
+        # نهايه نص التعديل الثالث       
+        # ---------------------------------------------------------
     },
 
 
@@ -360,13 +436,33 @@ RULES = [
 
         "required_terms": [],
         "forbidden_terms": [],
+    # ---------------------------------------------------------
+    # بدايه التعديل الرابع
+    # ---------------------------------------------------------
+        # "risk_terms": [
+        #     "no liability",
+        #     "unlimited liability",
+        #     "exclude all liability",
+        #     "sole liability",
+        # ],
 
-        "risk_terms": [
+        # ---------------------------------------------------------
+        # نص  التعديل الرابع
+        # ---------------------------------------------------------
+                "risk_terms": [
             "no liability",
             "unlimited liability",
             "exclude all liability",
             "sole liability",
+            "دون مسؤولية",
+            "بدون مسؤولية",
+            "مسؤولية غير محدودة",
+            "مسؤولية كاملة",
+            "استبعاد المسؤولية",
         ],
+        # ---------------------------------------------------------
+        # نهايه نص التعديل الرابع
+        # ---------------------------------------------------------
     },
 
 
@@ -425,6 +521,45 @@ RULES = [
         "use_is_modified": True,
     },
 
+    # بدايه الاضافه للتعديل
+
+    # =========================================================
+    # R014 - Unbalanced Indemnity
+    # =========================================================
+
+    {
+        "rule_id": "R014",
+        "clause_type": "Indemnity",
+        "rule_type": "risky_clause",
+        "trigger": "unbalanced_indemnity",
+
+        "risk_category": "risky_clause",
+        "severity": "high",
+
+        "legal_reference": None,
+
+        "description": (
+            "An indemnity clause that requires one party to cover losses "
+            "even where caused in part by the other party's own fault "
+            "should be reviewed."
+        ),
+
+        "required_terms": [],
+        "forbidden_terms": [],
+
+        "risk_terms": [
+            "even if",
+            "regardless of fault",
+            "حتى إذا ساهم",
+            "حتى لو ساهم",
+            "حتى إن ساهم",
+            "بصرف النظر عن الخطأ",
+        ],
+    },
+    # ---------------------------------------------------------
+    # نهاية التعديل 
+    # ---------------------------------------------------------
+
 
     # =========================================================
     # R015 - Unusual Confidentiality Disclosure
@@ -455,4 +590,43 @@ RULES = [
             "without consent",
         ],
     },
+
+
+    # =========================================================
+    # بداية التعديل 
+    # =========================================================
+
+    # =========================================================
+    # R015 - IP Transfer Without Compensation
+    # =========================================================
+
+    {
+        "rule_id": "R015",
+        "clause_type": "Intellectual Property",
+        "rule_type": "risky_clause",
+        "trigger": "ip_transfer_no_compensation",
+
+        "risk_category": "risky_clause",
+        "severity": "high",
+
+        "legal_reference": None,
+
+        "description": (
+            "A clause transferring intellectual property rights without "
+            "additional compensation should be reviewed."
+        ),
+
+        "required_terms": [],
+        "forbidden_terms": [],
+
+        "risk_terms": [
+            "without additional compensation",
+            "no additional payment",
+            "دون مقابل",
+            "بدون مقابل",
+            "دون مقابل إضافي",
+        ],
+    },
+
+
 ]
