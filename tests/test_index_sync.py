@@ -248,3 +248,25 @@ def test_synced_points_are_retrievable_under_an_access_scope():
     )
 
     assert {h["document_id"] for h in hits} == {"doc_law_1"}
+def test_index_sync_persists_canonical_name_as_title_metadata():
+    store = _store("sync_title_metadata")
+    service = IndexSyncService(
+        FakeEmbeddingService(),
+        store,
+    )
+    record = _record(
+        canonical_name="Current Employment Agreement",
+    )
+
+    service.apply(
+        _update(record),
+        record,
+    )
+
+    payloads = _payloads(store)
+
+    assert payloads
+    assert {
+        payload["metadata"]["title"]
+        for payload in payloads
+    } == {"Current Employment Agreement"}

@@ -338,6 +338,19 @@ async def chat_package4(
         CitationValidationError,
         P4GroundingValidationError,
     ) as exc:
+        logger.exception(
+            "p4_grounded_response_failed",
+            extra={
+                "request_id": getattr(
+                    request.state,
+                    "request_id",
+                    "unknown",
+                ),
+                "exception_type": type(exc).__name__,
+                "exception_message": str(exc),
+            },
+        )
+
         raise HTTPException(
             status_code=(
                 status.HTTP_502_BAD_GATEWAY

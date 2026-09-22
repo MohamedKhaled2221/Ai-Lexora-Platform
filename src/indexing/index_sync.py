@@ -249,7 +249,10 @@ class IndexSyncService:
         language = data.get("language")
         if language not in ("ar", "en", "ar-en"):
             language = "unknown"
-        metadata = {"record_type": record.record_type.value}
+        metadata = {
+            "record_type": record.record_type.value,
+            "title": record.canonical_name,
+        }
         if data.get("jurisdiction"):
             metadata["jurisdiction"] = data["jurisdiction"]
 

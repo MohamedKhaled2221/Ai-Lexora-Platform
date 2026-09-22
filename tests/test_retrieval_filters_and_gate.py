@@ -210,3 +210,55 @@ def test_pipeline_logs_config_and_selected_evidence_without_text(store, caplog):
     logged_ids = {(e["document_id"], e["chunk_id"]) for e in record.evidence}
     assert logged_ids == {(e.document_id, e.chunk_id) for e in evidence.retrieved_evidence}
     assert all("text" not in e and "client_id" not in e for e in record.evidence)
+
+
+def test_min_rerank_score_filters_weak_evidence_before_m4():
+    pipeline = M3RetrievalPipeline.__new__(
+        M3RetrievalPipeline
+    )
+    pipeline.min_rerank_score = 0.60
+
+    chunks = [
+        {
+            "document_id": "strong-a",
+            "score": 0.73,
+        },
+        {
+            "document_id": "strong-b",
+            "score": 0.68,
+        },
+        {
+            "document_id": "noise",
+            "score": 0.50,
+        },
+    ]
+
+    selected = pipeline._select_for_m4(
+        chunks
+    )
+
+    assert [
+        item["document_id"]
+        for item in selected
+    ] == [
+        "strong-a",
+        "strong-b",
+    ]
+
+
+def test_min_rerank_score_is_off_by_default():
+    pipeline = M3RetrievalPipeline.__new__(
+        M3RetrievalPipeline
+    )
+    pipeline.min_rerank_score = None
+
+    chunks = [
+        {
+            "document_id": "anything",
+            "score": 0.01,
+        },
+    ]
+
+    assert pipeline._select_for_m4(
+        chunks
+    ) == chunks

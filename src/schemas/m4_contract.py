@@ -9,6 +9,10 @@ class EvidenceItem(BaseModel):
     """
     document_id: str = Field(..., description="Source legal document ID")
     chunk_id: str = Field(..., description="Unique chunk ID within the document")
+    title: Optional[str] = Field(
+        default=None,
+        description="Trusted canonical document title",
+    )
     text: str = Field(..., description="Extracted legal snippet text")
     page: Optional[int] = Field(default=None, description="Page number for citation validation in M4")
     section: Optional[str] = Field(default=None, description="Document section or article title")

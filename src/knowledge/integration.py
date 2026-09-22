@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
 
 from src.knowledge.access_control import (
@@ -129,6 +130,8 @@ class KnowledgeIntegrationService:
     def evaluate_evidence(
         self,
         evidence: RetrievedEvidence,
+        *,
+        original_query: str | None = None,
     ) -> EvidenceSufficiencyResult:
         """
         Evaluate the trusted M3 evidence package.
@@ -172,6 +175,51 @@ class KnowledgeIntegrationService:
                 requires_follow_up=True,
             )
 
+        requested_titles = (
+            self._explicit_document_titles(
+                original_query
+            )
+        )
+
+        if requested_titles:
+            available_titles = {
+                self._normalize_document_title(
+                    item.title
+                )
+                for item in valid_evidence
+                if (
+                    item.title is not None
+                    and item.title.strip()
+                )
+            }
+
+            missing_titles = [
+                title
+                for title in requested_titles
+                if (
+                    self._normalize_document_title(
+                        title
+                    )
+                    not in available_titles
+                )
+            ]
+
+            if missing_titles:
+                return EvidenceSufficiencyResult(
+                    sufficient=False,
+                    score=0.0,
+                    reason=(
+                        "Retrieved evidence does not "
+                        "contain the explicitly requested "
+                        "document."
+                    ),
+                    missing_information=[
+                        f"Requested document: {title}"
+                        for title in missing_titles
+                    ],
+                    requires_follow_up=True,
+                )
+
         score = min(
             1.0,
             len(valid_evidence) / 3,
@@ -187,6 +235,78 @@ class KnowledgeIntegrationService:
             missing_information=[],
             requires_follow_up=False,
         )
+
+    @staticmethod
+    def _normalize_document_title(
+        value: str,
+    ) -> str:
+        return " ".join(
+            value.casefold().split()
+        )
+
+    @staticmethod
+    def _explicit_document_titles(
+        query: str | None,
+    ) -> list[str]:
+        """
+        Extract only strong English title-like references.
+
+        This is intentionally narrow. It is a safety/sufficiency
+        control, not general entity extraction.
+
+        Examples:
+        - Current Employment Agreement
+        - Internal Test Document
+        - Injection Resistance Document
+        - Agreement Pending Review
+        - Contract A
+
+        Generic lowercase descriptions such as
+        "Arabic test contract" are deliberately not treated as
+        canonical-title requirements.
+        """
+        if query is None or not query.strip():
+            return []
+
+        patterns = (
+            (
+                r"\b("
+                r"(?:[A-Z][A-Za-z0-9'&./-]*\s+){1,6}"
+                r"(?:Agreement|Contract|Document)"
+                r")\b"
+            ),
+            (
+                r"\b("
+                r"(?:Agreement|Contract|Document)"
+                r"(?:\s+[A-Z][A-Za-z0-9'&./-]*){1,6}"
+                r")\b"
+            ),
+        )
+
+        titles: list[str] = []
+        seen: set[str] = set()
+
+        for pattern in patterns:
+            for match in re.finditer(
+                pattern,
+                query,
+            ):
+                title = match.group(1).strip()
+
+                normalized = (
+                    KnowledgeIntegrationService
+                    ._normalize_document_title(
+                        title
+                    )
+                )
+
+                if normalized in seen:
+                    continue
+
+                seen.add(normalized)
+                titles.append(title)
+
+        return titles
 
     def build_answer_request(
         self,
@@ -222,7 +342,8 @@ class KnowledgeIntegrationService:
 
         evidence_result = (
             self.evaluate_evidence(
-                retrieved_evidence
+                retrieved_evidence,
+                original_query=original_query,
             )
         )
 

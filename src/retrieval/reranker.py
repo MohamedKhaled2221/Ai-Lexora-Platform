@@ -127,7 +127,10 @@ class BGEReranker:
             )
 
         if self.model is not None:
-            pairs = [[query_text, c["text"]] for c in candidates]
+            pairs = [
+                [query_text, self._rerank_document_text(candidate)]
+                for candidate in candidates
+            ]
             raw_scores = self.model.predict(pairs)
 
             # Normalize scores using sigmoid for 0.0 - 1.0 output range
@@ -147,6 +150,20 @@ class BGEReranker:
         reranked.sort(key=lambda x: x["score"], reverse=True)
         return reranked[:top_k]
 
+    @staticmethod
+    def _rerank_document_text(candidate: Dict[str, Any]) -> str:
+        """Build trusted title + passage text for relevance scoring."""
+        title = str(candidate.get("title") or "").strip()
+        text = str(candidate.get("text") or "").strip()
+
+        if not title:
+            return text
+
+        return (
+            f"Document title: {title}\n"
+            f"Document text: {text}"
+        )
+
     def _fallback_rerank(
         self,
         query_text: str,
@@ -160,7 +177,7 @@ class BGEReranker:
         reranked = []
 
         for item in candidates:
-            text = item.get("text", "").lower()
+            text = self._rerank_document_text(item).lower()
             text_terms = set(text.split())
 
             if not query_terms:

@@ -204,3 +204,36 @@ def test_strict_offline_requires_datasets_offline(
         validate_offline_runtime_environment(
             settings
         )
+
+
+def test_min_rerank_score_defaults_off():
+    settings = RAGRuntimeSettings(
+        _env_file=None
+    )
+
+    assert settings.min_rerank_score is None
+
+
+def test_min_rerank_score_environment_override(
+    monkeypatch,
+):
+    monkeypatch.setenv(
+        "RAG_MIN_RERANK_SCORE",
+        "0.60",
+    )
+
+    settings = RAGRuntimeSettings(
+        _env_file=None
+    )
+
+    assert settings.min_rerank_score == 0.60
+
+
+def test_min_rerank_score_rejects_invalid_value():
+    with pytest.raises(
+        ValidationError
+    ):
+        RAGRuntimeSettings(
+            min_rerank_score=1.1,
+            _env_file=None,
+        )

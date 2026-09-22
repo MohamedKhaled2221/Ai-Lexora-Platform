@@ -697,10 +697,18 @@ class QdrantVectorStore:
         must read as unverifiable, never as permitted.
         """
 
+        metadata = payload.get("metadata")
+        if not isinstance(metadata, dict):
+            metadata = {}
+
+        raw_title = metadata.get("title") or payload.get("title") or ""
+        title = str(raw_title).strip()
+
         projected = {
             "point_id": point_id,
             "document_id": payload.get("document_id", ""),
             "chunk_id": payload.get("chunk_id", str(point_id)),
+            "title": title,
             "text": payload.get("text", ""),
             "page": payload.get("page"),
             "section": payload.get("section"),

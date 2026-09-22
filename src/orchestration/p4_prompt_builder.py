@@ -90,6 +90,7 @@ class P4PromptBuilder:
             "trusted_evidence": [
                 {
                     "evidence_id": evidence_id,
+                    "document_title": evidence.title,
                     "text": evidence.text,
                 }
                 for evidence_id, evidence

@@ -256,3 +256,138 @@ def test_m6_does_not_define_parallel_p4_contract():
         m6_knowledge,
         "Citation",
     )
+
+def test_explicit_requested_document_must_survive_retrieval():
+    service = make_service()
+
+    evidence = RetrievedEvidence(
+        query_id="query-title-missing",
+        retrieved_evidence=[
+            EvidenceItem(
+                document_id="qa-public",
+                chunk_id="qa-public-001",
+                title="Public Test Document",
+                text=(
+                    "The fictional public registration "
+                    "period is 11 days."
+                ),
+                language="en",
+                score=0.70,
+            )
+        ],
+    )
+
+    result = service.evaluate_evidence(
+        evidence,
+        original_query=(
+            "What is the fictional internal registration "
+            "period in the Internal Test Document?"
+        ),
+    )
+
+    assert result.sufficient is False
+    assert result.requires_follow_up is True
+    assert "requested document" in result.reason.lower()
+
+
+def test_explicit_requested_document_is_sufficient_when_present():
+    service = make_service()
+
+    evidence = RetrievedEvidence(
+        query_id="query-title-present",
+        retrieved_evidence=[
+            EvidenceItem(
+                document_id="qa-internal",
+                chunk_id="qa-internal-001",
+                title="Internal Test Document",
+                text=(
+                    "The fictional internal registration "
+                    "period is 22 days."
+                ),
+                language="en",
+                score=0.70,
+            )
+        ],
+    )
+
+    result = service.evaluate_evidence(
+        evidence,
+        original_query=(
+            "What is the fictional internal registration "
+            "period in the Internal Test Document?"
+        ),
+    )
+
+    assert result.sufficient is True
+
+
+def test_lowercase_descriptive_document_phrase_is_not_canonical_title_gate():
+    service = make_service()
+
+    evidence = RetrievedEvidence(
+        query_id="query-cross-lingual",
+        retrieved_evidence=[
+            EvidenceItem(
+                document_id="qa-arabic-contract",
+                chunk_id="qa-arabic-contract-001",
+                title="عقد اختبار عربي",
+                text=(
+                    "مدة الإخطار التعاقدي هي خمسة عشر "
+                    "يومًا تقويميًا."
+                ),
+                language="ar",
+                score=0.72,
+            )
+        ],
+    )
+
+    result = service.evaluate_evidence(
+        evidence,
+        original_query=(
+            "What is the notice period in the "
+            "Arabic test contract?"
+        ),
+    )
+
+    assert result.sufficient is True
+
+
+def test_build_answer_request_abstains_when_named_document_is_missing():
+    service = make_service()
+
+    evidence = RetrievedEvidence(
+        query_id="query-title-build",
+        retrieved_evidence=[
+            EvidenceItem(
+                document_id="qa-public",
+                chunk_id="qa-public-001",
+                title="Public Test Document",
+                text=(
+                    "The fictional public registration "
+                    "period is 11 days."
+                ),
+                language="en",
+                score=0.70,
+            )
+        ],
+    )
+
+    request = service.build_answer_request(
+        request_id="request-title-build",
+        original_query=(
+            "What is the fictional internal registration "
+            "period in the Internal Test Document?"
+        ),
+        response_language="en",
+        retrieved_evidence=evidence,
+        record_statuses=[
+            ValidityStatus.CURRENT
+        ],
+    )
+
+    assert request.evidence_sufficient is False
+    assert request.insufficiency_reason
+    assert (
+        "requested document"
+        in request.insufficiency_reason.lower()
+    )

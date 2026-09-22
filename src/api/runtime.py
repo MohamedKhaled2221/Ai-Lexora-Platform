@@ -113,6 +113,14 @@ class RAGRuntimeSettings(BaseSettings):
     """RAG_MIN_DENSE_SCORE. Abstain when the top dense cosine is below this.
     Off by default; see ``hybrid_search.MEASURED_MIN_DENSE_SCORE``."""
 
+    min_rerank_score: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+    )
+    """RAG_MIN_RERANK_SCORE. Drop weak reranked evidence before M4.
+    Off by default until measured for the target corpus."""
+
     validity_status_filter: list[str] | None = None
     """RAG_VALIDITY_STATUS_FILTER, e.g. ``["current"]``. Off by default."""
 
@@ -239,6 +247,7 @@ def build_rag_service(
             settings.keyword_backend
         ),
         min_dense_score=settings.min_dense_score,
+        min_rerank_score=settings.min_rerank_score,
         allowed_validity_statuses=(
             settings.validity_status_filter
         ),

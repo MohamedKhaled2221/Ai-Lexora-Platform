@@ -46,12 +46,23 @@ class M3RetrievalPipeline:
         reranker_local_files_only: bool = True,
         keyword_backend: KeywordBackend = "sparse",
         min_dense_score: Optional[float] = None,
+        min_rerank_score: Optional[float] = None,
         allowed_validity_statuses: Optional[Sequence[str]] = None,
         include_unversioned_points: bool = False,
     ):
         self.vector_store = vector_store or QdrantVectorStore()
         self.candidate_top_k = candidate_top_k
         self.final_top_k = final_top_k
+
+        if (
+            min_rerank_score is not None
+            and not 0.0 <= min_rerank_score <= 1.0
+        ):
+            raise ValueError(
+                "min_rerank_score must be between 0.0 and 1.0"
+            )
+
+        self.min_rerank_score = min_rerank_score
 
         self.keyword_backend = keyword_backend
         """Which keyword retriever this pipeline was built with.
@@ -110,13 +121,21 @@ class M3RetrievalPipeline:
             query_id=query.query_id,
         )
 
+        # Step 2c: Remove weak reranker matches before evidence crosses
+        # the M3 -> M4 boundary. Off by default and configurable via
+        # RAG_MIN_RERANK_SCORE.
+        selected_chunks = self._select_for_m4(
+            reranked_chunks
+        )
+
         # Step 3: Format Output Contract for M4 (RetrievedEvidence)
         evidence_items = []
-        for chunk in reranked_chunks:
+        for chunk in selected_chunks:
             evidence_items.append(
                 EvidenceItem(
                     document_id=chunk.get("document_id", "doc_unknown"),
                     chunk_id=chunk.get("chunk_id", "chunk_unknown"),
+                    title=chunk.get("title"),
                     text=chunk.get("text", ""),
                     page=chunk.get("page"),
                     section=chunk.get("section"),
@@ -155,12 +174,32 @@ class M3RetrievalPipeline:
                         "rrf_score": chunk.get("rrf_score"),
                         "matched_by": chunk.get("matched_by"),
                     }
-                    for chunk in reranked_chunks
+                    for chunk in selected_chunks
                 ],
             },
         )
 
         return output_evidence, latency_ms
+
+    def _select_for_m4(
+        self,
+        reranked_chunks: Sequence[Dict[str, Any]],
+    ) -> list[Dict[str, Any]]:
+        """
+        Keep only sufficiently relevant reranked evidence for M4.
+
+        This applies to answer-generation evidence only. Search-result
+        listings still expose their requested ranked candidate window.
+        """
+        if self.min_rerank_score is None:
+            return list(reranked_chunks)
+
+        return [
+            chunk
+            for chunk in reranked_chunks
+            if float(chunk.get("score", 0.0))
+            >= self.min_rerank_score
+        ]
 
     def search_candidates(
         self,
@@ -212,6 +251,7 @@ class M3RetrievalPipeline:
             "keyword_backend": self.keyword_backend,
             "candidate_top_k": self.candidate_top_k,
             "final_top_k": self.final_top_k,
+            "min_rerank_score": self.min_rerank_score,
         }
         for name in (
             "rrf_k",

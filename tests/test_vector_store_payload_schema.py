@@ -288,3 +288,25 @@ def test_a_fully_unstamped_chunk_is_refused():
                 )
             ]
         )
+def test_project_exposes_title_from_trusted_metadata():
+    projected = QdrantVectorStore._project(
+        point_id="point-1",
+        payload={
+            "document_id": "doc-1",
+            "chunk_id": "chunk-1",
+            "text": "The contractual notice period is 30 calendar days.",
+            "metadata": {
+                "title": "Current Employment Agreement",
+            },
+        },
+        score=0.9,
+    )
+
+    assert (
+        projected["title"]
+        == "Current Employment Agreement"
+    )
+    assert (
+        projected["text"]
+        == "The contractual notice period is 30 calendar days."
+    )
