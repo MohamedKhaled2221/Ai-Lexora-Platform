@@ -3,11 +3,28 @@ from __future__ import annotations
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 from fastapi.testclient import TestClient
 
 from src.api.app import create_app
+from src.orchestration import (
+    CitationValidationError,
+    M2QueryRuntimeError,
+    M4LLMConnectionError,
+    M4LLMInvocationError,
+)
 from src.orchestration.p3_generation_service import (
     P3GenerationIntegrationError,
+)
+from src.orchestration.p4_chat_service import (
+    P4RetrievalPolicyError,
+)
+from src.orchestration.p4_orchestrator import (
+    P4GroundingValidationError,
+)
+from src.retrieval.reranker import (
+    RerankerUnavailable,
 )
 from src.schemas.m4_contract import Citation
 from src.schemas.p3_generation_contract import (
@@ -272,6 +289,22 @@ class FakeP4ChatService:
                 ),
             ),
         )
+
+
+class FailingP4ChatService:
+    def __init__(
+        self,
+        error: Exception,
+    ) -> None:
+        self.error = error
+        self.calls = 0
+
+    async def aanswer(
+        self,
+        **kwargs,
+    ):
+        self.calls += 1
+        raise self.error
 
 
 def make_p4_app(
@@ -597,6 +630,164 @@ def test_p4_insufficient_evidence_remains_200():
     assert (
         payload["grounding_valid"]
         is False
+    )
+
+    assert service.calls == 1
+
+
+def _assert_p4_chat_validation_failure_is_generic(
+    error: Exception,
+    private_diagnostic: str,
+) -> None:
+    service = FailingP4ChatService(
+        error
+    )
+
+    app = make_p4_app(service)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/p4/chat",
+            headers=IDENTITY_HEADERS,
+            json={
+                "question": (
+                    "What does Article 157 say?"
+                )
+            },
+        )
+
+    assert response.status_code == 502
+
+    payload = response.json()
+
+    assert (
+        payload["error"]["code"]
+        == "HTTP_ERROR"
+    )
+
+    assert (
+        payload["error"]["message"]
+        == (
+            "Package 4 could not produce "
+            "a valid grounded response."
+        )
+    )
+
+    assert payload["error"]["request_id"]
+
+    assert (
+        private_diagnostic
+        not in response.text
+    )
+
+    assert service.calls == 1
+
+
+def test_p4_chat_malformed_model_output_fails_closed():
+    private_diagnostic = (
+        "private malformed-output diagnostic"
+    )
+
+    _assert_p4_chat_validation_failure_is_generic(
+        M4LLMInvocationError(
+            private_diagnostic
+        ),
+        private_diagnostic,
+    )
+
+
+def test_p4_chat_citation_failure_fails_closed():
+    private_diagnostic = (
+        "private citation diagnostic"
+    )
+
+    _assert_p4_chat_validation_failure_is_generic(
+        CitationValidationError(
+            private_diagnostic
+        ),
+        private_diagnostic,
+    )
+
+
+def test_p4_chat_grounding_failure_fails_closed():
+    private_diagnostic = (
+        "private grounding diagnostic"
+    )
+
+    _assert_p4_chat_validation_failure_is_generic(
+        P4GroundingValidationError(
+            private_diagnostic
+        ),
+        private_diagnostic,
+    )
+
+
+@pytest.mark.parametrize(
+    "exception_type, private_diagnostic",
+    [
+        (
+            M2QueryRuntimeError,
+            "private M2 runtime diagnostic",
+        ),
+        (
+            RerankerUnavailable,
+            "private reranker diagnostic",
+        ),
+        (
+            M4LLMConnectionError,
+            "private Ollama connection diagnostic",
+        ),
+        (
+            P4RetrievalPolicyError,
+            "private retrieval-policy diagnostic",
+        ),
+    ],
+)
+def test_p4_chat_runtime_failure_returns_generic_503(
+    exception_type,
+    private_diagnostic: str,
+) -> None:
+    service = FailingP4ChatService(
+        exception_type(
+            private_diagnostic
+        )
+    )
+
+    app = make_p4_app(service)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/p4/chat",
+            headers=IDENTITY_HEADERS,
+            json={
+                "question": (
+                    "What does Article 157 say?"
+                )
+            },
+        )
+
+    assert response.status_code == 503
+
+    payload = response.json()
+
+    assert (
+        payload["error"]["code"]
+        == "HTTP_ERROR"
+    )
+
+    assert (
+        payload["error"]["message"]
+        == (
+            "The local Package 4 runtime "
+            "is unavailable."
+        )
+    )
+
+    assert payload["error"]["request_id"]
+
+    assert (
+        private_diagnostic
+        not in response.text
     )
 
     assert service.calls == 1

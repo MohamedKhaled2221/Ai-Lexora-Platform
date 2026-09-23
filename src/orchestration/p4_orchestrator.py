@@ -36,6 +36,7 @@ from src.orchestration.p4_prompt_builder import (
 from src.orchestration.settings import M4Settings
 from src.schemas.p4_chat_contract import (
     AnswerGenerationRequest,
+    P4GroundedModelOutput,
     ResponseLanguage,
     ValidatedAIResponse,
 )
@@ -88,7 +89,8 @@ class P4M4Orchestrator:
         self.llm_service = (
             llm_service
             or M4LLMService(
-                settings=self.settings
+                settings=self.settings,
+                output_schema=P4GroundedModelOutput,
             )
         )
 

@@ -11,9 +11,26 @@ from src.schemas.p4_chat_contract import (
     ResponseLanguage,
     SafeContextTurn,
     ValidatedAIResponse,
+    P4GroundedModelOutput,
 )
 
+def test_p4_grounded_model_output_requires_citation():
+    with pytest.raises(ValidationError):
+        P4GroundedModelOutput(
+            answer="تسعين يومًا",
+            citation_ids=[],
+            confidence=1.0,
+        )
 
+
+def test_p4_grounded_model_output_accepts_trusted_alias():
+    output = P4GroundedModelOutput(
+        answer="تسعين يومًا",
+        citation_ids=["E1"],
+        confidence=1.0,
+    )
+
+    assert output.citation_ids == ["E1"]
 def make_evidence() -> RetrievedEvidence:
     return RetrievedEvidence(
         query_id="query-001",

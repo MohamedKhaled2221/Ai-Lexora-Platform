@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import re
 import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -138,6 +139,33 @@ class P4ChatService:
     into an EvidenceItem.
     """
 
+    _FOLLOW_UP_REFERENCE_RE = re.compile(
+        r"\b(?:it|its|this|that|them|their)\b"
+        r"|^\s*(?:and|what about|how about)\b",
+        re.IGNORECASE,
+    )
+
+    # Deliberately narrow document-title extraction.
+    #
+    # Conversation context may clarify WHICH document a
+    # follow-up refers to, but factual statements from
+    # conversation history must never become legal evidence.
+    _DOCUMENT_TITLE_PATTERNS = (
+        re.compile(
+            r"\b("
+            r"(?:[A-Z][a-z0-9&'/-]*\s+){1,6}"
+            r"(?:Agreement|Contract|Document)"
+            r")\b"
+        ),
+        re.compile(
+            r"\b("
+            r"(?:Agreement|Contract|Document)"
+            r"\s+[A-Z0-9][A-Za-z0-9&'/-]*"
+            r"(?:\s+[A-Z0-9][A-Za-z0-9&'/-]*){0,2}"
+            r")\b"
+        ),
+    )
+
     def __init__(
         self,
         *,
@@ -207,6 +235,7 @@ class P4ChatService:
             self._prepare_processed_query(
                 question=question,
                 filters=filters,
+                safe_context=safe_context,
             )
         )
 
@@ -280,6 +309,7 @@ class P4ChatService:
             self._prepare_and_retrieve,
             question,
             filters,
+            safe_context,
         )
 
         answer_request = (
@@ -318,6 +348,9 @@ class P4ChatService:
         self,
         question: str,
         filters: QueryFilters,
+        safe_context: Sequence[
+            SafeContextTurn
+        ] = (),
     ) -> tuple[
         ProcessedQuery,
         RetrievedEvidence,
@@ -328,6 +361,7 @@ class P4ChatService:
             self._prepare_processed_query(
                 question=question,
                 filters=filters,
+                safe_context=safe_context,
             )
         )
 
@@ -353,6 +387,9 @@ class P4ChatService:
         *,
         question: str,
         filters: QueryFilters,
+        safe_context: Sequence[
+            SafeContextTurn
+        ] = (),
     ) -> ProcessedQuery:
 
         # The injected M3 searcher is mutable, so enforce
@@ -369,10 +406,17 @@ class P4ChatService:
                 "before M2/M3 retrieval can run."
             )
 
+        retrieval_question = (
+            self._resolve_retrieval_question(
+                question=question,
+                safe_context=safe_context,
+            )
+        )
+
         try:
             embedded = (
                 self.query_pipeline.process(
-                    question
+                    retrieval_question
                 )
             )
 
@@ -407,6 +451,100 @@ class P4ChatService:
                 deep=True,
             )
         )
+
+    @classmethod
+    def _resolve_retrieval_question(
+        cls,
+        *,
+        question: str,
+        safe_context: Sequence[
+            SafeContextTurn
+        ],
+    ) -> str:
+        """
+        Resolve only a narrow conversational document reference.
+
+        Conversation history may contribute a document TITLE for
+        retrieval clarification. It must never contribute factual
+        or legal claims to trusted evidence.
+
+        Access control, matter scope, confidentiality, lifecycle,
+        and evidence validation remain downstream and unchanged.
+        """
+
+        cleaned_question = " ".join(
+            question.split()
+        )
+
+        if (
+            not safe_context
+            or not cls._FOLLOW_UP_REFERENCE_RE.search(
+                cleaned_question
+            )
+        ):
+            return question
+
+        for turn in reversed(
+            safe_context
+        ):
+            title = (
+                cls._extract_context_document_title(
+                    turn.text
+                )
+            )
+
+            if title is None:
+                continue
+
+            if (
+                title.casefold()
+                in cleaned_question.casefold()
+            ):
+                return question
+
+            return (
+                f"{cleaned_question} "
+                f"Referenced document: {title}."
+            )
+
+        return question
+
+    @classmethod
+    def _extract_context_document_title(
+        cls,
+        text: str,
+    ) -> str | None:
+        """
+        Extract a narrow title-like document reference only.
+
+        Numbers, deadlines, amounts, instructions, and other
+        conversational claims are intentionally discarded.
+        """
+
+        for pattern in (
+            cls._DOCUMENT_TITLE_PATTERNS
+        ):
+            matches = list(
+                pattern.finditer(text)
+            )
+
+            if not matches:
+                continue
+
+            title = " ".join(
+                matches[-1]
+                .group(1)
+                .split()
+            )
+
+            if title.startswith(
+                "The "
+            ):
+                title = title[4:]
+
+            return title
+
+        return None
 
     def _validate_m2_handoff(
         self,

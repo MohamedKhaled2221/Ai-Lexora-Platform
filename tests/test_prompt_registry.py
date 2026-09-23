@@ -52,7 +52,7 @@ def test_registry_contains_p4_grounded_prompt():
 
     assert (
         prompt.version
-        == "p4-grounded-answer-v1"
+        == "p4-grounded-answer-v4"
     )
 
 def test_registry_contains_four_prompts():
@@ -101,7 +101,7 @@ def test_prompt_keys_are_unique():
 
 def test_lookup_by_version():
     prompt = prompt_registry.get_by_version(
-        "p4-grounded-answer-v1"
+        "p4-grounded-answer-v4"
     )
 
     assert (
@@ -242,3 +242,100 @@ def test_p4_grounding_prompt_does_not_discard_facts_because_of_injection_text():
     )
 
     assert "document_title" in normalized
+
+
+def test_p4_grounded_v4_preserves_legal_referents_directness_and_scalars():
+    prompt = prompt_registry.get(
+        PromptKey.P4_GROUNDED_ANSWER
+    )
+
+    assert (
+        prompt.version
+        == "p4-grounded-answer-v4"
+    )
+
+    normalized = " ".join(
+        prompt.system_prompt.lower().split()
+    )
+
+    assert (
+        "answer only the question asked"
+        in normalized
+    )
+
+    assert (
+        "dates, durations, amounts, conditions"
+        in normalized
+    )
+
+    assert (
+        "do not expand or replace an ambiguous "
+        "pronoun or referential phrase"
+        in normalized
+    )
+
+    assert (
+        'arabic "به"'
+        in normalized
+    )
+
+    assert (
+        "do not introduce a more specific legal "
+        "referent than the evidence itself provides"
+        in normalized
+    )
+
+    assert (
+        "first identify exactly what fact or field "
+        "the user asks for"
+        in normalized
+    )
+
+    assert (
+        "for questions asking only for a duration, "
+        "number, amount, date"
+        in normalized
+    )
+
+    assert (
+        'when an arabic question asks only "خلال كم يومًا؟"'
+        in normalized
+    )
+
+    assert (
+        "if an ambiguous source referent is necessary "
+        "to answer the question"
+        in normalized
+    )
+    assert (
+        "scalar-copy rule"
+        in normalized
+    )
+
+    assert (
+        "preserve the value exactly as it appears "
+        "in the cited evidence"
+        in normalized
+    )
+
+    assert (
+        "do not calculate, reinterpret, translate, "
+        "expand, contract, or replace"
+        in normalized
+    )
+
+    assert (
+        'if the evidence states "تسعين"'
+        in normalized
+    )
+
+    assert (
+        '"تسعة وتسعون"'
+        in normalized
+    )
+
+    assert (
+        'evidence containing "تسعين يوم ا" may be rendered as '
+        '"تسعين يومًا"'
+        in normalized
+    )

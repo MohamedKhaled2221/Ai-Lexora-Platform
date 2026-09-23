@@ -165,7 +165,7 @@ class FakeP4Service:
                 structured_output_valid=True,
                 model_tag="fake-qwen",
                 prompt_version=(
-                    "p4-grounded-answer-v1"
+                    "p4-grounded-answer-v4"
                 ),
             ),
             metrics=P4OrchestrationMetrics(

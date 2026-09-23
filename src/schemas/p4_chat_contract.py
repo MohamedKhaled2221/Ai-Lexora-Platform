@@ -31,6 +31,7 @@ from pydantic import (
 
 from .m4_contract import (
     Citation,
+    M4ModelOutput,
     RetrievedEvidence,
 )
 
@@ -49,6 +50,25 @@ class ResponseLanguage(str, Enum):
     ENGLISH = "en"
     MIXED = "mixed"
 
+class P4GroundedModelOutput(M4ModelOutput):
+    """
+    Structured LLM output for Package 4 when M6 has already
+    declared the retrieved evidence sufficient.
+
+    Unlike the shared M4ModelOutput contract, a grounded
+    Package 4 answer must cite at least one supplied evidence
+    alias.
+    """
+
+    citation_ids: list[str] = Field(
+        ...,
+        min_length=1,
+        description=(
+            "One or more trusted evidence aliases supporting "
+            "the answer. Package 4 grounded generation requires "
+            "at least one alias, for example ['E1']."
+        ),
+    )
 
 class SafeContextTurn(BaseModel):
     """

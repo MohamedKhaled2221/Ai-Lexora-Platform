@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections import Counter
 from dataclasses import dataclass
 from typing import Protocol, Sequence
 
@@ -347,6 +348,20 @@ class P4GroundingValidator:
                 ),
             )
 
+        if self._has_safe_arabic_lexical_support(
+            model_output=model_output,
+            evidence_by_id=evidence_by_id,
+        ):
+            return P4GroundingReport(
+                grounded=True,
+                unsupported_claims=(),
+                errors=(),
+                model_tag=None,
+                prompt_version=(
+                    "p4-arabic-lexical-grounding-v2"
+                ),
+            )
+
         checker = self._get_checker()
 
         result = checker.check(
@@ -402,6 +417,20 @@ class P4GroundingValidator:
                 model_tag=None,
                 prompt_version=(
                     "p4-verbatim-grounding-v1"
+                ),
+            )
+
+        if self._has_safe_arabic_lexical_support(
+            model_output=model_output,
+            evidence_by_id=evidence_by_id,
+        ):
+            return P4GroundingReport(
+                grounded=True,
+                unsupported_claims=(),
+                errors=(),
+                model_tag=None,
+                prompt_version=(
+                    "p4-arabic-lexical-grounding-v2"
                 ),
             )
 
@@ -489,6 +518,258 @@ class P4GroundingValidator:
 
         return True
 
+    @classmethod
+    def _has_safe_arabic_lexical_support(
+        cls,
+        *,
+        model_output: M4ModelOutput,
+        evidence_by_id: dict[str, EvidenceItem],
+    ) -> bool:
+        """
+        Accept a narrow Arabic lexical-equivalence case without
+        relying on a second LLM validation pass.
+
+        This remains deliberately conservative:
+
+        - every answer sentence must be Arabic;
+        - every substantive answer token must occur in the trusted
+          cited document title or evidence text;
+        - only explicitly approved lexical equivalences are
+          canonicalized;
+        - changed amounts, durations, legal terms, or document names
+          therefore fail closed;
+        - instruction/control-like answer text is never approved.
+        """
+        answer_sentences = cls._factual_sentences(
+            model_output.answer
+        )
+
+        if not answer_sentences:
+            return False
+
+        for sentence in answer_sentences:
+            if cls._looks_instruction_like(sentence):
+                return False
+
+            if not cls._contains_arabic(sentence):
+                return False
+
+            answer_tokens = cls._arabic_support_tokens(
+                sentence
+            )
+
+            # Avoid auto-approving extremely short / ambiguous
+            # fragments such as "نعم" or a bare number.
+            #
+            # Exception: a two-token day-duration such as
+            # "تسعين يومًا" may be approved only when the exact
+            # normalized token sequence occurs contiguously in the
+            # cited evidence. This handles the observed OCR form
+            # "تسعين يوم ا" without broadly relaxing the shortcut.
+            short_day_duration = (
+                len(answer_tokens) == 2
+                and any(
+                    token in {
+                        "يوم",
+                        "يوما",
+                        "ايام",
+                    }
+                    for token in answer_tokens
+                )
+            )
+
+            if (
+                len(answer_tokens) < 3
+                and not short_day_duration
+            ):
+                return False
+
+            answer_counts = Counter(
+                answer_tokens
+            )
+
+            supported = False
+
+            for citation_id in model_output.citation_ids:
+                evidence = evidence_by_id.get(
+                    citation_id
+                )
+
+                if evidence is None:
+                    continue
+
+                if not (
+                    evidence.language
+                    and evidence.language
+                    .casefold()
+                    .startswith("ar")
+                ):
+                    continue
+
+                trusted_text = " ".join(
+                    value
+                    for value in (
+                        evidence.title,
+                        evidence.text,
+                    )
+                    if value
+                )
+
+                evidence_tokens = (
+                cls._arabic_support_tokens(
+                    trusted_text
+                )
+            )
+
+            if short_day_duration:
+                sequence_length = len(
+                    answer_tokens
+                )
+
+                for start in range(
+                    len(evidence_tokens)
+                    - sequence_length
+                    + 1
+                ):
+                    if (
+                        evidence_tokens[
+                            start:
+                            start + sequence_length
+                        ]
+                        == answer_tokens
+                    ):
+                        supported = True
+                        break
+
+                if supported:
+                    break
+
+                continue
+
+            evidence_counts = Counter(
+                evidence_tokens
+            )
+
+            missing = (
+                answer_counts
+                - evidence_counts
+            )
+
+            if not missing:
+                supported = True
+                break
+
+            if not supported:
+                return False
+
+        return True
+
+    @staticmethod
+    def _contains_arabic(
+        value: str,
+    ) -> bool:
+        return bool(
+            re.search(
+                r"[\u0600-\u06FF]",
+                value,
+            )
+        )
+
+    @classmethod
+    def _arabic_support_tokens(
+        cls,
+        value: str,
+    ) -> list[str]:
+        """
+        Conservative Arabic token normalization used only by the
+        deterministic grounding shortcut.
+
+        It intentionally does not stem words, translate text, or
+        normalize ya/alef-maqsura or ta-marbuta/ha.
+        """
+        normalized = cls._normalize_text(
+            value
+        )
+
+        # Tatweel / kashida.
+        normalized = normalized.replace(
+            "\u0640",
+            "",
+        )
+
+        # Arabic vowel / recitation marks.
+        normalized = re.sub(
+            (
+                r"[\u0610-\u061A"
+                r"\u064B-\u065F"
+                r"\u0670"
+                r"\u06D6-\u06ED]"
+            ),
+            "",
+            normalized,
+        )
+
+        # Conservative alef normalization.
+        normalized = (
+            normalized
+            .replace("أ", "ا")
+            .replace("إ", "ا")
+            .replace("آ", "ا")
+            .replace("ٱ", "ا")
+        )
+        # PyMuPDF/OCR may split the accusative alef from the Arabic
+        # day unit, for example:
+        #
+        #     "ثلاثين يوم ا"
+        #
+        # while clean/generated Arabic contains:
+        #
+        #     "ثلاثين يومًا" -> "ثلاثين يوما"
+        #
+        # Normalize only this observed legal-duration OCR artifact.
+        # Do not generally join standalone alef tokens because that
+        # would make the deterministic grounding shortcut less
+        # conservative.
+        normalized = re.sub(
+            r"\bيوم\s+ا\b",
+            "يوما",
+            normalized,
+        )
+
+        tokens = re.findall(
+            r"[\u0621-\u064A]+|\d+",
+            normalized,
+        )
+
+        # Only explicitly approved equivalences belong here.
+        equivalents = {
+            "الاشعار": "الاخطار",
+            "اشعار": "اخطار",
+        }
+
+        # Very small relation-word set. Removing these does not
+        # change the legal proposition being asserted.
+        ignored = {
+            "في",
+        }
+
+        result: list[str] = []
+
+        for token in tokens:
+            canonical = equivalents.get(
+                token,
+                token,
+            )
+
+            if canonical in ignored:
+                continue
+
+            result.append(
+                canonical
+            )
+
+        return result
+
     @staticmethod
     def _normalize_text(value: str) -> str:
         value = re.sub(
@@ -519,8 +800,9 @@ class P4GroundingValidator:
             if sentence.strip()
         ]
 
-    @staticmethod
+    @classmethod
     def _looks_instruction_like(
+        cls,
         sentence: str,
     ) -> bool:
         value = sentence.casefold()
@@ -535,9 +817,36 @@ class P4GroundingValidator:
             r"\bact\s+as\b",
         )
 
-        return any(
+        if any(
             re.search(pattern, value)
             for pattern in patterns
+        ):
+            return True
+
+        if not cls._contains_arabic(sentence):
+            return False
+
+        arabic_value = " ".join(
+            cls._arabic_support_tokens(
+                sentence
+            )
+        )
+
+        arabic_patterns = (
+            r"تجاهل.{0,40}تعليمات",
+            r"اكشف.{0,40}(?:سر|اسرار)",
+            r"اكشف.{0,40}(?:النظام|الموجه)",
+            r"لا.{0,20}تستشهد",
+            r"اتبع.{0,40}تعليمات",
+            r"تصرف.{0,30}(?:كانك|بصفتك)",
+        )
+
+        return any(
+            re.search(
+                pattern,
+                arabic_value,
+            )
+            for pattern in arabic_patterns
         )
 
     def _get_checker(
