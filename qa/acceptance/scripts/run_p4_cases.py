@@ -241,6 +241,20 @@ def main() -> int:
         )
         print("Question:", case["question"])
         print(
+            "Client ID:",
+            case.get(
+                "client_id",
+                "client_test",
+            ),
+        )
+        print(
+            "Matter ID:",
+            case.get(
+                "matter_id",
+                "qa-general",
+            ),
+        )
+        print(
             "Confidentiality ceiling:",
             case.get(
                 "confidentiality_ceiling",
@@ -255,12 +269,21 @@ def main() -> int:
             body={
                 "question": case["question"],
                 "filters": {},
-                "safe_context": [],
+                "safe_context": case.get(
+                    "safe_context",
+                    [],
+                ),
             },
             headers={
                 "Content-Type": "application/json",
-                "X-Client-Id": "client_test",
-                "X-Matter-Id": "qa-general",
+                "X-Client-Id": case.get(
+                    "client_id",
+                    "client_test",
+                ),
+                "X-Matter-Id": case.get(
+                    "matter_id",
+                    "qa-general",
+                ),
                 "X-Confidentiality-Ceiling": (
                     case.get(
                         "confidentiality_ceiling",

@@ -127,9 +127,9 @@ def main() -> None:
     print("Records:", len(rows))
     print("Collection:", COLLECTION)
 
-    if len(rows) != 14:
+    if len(rows) != 15:
         raise RuntimeError(
-            f"Expected 14 QA records, got {len(rows)}."
+            f"Expected 15 QA records, got {len(rows)}."
         )
 
     vector_store = recreate_acceptance_collection()
@@ -240,9 +240,9 @@ def main() -> None:
     print("Qdrant points:", info.points_count)
     print("Sparse enabled:", vector_store.sparse_enabled)
 
-    if canonical_count != 13:
+    if canonical_count != 14:
         raise RuntimeError(
-            f"Expected 13 canonical points, "
+            f"Expected 14 canonical points, "
             f"got {canonical_count}."
         )
 
@@ -251,9 +251,9 @@ def main() -> None:
             f"Expected 1 legacy point, got {legacy_count}."
         )
 
-    if info.points_count != 14:
+    if info.points_count != 15:
         raise RuntimeError(
-            f"Expected 14 Qdrant points, "
+            f"Expected 15 Qdrant points, "
             f"got {info.points_count}."
         )
 
