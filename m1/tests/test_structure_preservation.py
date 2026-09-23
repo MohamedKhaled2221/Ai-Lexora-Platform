@@ -134,6 +134,26 @@ class TestDocumentInference:
         )
         assert dtype is DocumentType.LAW
 
+    def test_english_law_heading_is_a_law(self):
+        dtype, _ = infer_document_type(
+            "LAW ON THE PROTECTION\n"
+            "OF INTELLECTUAL PROPERTY RIGHTS\n"
+            "BOOK ONE\n"
+            "Article 1\n"
+            "A patent shall be granted under this Law.\n"
+            "This agreement may be referred to elsewhere in the statute.\n"
+            "The contract terminology here must not override the statute heading."
+        )
+        assert dtype is DocumentType.LAW
+
+    def test_contract_governing_law_stays_contract(self):
+        dtype, _ = infer_document_type(
+            "SERVICE AGREEMENT\n"
+            "This agreement is entered into between the parties.\n"
+            "This contract is governed by the law of Egypt."
+        )
+        assert dtype is DocumentType.CONTRACT
+
     def test_constitution_is_a_law(self):
         dtype, _ = infer_document_type("دستور جمهورية مصر العربية الصادر عام 2014")
         assert dtype is DocumentType.LAW

@@ -498,6 +498,23 @@ def infer_document_type(text: str) -> tuple[DocumentType, float]:
     only. It has never seen a document from the firm. Expect to retune the cue
     lists once real samples arrive -- that is the intended change, not a rewrite.
     """
+    # Some official English-language statutes begin with a title such as
+    # "LAW ON THE PROTECTION ..." but contain neither "Law No." nor
+    # "Official Gazette" in the extracted text. Generic contract vocabulary
+    # such as "agreement" can then incorrectly win the lexical cue score.
+    #
+    # Keep this deliberately narrow: require a document-opening "LAW ON ..."
+    # heading and an Article 1 marker near the beginning. Do not treat the
+    # generic word "law" as a statute signal because ordinary contracts often
+    # discuss governing or applicable law.
+    heading_probe = re.sub(r"\s+", " ", text[:1500]).strip().lower()
+
+    if (
+        re.match(r"^law\s+on\b", heading_probe)
+        and re.search(r"\barticle\s+1\b", heading_probe)
+    ):
+        return DocumentType.LAW, 1.0
+
     probe = text[:6000].lower()
     # Also match against a space-stripped copy. Arabic PDFs routinely extract
     # with spurious intra-word spacing ("دس تور" for "دستور", "ا ن ش اء" for
