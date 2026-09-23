@@ -350,7 +350,7 @@ def build_p4_chat_service(
     ) = copy(
         base_retrieval
     )
-
+    p4_retrieval.candidate_top_k = 5
     p4_retrieval.hybrid_searcher = (
         HybridSearcher(
             vector_store=(
