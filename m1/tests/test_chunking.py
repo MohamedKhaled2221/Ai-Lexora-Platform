@@ -121,7 +121,74 @@ class TestStructuralBoundaries:
         ])]))
         chunks = chunk_document(doc, PipelineConfig())
         assert len(chunks) == 1
+    def test_parenthesized_english_articles_preserve_page_and_identity(
+        self,
+        make_doc,
+    ):
+        """
+        English statutes commonly write ``Article (42)``.
+        Each article must open its own structural unit so later
+        pages do not inherit an earlier article's citation metadata.
+        """
+        doc = annotate_structure(
+            make_doc(
+                [
+                    (
+                        8,
+                        [
+                            "Article (11):",
+                            (
+                                "Earlier article text that belongs "
+                                "only to article eleven."
+                            ),
+                        ],
+                    ),
+                    (
+                        19,
+                        [
+                            "Section (3)",
+                            "Consumer Protection Agency (CPA)",
+                            "Article (42):",
+                            (
+                                "Consumer Protection Agency (CPA) "
+                                "is the competent body to implement "
+                                "the provisions of this law."
+                            ),
+                            "Article (43):",
+                            (
+                                "CPA aims to protect the Consumer "
+                                "and safeguard his or her interests."
+                            ),
+                        ],
+                    ),
+                ]
+            )
+        )
 
+        chunks = chunk_document(
+            doc,
+            PipelineConfig(),
+        )
+
+        article_42 = next(
+            c
+            for c in chunks
+            if (
+                c.metadata["structure"]
+                or {}
+            ).get("article") == "Article 42"
+        )
+
+        assert article_42.page == 19
+        assert article_42.section == "Article 42"
+        assert (
+            "competent body to implement"
+            in article_42.text
+        )
+        assert (
+            "Earlier article text"
+            not in article_42.text
+        )
     def test_chunk_ids_are_sequential_and_formatted(self, statute_doc):
         chunks = chunk_document(statute_doc, PipelineConfig())
         assert [c.chunk_id for c in chunks] == [

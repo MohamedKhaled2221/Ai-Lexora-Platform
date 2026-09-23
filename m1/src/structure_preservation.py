@@ -226,10 +226,18 @@ _MARKER_PATTERNS: list[tuple[re.Pattern, StructLevel, str, str]] = [
     (re.compile(r"^\s*(?:SCHEDULE|Schedule|ANNEX|Annex|APPENDIX|Appendix|EXHIBIT|Exhibit)"
                 r"\s+(?P<num>[IVXLC]+|\d+|[A-Z])\b[\s:\-–—]*(?P<title>.*)$"),
      StructLevel.SECTION, "annex", "en"),
-    (re.compile(r"^\s*(?:SECTION|Section)\s+(?P<num>\d+(?:\.\d+)*|[IVXLC]+)\b[\s:\-–—.]*(?P<title>.*)$"),
-     StructLevel.SECTION, "section", "en"),
-    (re.compile(r"^\s*(?:ARTICLE|Article|ART\.)\s+(?P<num>\d+(?:\.\d+)*|[IVXLC]+)\b[\s:\-–—.]*(?P<title>.*)$"),
-     StructLevel.ARTICLE, "article", "en"),
+    (re.compile(
+    r"^\s*(?:SECTION|Section)\s+[\(\[]?\s*"
+    r"(?P<num>\d+(?:\.\d+)*|[IVXLC]+)"
+    r"\s*[\)\]]?[\s:\-–—.]*(?P<title>.*)$"
+),
+ StructLevel.SECTION, "section", "en"),
+    (re.compile(
+        r"^\s*(?:ARTICLE|Article|ART\.)\s+[\(\[]?\s*"
+        r"(?P<num>\d+(?:\.\d+)*|[IVXLC]+)"
+        r"\s*[\)\]]?[\s:\-–—.]*(?P<title>.*)$"
+    ),
+    StructLevel.ARTICLE, "article", "en"),
     (re.compile(r"^\s*(?:CLAUSE|Clause)\s+(?P<num>\d+(?:\.\d+)*)\b[\s:\-–—.]*(?P<title>.*)$"),
      StructLevel.CLAUSE, "clause", "en"),
     # Decimal outline: "12.3 Termination." -- 2+ components so a sentence
