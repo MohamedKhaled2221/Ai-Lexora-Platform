@@ -399,7 +399,7 @@ def test_prompt_version_is_recorded():
 
     assert (
         result.response.prompt_version
-        == "p4-grounded-answer-v4"
+        == "p4-grounded-answer-v5"
     )
 
     assert (

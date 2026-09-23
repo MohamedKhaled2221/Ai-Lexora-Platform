@@ -52,9 +52,8 @@ def test_registry_contains_p4_grounded_prompt():
 
     assert (
         prompt.version
-        == "p4-grounded-answer-v4"
+        == "p4-grounded-answer-v5"
     )
-
 def test_registry_contains_four_prompts():
     prompts = prompt_registry.all()
 
@@ -101,14 +100,13 @@ def test_prompt_keys_are_unique():
 
 def test_lookup_by_version():
     prompt = prompt_registry.get_by_version(
-        "p4-grounded-answer-v4"
+        "p4-grounded-answer-v5"
     )
 
     assert (
         prompt.key
         == PromptKey.P4_GROUNDED_ANSWER
     )
-
 
 def test_unknown_version_raises_key_error():
     with pytest.raises(
@@ -244,14 +242,14 @@ def test_p4_grounding_prompt_does_not_discard_facts_because_of_injection_text():
     assert "document_title" in normalized
 
 
-def test_p4_grounded_v4_preserves_legal_referents_directness_and_scalars():
+def test_p4_grounded_v5_preserves_legal_referents_directness_and_scalars():
     prompt = prompt_registry.get(
         PromptKey.P4_GROUNDED_ANSWER
     )
 
     assert (
         prompt.version
-        == "p4-grounded-answer-v4"
+        == "p4-grounded-answer-v5"
     )
 
     normalized = " ".join(
@@ -337,5 +335,40 @@ def test_p4_grounded_v4_preserves_legal_referents_directness_and_scalars():
     assert (
         'evidence containing "تسعين يوم ا" may be rendered as '
         '"تسعين يومًا"'
+        in normalized
+    )
+    assert (
+        "duration-qualifier rule"
+        in normalized
+    )
+
+    assert (
+        "never shorten a qualified duration "
+        "to an unqualified duration"
+        in normalized
+    )
+
+    assert (
+        "translate the complete duration phrase faithfully"
+        in normalized
+    )
+
+    assert (
+        "including every supported duration qualifier"
+        in normalized
+    )
+
+    assert (
+        '"خمسة عشر يومًا تقويميًا"'
+        in normalized
+    )
+
+    assert (
+        '"fifteen calendar days"'
+        in normalized
+    )
+
+    assert (
+        'must not be answered in english as "fifteen days"'
         in normalized
     )
