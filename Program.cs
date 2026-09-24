@@ -152,11 +152,13 @@ builder.Services.AddHttpClient<LexoraDocumentIndexingService>(
 
 builder.Services.AddScoped<ILexoraDocumentIndexingService>(
     sp => sp.GetRequiredService<LexoraDocumentIndexingService>());
+builder.Services.AddScoped<IAiCallerIdentityProvider, ClaimsAiCallerIdentityProvider>();
 builder.Services.AddHttpClient<LexoraRagChatbotService>((sp, client) =>
 {
     var config = sp.GetRequiredService<IConfiguration>();
     var baseUrl = config["AiService:BaseUrl"] ?? "http://localhost:8000";
-    var timeoutSeconds = config.GetValue<int?>("AiService:TimeoutSeconds") ?? 60;
+    // P4 = retrieval + rerank + local Qwen + grounding validation: needs far more than the generic 60s.
+    var timeoutSeconds = config.GetValue<int?>("AiService:ChatTimeoutSeconds") ?? 180;
     client.BaseAddress = new Uri(baseUrl);
     client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
 });

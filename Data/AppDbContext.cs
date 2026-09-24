@@ -90,6 +90,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
         {
             entity.Property(m => m.Role).HasMaxLength(20);
             entity.Property(m => m.Content).HasMaxLength(4000);
+            entity.Property(m => m.AiRequestId).HasMaxLength(100);
+            entity.Property(m => m.ModelTag).HasMaxLength(100);
             entity.HasOne(m => m.Conversation)
                 .WithMany(c => c.Messages)
                 .HasForeignKey(m => m.ConversationId)
@@ -193,6 +195,12 @@ public class ChatMessage
     public string Role { get; set; } = ChatMessageRoles.User;
     public string Content { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    // Package 4 grounding metadata (assistant messages only)
+    public string? CitationsJson { get; set; }
+    public bool InsufficientEvidence { get; set; }
+    public string? AiRequestId { get; set; }
+    public string? ModelTag { get; set; }
 }
 
 public static class ChatMessageRoles
