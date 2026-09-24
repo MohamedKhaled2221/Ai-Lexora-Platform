@@ -8,6 +8,15 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.api.app import create_app
+from src.api.dependencies import (
+    get_p3_generation_runtime,
+)
+from src.api.package_runtime import (
+    P3APIRuntime,
+)
+from src.api.security import (
+    APISecuritySettings,
+)
 from src.orchestration import (
     CitationValidationError,
     M2QueryRuntimeError,
@@ -849,3 +858,182 @@ def test_p3_ollama_unavailable_maps_to_503(
     )
 
     assert service.calls == 1
+
+
+# =========================================================
+# Package 3 export download tests
+# =========================================================
+
+
+def make_p3_export_app(
+    export_dir,
+):
+    app = create_app(
+        api_security_settings=(
+            APISecuritySettings(
+                environment="development",
+                trusted_host_enforcement=False,
+            )
+        )
+    )
+
+    runtime = P3APIRuntime(
+        service=object(),
+        export_dir=export_dir,
+    )
+
+    app.dependency_overrides[
+        get_p3_generation_runtime
+    ] = lambda: runtime
+
+    return app
+
+
+def test_p3_export_download_returns_docx(
+    tmp_path,
+):
+    file_name = (
+        "0123456789abcdef"
+        "0123456789abcdef.docx"
+    )
+
+    expected = (
+        b"PK\x03\x04synthetic-p3-docx"
+    )
+
+    (
+        tmp_path / file_name
+    ).write_bytes(
+        expected
+    )
+
+    app = make_p3_export_app(
+        tmp_path
+    )
+
+    with TestClient(app) as client:
+        response = client.get(
+            (
+                "/api/v1/p3/exports/"
+                + file_name
+            ),
+            headers=IDENTITY_HEADERS,
+        )
+
+    assert response.status_code == 200
+
+    assert response.content == expected
+
+    assert (
+        response.headers["content-type"]
+        ==
+        "application/"
+        "vnd.openxmlformats-officedocument."
+        "wordprocessingml.document"
+    )
+
+    disposition = (
+        response.headers[
+            "content-disposition"
+        ]
+    )
+
+    assert "attachment" in disposition
+
+    assert file_name in disposition
+
+
+def test_p3_export_download_missing_file_returns_404(
+    tmp_path,
+):
+    app = make_p3_export_app(
+        tmp_path
+    )
+
+    with TestClient(app) as client:
+        response = client.get(
+            (
+                "/api/v1/p3/exports/"
+                "missing.docx"
+            ),
+            headers=IDENTITY_HEADERS,
+        )
+
+    assert response.status_code == 404
+
+
+def test_p3_export_download_rejects_unsafe_names(
+    tmp_path,
+):
+    outside = (
+        tmp_path.parent
+        / "secret.docx"
+    )
+
+    outside.write_bytes(
+        b"must-not-be-served"
+    )
+
+    app = make_p3_export_app(
+        tmp_path
+    )
+
+    with TestClient(app) as client:
+        wrong_extension = client.get(
+            (
+                "/api/v1/p3/exports/"
+                "secret.pdf"
+            ),
+            headers=IDENTITY_HEADERS,
+        )
+
+        traversal = client.get(
+            (
+                "/api/v1/p3/exports/"
+                "..%5Csecret.docx"
+            ),
+            headers=IDENTITY_HEADERS,
+        )
+
+    assert (
+        wrong_extension.status_code
+        == 404
+    )
+
+    assert traversal.status_code == 404
+
+    assert (
+        b"must-not-be-served"
+        not in traversal.content
+    )
+
+
+def test_p3_export_download_requires_identity(
+    tmp_path,
+):
+    file_name = "protected.docx"
+
+    (
+        tmp_path / file_name
+    ).write_bytes(
+        b"protected"
+    )
+
+    app = make_p3_export_app(
+        tmp_path
+    )
+
+    with TestClient(app) as client:
+        response = client.get(
+            (
+                "/api/v1/p3/exports/"
+                + file_name
+            )
+        )
+
+    assert response.status_code != 200
+
+    assert (
+        "X-Client-Id"
+        in response.text
+    )
