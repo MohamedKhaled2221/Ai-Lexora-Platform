@@ -12,6 +12,7 @@ from fastapi import (
     Request,
     status,
 )
+from fastapi.responses import FileResponse
 
 from src.api.dependencies import (
     get_p3_generation_runtime,
@@ -249,6 +250,82 @@ async def generate_package3(
         ),
     )
 
+
+
+@router.get(
+    "/p3/exports/{file_name}",
+    response_class=FileResponse,
+    tags=["Package 3"],
+)
+async def download_package3_export(
+    file_name: str,
+    runtime: P3Dependency,
+    identity: CallerIdentityDependency,
+) -> FileResponse:
+    """
+    Download a generated Package 3 DOCX.
+
+    Files are served only from the configured
+    Package 3 export directory.
+    """
+
+    # Require the same caller-identity boundary
+    # used by Package 3 generation.
+    _ = identity
+
+    if (
+        not file_name
+        or file_name in {".", ".."}
+        or "/" in file_name
+        or "\\" in file_name
+        or not file_name.casefold().endswith(
+            ".docx"
+        )
+    ):
+        raise HTTPException(
+            status_code=(
+                status.HTTP_404_NOT_FOUND
+            ),
+            detail=(
+                "Package 3 export was not found."
+            ),
+        )
+
+    export_root = (
+        runtime.export_dir.resolve()
+    )
+
+    export_path = (
+        export_root / file_name
+    ).resolve(
+        strict=False
+    )
+
+    # Generated exports are direct children of
+    # P3_EXPORT_DIR. Resolving the path also prevents
+    # symlink/path-traversal escapes.
+    if (
+        export_path.parent != export_root
+        or not export_path.is_file()
+    ):
+        raise HTTPException(
+            status_code=(
+                status.HTTP_404_NOT_FOUND
+            ),
+            detail=(
+                "Package 3 export was not found."
+            ),
+        )
+
+    return FileResponse(
+        path=str(export_path),
+        media_type=(
+            "application/"
+            "vnd.openxmlformats-officedocument."
+            "wordprocessingml.document"
+        ),
+        filename=file_name,
+    )
 
 @router.post(
     "/p4/chat",
