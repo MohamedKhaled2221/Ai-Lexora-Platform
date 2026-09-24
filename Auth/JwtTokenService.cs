@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using LegalAssistant.Api.Data;
+using LegalAssistant.Api.Services;
 using Microsoft.IdentityModel.Tokens;
 
 namespace LegalAssistant.Api.Auth;
@@ -30,6 +31,13 @@ public class JwtTokenService
             new(ClaimTypes.Role, role),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
+
+        // AI access scope: only added when assigned, so a user without a scope carries NO claim
+        // (and gets refused by ClaimsAiCallerIdentityProvider once AllowSharedIdentity=false).
+        if (!string.IsNullOrWhiteSpace(user.ClientId))
+            claims.Add(new Claim(ClaimsAiCallerIdentityProvider.ClientIdClaim, user.ClientId.Trim()));
+        if (!string.IsNullOrWhiteSpace(user.ConfidentialityCeiling))
+            claims.Add(new Claim(ClaimsAiCallerIdentityProvider.CeilingClaim, user.ConfidentialityCeiling.Trim()));
 
         var credentials = new SigningCredentials(
             new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
