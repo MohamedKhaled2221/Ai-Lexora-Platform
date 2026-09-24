@@ -6,6 +6,10 @@ from src.orchestration.grounding_validator import (
     P3SemanticGroundingOutput,
     TrustedSourceText,
 )
+from src.orchestration.llm_service import (
+    M4LLMConnectionError,
+)
+
 from src.orchestration.p3_orchestrator import (
     P3M4Orchestrator,
     P3ValidationContractError,
@@ -545,3 +549,58 @@ def test_validator_version_is_recorded():
         .validator_version
         == "test-validator-v99"
     )
+
+
+def test_semantic_grounding_ollama_unavailable_fails_closed():
+    class FailingSemanticChecker:
+        @property
+        def model_tag(self):
+            return "qwen-test"
+
+        @property
+        def prompt_version(self):
+            return (
+                "p3-draft-validation-v1"
+            )
+
+        def check(
+            self,
+            *,
+            section,
+            sources,
+            transformation_metadata,
+        ):
+            raise M4LLMConnectionError(
+                "ollama unavailable"
+            )
+
+    orchestrator = P3M4Orchestrator(
+        grounding_validator=(
+            P3GroundingValidator(
+                semantic_checker=(
+                    FailingSemanticChecker()
+                )
+            )
+        )
+    )
+
+    with pytest.raises(
+        M4LLMConnectionError,
+        match="ollama unavailable",
+    ):
+        orchestrator.validate(
+            draft=make_draft(
+                text=(
+                    "The receiving party must "
+                    "keep the information private."
+                )
+            ),
+            manifest=make_manifest(
+                transformations=[
+                    make_transformation()
+                ]
+            ),
+            grounding_context=(
+                make_context()
+            ),
+        )

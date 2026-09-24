@@ -791,3 +791,61 @@ def test_p4_chat_runtime_failure_returns_generic_503(
     )
 
     assert service.calls == 1
+
+
+def test_p3_ollama_unavailable_maps_to_503(
+    tmp_path: Path,
+):
+    private_diagnostic = (
+        "private ollama connection diagnostic"
+    )
+
+    service = FakeP3GenerationService(
+        error=M4LLMConnectionError(
+            private_diagnostic
+        )
+    )
+
+    app = make_p3_app(
+        service,
+        tmp_path,
+    )
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/p3/generate",
+            headers=IDENTITY_HEADERS,
+            json=p3_request_json(),
+        )
+
+    assert response.status_code == 503
+
+    payload = response.json()
+
+    assert (
+        payload["error"]["code"]
+        == "HTTP_ERROR"
+    )
+
+    assert (
+        payload["error"]["message"]
+        ==
+        "The local Package 3 AI "
+        "validation runtime is unavailable."
+    )
+
+    assert isinstance(
+        payload["error"]["request_id"],
+        str,
+    )
+
+    assert (
+        payload["error"]["request_id"]
+    )
+
+    assert (
+        private_diagnostic
+        not in response.text
+    )
+
+    assert service.calls == 1

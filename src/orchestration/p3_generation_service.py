@@ -154,7 +154,40 @@ class P3GenerationService:
         requirement = (
             handoff.template_requirement
         )
+        declared_conditions = {
+            conditional.condition
+            for conditional
+            in requirement.conditional_clauses
+        }
 
+        resolved_special_ids: set[str] = set()
+
+        for condition in active_conditions:
+            if condition in declared_conditions:
+                continue
+
+            resolution = (
+                self.m5_service
+                .resolve_special_condition(
+                    condition,
+                    jurisdiction=jurisdiction,
+                    document_type=document_type,
+                )
+            )
+
+            if (
+                not resolution.resolved
+                or resolution.requires_lawyer_input
+                or resolution.matched_clause is None
+            ):
+                raise P3GenerationIntegrationError(
+                    "One or more special conditions "
+                    "require lawyer input."
+                )
+
+            resolved_special_ids.add(
+                resolution.matched_clause.clause_id
+            )
         optional_ids = set(
             requirement.optional_clauses
         )
@@ -192,6 +225,7 @@ class P3GenerationService:
             *requirement.required_clauses,
             *active_conditional_ids,
             *requested_optional,
+            *resolved_special_ids,
         }
 
         clauses_by_id = {
