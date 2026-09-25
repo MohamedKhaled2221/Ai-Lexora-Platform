@@ -61,6 +61,7 @@ class TemplateRegistry:
                 template_id=template_data["template_id"],
                 document_type=template_data["document_type"],
                 jurisdiction=template_data["jurisdiction"],
+                file_path=template_data.get("file_path"),
                 version=template_data.get(
                     "version",
                     data.get("version", "1.0.0"),
@@ -68,6 +69,10 @@ class TemplateRegistry:
                 active=template_data.get(
                     "active",
                     True,
+                ),
+                fields=template_data.get(
+                    "fields",
+                    [],
                 ),
                 required_clauses=template_data.get(
                     "required_clauses",
