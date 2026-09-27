@@ -87,6 +87,27 @@
       "template_id": "TMPL-NDA-EG-001",
       "document_type": "nda",
       "jurisdiction": "EG",
+      "file_path": "templates/nda/v1.docx",
+      "fields": [
+        {
+          "name": "party_a_name",
+          "label": "Party A",
+          "field_type": "text",
+          "required": true
+        },
+        {
+          "name": "party_b_name",
+          "label": "Party B",
+          "field_type": "text",
+          "required": true
+        },
+        {
+          "name": "effective_date",
+          "label": "Effective Date",
+          "field_type": "date",
+          "required": true
+        }
+      ],
       "required_clauses": [
         "CLZ-CONF-EG-001",
         "CLZ-GLAW-EG-001"
@@ -98,12 +119,12 @@
       "prohibited_clauses": [],
       "conditional_clauses": [],
       "section_placeholders": {
-        "section_confidentiality": "{{CONFIDENTIALITY_CLAUSE}}",
-        "section_penalty": "{{PENALTY_CLAUSE}}",
-        "section_governing_law": "{{GOVERNING_LAW_CLAUSE}}",
-        "section_dispute_resolution": "{{DISPUTE_RESOLUTION_CLAUSE}}"
+        "section_confidentiality": "{{CLAUSE:section_confidentiality}}",
+        "section_penalty": "{{CLAUSE:section_penalty}}",
+        "section_governing_law": "{{CLAUSE:section_governing_law}}",
+        "section_dispute_resolution": "{{CLAUSE:section_dispute_resolution}}"
       },
-      "template_structure": "اتفاقية عدم إفصاح (NDA) - جمهورية مصر العربية\n\n1. التزامات سرية المعلومات:\n{{CONFIDENTIALITY_CLAUSE}}\n\n2. الشرط الجزائي للإخلال:\n{{PENALTY_CLAUSE}}\n\n3. القانون الواجب التطبيق:\n{{GOVERNING_LAW_CLAUSE}}\n\n4. الاختصاص القضائي وتوافق النزاعات:\n{{DISPUTE_RESOLUTION_CLAUSE}}"
+      "template_structure": "اتفاقية عدم إفصاح (NDA) - جمهورية مصر العربية\n\n1. التزامات سرية المعلومات:\n{{CLAUSE:section_confidentiality}}\n\n2. الشرط الجزائي للإخلال:\n{{CLAUSE:section_penalty}}\n\n3. القانون الواجب التطبيق:\n{{CLAUSE:section_governing_law}}\n\n4. الاختصاص القضائي وتوافق النزاعات:\n{{CLAUSE:section_dispute_resolution}}"
     },
     {
       "template_id": "TMPL-SVC-INT-001",
