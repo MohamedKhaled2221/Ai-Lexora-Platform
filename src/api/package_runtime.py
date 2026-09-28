@@ -101,6 +101,7 @@ class P3RuntimeSettings(BaseSettings):
 class P3APIRuntime:
     service: P3GenerationService
     export_dir: Path
+    templates: tuple[TemplateDefinition, ...]
 
 
 def _project_root() -> Path:
@@ -288,6 +289,7 @@ def build_p3_api_runtime(
     return P3APIRuntime(
         service=service,
         export_dir=export_dir,
+        templates=tuple(templates),
     )
 
 
@@ -350,7 +352,9 @@ def build_p4_chat_service(
     ) = copy(
         base_retrieval
     )
+
     p4_retrieval.candidate_top_k = 5
+
     p4_retrieval.hybrid_searcher = (
         HybridSearcher(
             vector_store=(
