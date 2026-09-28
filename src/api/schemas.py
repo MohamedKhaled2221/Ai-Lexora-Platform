@@ -274,3 +274,34 @@ class P3ValidationRequest(BaseModel):
     grounding_context: P3GroundingContext = Field(
         default_factory=P3GroundingContext
     )
+
+#
+
+class P3TemplateFieldResponse(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid"
+    )
+
+    name: str
+    label: str
+    field_type: str
+    required: bool
+
+
+class P3TemplateSummary(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid"
+    )
+
+    template_id: str
+    document_type: str
+    jurisdiction: str
+    fields: List[P3TemplateFieldResponse]
+
+
+class P3TemplatesResponse(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid"
+    )
+
+    templates: List[P3TemplateSummary]
