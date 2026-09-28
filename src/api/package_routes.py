@@ -29,6 +29,9 @@ from src.api.package_runtime import (
 from src.api.schemas import (
     P3GenerateRequest,
     P3GenerateResponse,
+    P3TemplateFieldResponse,
+    P3TemplateSummary,
+    P3TemplatesResponse,
     P4ChatRequest,
 )
 from src.document_generator.errors import (
@@ -92,6 +95,58 @@ P4Dependency = Annotated[
         get_p4_chat_service
     ),
 ]
+
+
+# =========================================================
+# Package 3 - Available Templates
+# =========================================================
+
+
+@router.get(
+    "/p3/templates",
+    response_model=P3TemplatesResponse,
+    tags=["Package 3"],
+)
+async def list_package3_templates(
+    runtime: P3Dependency,
+    identity: CallerIdentityDependency,
+) -> P3TemplatesResponse:
+    """
+    Return the enabled Package 3 templates
+    and their guided-input fields.
+
+    Template definitions are loaded once by the
+    P3 runtime from the configured M1 template registry.
+    """
+
+    # Require the same caller-identity boundary
+    # used by Package 3 generation.
+    _ = identity
+
+    return P3TemplatesResponse(
+        templates=[
+            P3TemplateSummary(
+                template_id=template.template_id,
+                document_type=template.document_type,
+                jurisdiction=template.jurisdiction,
+                fields=[
+                    P3TemplateFieldResponse(
+                        name=field.name,
+                        label=field.label,
+                        field_type=field.field_type,
+                        required=field.required,
+                    )
+                    for field in template.fields
+                ],
+            )
+            for template in runtime.templates
+        ]
+    )
+
+
+# =========================================================
+# Package 3 - Document Generation
+# =========================================================
 
 
 @router.post(
@@ -251,6 +306,10 @@ async def generate_package3(
     )
 
 
+# =========================================================
+# Package 3 - Generated Document Download
+# =========================================================
+
 
 @router.get(
     "/p3/exports/{file_name}",
@@ -326,6 +385,12 @@ async def download_package3_export(
         ),
         filename=file_name,
     )
+
+
+# =========================================================
+# Package 4 - Legal Knowledge Chat
+# =========================================================
+
 
 @router.post(
     "/p4/chat",
