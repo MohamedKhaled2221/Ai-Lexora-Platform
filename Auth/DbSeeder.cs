@@ -1,4 +1,4 @@
-using LegalAssistant.Api.Data;
+﻿using LegalAssistant.Api.Data;
 using Microsoft.AspNetCore.Identity;
 
 namespace LegalAssistant.Api.Auth;
@@ -13,7 +13,7 @@ public static class DbSeeder
         // 1) Make sure both roles exist.
         foreach (var role in new[] { AppRoles.Admin, AppRoles.Lawyer })
         {
-                if (!await roleManager.RoleExistsAsync(role))
+            if (!await roleManager.RoleExistsAsync(role))
                 await roleManager.CreateAsync(new IdentityRole(role));
         }
 

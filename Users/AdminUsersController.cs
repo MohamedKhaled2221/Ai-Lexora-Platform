@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using LegalAssistant.Api.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -6,6 +7,39 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace LegalAssistant.Api.Users;
+
+// =========================================================
+// AI-scope request/validator, moved here from the old
+// LegalAssistant.Api.Auth.AdminUsersController (that file's
+// controller class is gone — merged into this one).
+// =========================================================
+
+public record SetAiScopeRequest(string ClientId, string ConfidentialityCeiling);
+
+/// <summary>
+/// Validation for the AI access scope an Admin assigns to a user. Both values end up in HTTP headers sent
+/// to the AI service (X-Client-Id / X-Confidentiality-Ceiling), so they are tightly restricted.
+/// </summary>
+public static class AiScopeValidator
+{
+    // Must match ConfidentialityLevel in the Python AI service (src/schemas/access_control.py).
+    public static readonly IReadOnlyList<string> AllowedCeilings = new[] { "public", "internal", "privileged" };
+
+    private static readonly Regex ClientIdPattern = new(@"^[A-Za-z0-9._:\-]{1,100}$", RegexOptions.Compiled);
+
+    public static (string? ClientId, string? Ceiling, string? Error) Validate(string? clientId, string? ceiling)
+    {
+        var id = clientId?.Trim();
+        if (string.IsNullOrEmpty(id) || !ClientIdPattern.IsMatch(id))
+            return (null, null, "clientId is required: letters, digits and . _ : - only, max 100 characters.");
+
+        var level = ceiling?.Trim().ToLowerInvariant();
+        if (level is null || !AllowedCeilings.Contains(level))
+            return (null, null, $"confidentialityCeiling must be one of: {string.Join(", ", AllowedCeilings)}.");
+
+        return (id, level, null);
+    }
+}
 
 [ApiController]
 [Authorize(Roles = AppRoles.Admin)]
@@ -21,6 +55,9 @@ public class AdminUsersController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>Paged, searchable user list. Now also carries each user's AI
+    /// scope (ClientId / ConfidentialityCeiling) — see the note below on
+    /// AdminUserResponse — so you can spot who has none from the same list.</summary>
     [HttpGet]
     public async Task<ActionResult<PagedUsersResponse>> List(
         [FromQuery] int page = 1,
@@ -98,6 +135,52 @@ public class AdminUsersController : ControllerBase
         return Ok(await ToResponse(user));
     }
 
+    /// <summary>Assign (or change) the user's AI client and confidentiality
+    /// ceiling. Merged in from the old Auth.AdminUsersController.</summary>
+    [HttpPut("{userId}/ai-scope")]
+    public async Task<ActionResult<AdminUserResponse>> SetAiScope(string userId, [FromBody] SetAiScopeRequest request)
+    {
+        var (clientId, ceiling, error) = AiScopeValidator.Validate(request.ClientId, request.ConfidentialityCeiling);
+        if (error is not null) return BadRequest(new { message = error });
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is null) return NotFound(new { message = "User not found." });
+
+        user.ClientId = clientId;
+        user.ConfidentialityCeiling = ceiling;
+        return await SaveAiScopeAsync(user, "set");
+    }
+
+    /// <summary>Remove the user's AI scope. Once AllowSharedIdentity=false the user can no longer query the AI.</summary>
+    [HttpDelete("{userId}/ai-scope")]
+    public async Task<ActionResult<AdminUserResponse>> ClearAiScope(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is null) return NotFound(new { message = "User not found." });
+
+        user.ClientId = null;
+        user.ConfidentialityCeiling = null;
+        return await SaveAiScopeAsync(user, "cleared");
+    }
+
+    private async Task<ActionResult<AdminUserResponse>> SaveAiScopeAsync(ApplicationUser user, string action)
+    {
+        var result = await _userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+        {
+            _logger.LogError("Could not update AI scope for {UserId}: {Errors}", user.Id,
+                string.Join("; ", result.Errors.Select(e => e.Description)));
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Could not update the user." });
+        }
+
+        var admin = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+        _logger.LogInformation("Admin {AdminId} {Action} AI scope for user {UserId}: client={ClientId} ceiling={Ceiling}",
+            admin, action, user.Id, user.ClientId, user.ConfidentialityCeiling);
+
+        // The scope is baked into the JWT, so it applies from the user's next login / token refresh.
+        return Ok(await ToResponse(user));
+    }
+
     private string? GetCurrentUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
 
     private async Task<AdminUserResponse> ToResponse(ApplicationUser user) => new(
@@ -106,5 +189,7 @@ public class AdminUsersController : ControllerBase
         user.FullName,
         user.CreatedAt,
         (await _userManager.GetRolesAsync(user)).ToArray(),
-        !user.LockoutEnd.HasValue || user.LockoutEnd <= DateTimeOffset.UtcNow);
+        !user.LockoutEnd.HasValue || user.LockoutEnd <= DateTimeOffset.UtcNow,
+        user.ClientId,
+        user.ConfidentialityCeiling);
 }

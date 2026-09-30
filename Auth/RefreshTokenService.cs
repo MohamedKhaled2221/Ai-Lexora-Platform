@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 using LegalAssistant.Api.Data;
 using Microsoft.EntityFrameworkCore;

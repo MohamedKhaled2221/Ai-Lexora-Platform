@@ -6,7 +6,9 @@ public record AdminUserResponse(
     string FullName,
     DateTime CreatedAt,
     IReadOnlyCollection<string> Roles,
-    bool IsActive);
+    bool IsActive,
+    string? ClientId,
+    string? ConfidentialityCeiling);
 
 public record PagedUsersResponse(
     IReadOnlyCollection<AdminUserResponse> Items,
