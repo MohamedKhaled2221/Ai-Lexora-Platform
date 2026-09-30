@@ -1,6 +1,7 @@
-using LegalAssistant.Api.Data;
+﻿using LegalAssistant.Api.Data;
 using LegalAssistant.Api.Email;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LegalAssistant.Api.Auth;
@@ -103,7 +104,8 @@ public class AuthController : ControllerBase
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
             var link = BuildLink("reset-password", new Dictionary<string, string>
             {
-                ["email"] = user.Email!, ["token"] = token
+                ["email"] = user.Email!,
+                ["token"] = token
             });
             await _emailService.SendAsync(user.Email!, "Reset your Legal Assistant password",
                 $"<p>Use this link to reset your password:</p><p><a href=\"{link}\">Reset password</a></p>");
@@ -165,7 +167,9 @@ public class AuthController : ControllerBase
         var token = await _userManager.GenerateChangeEmailTokenAsync(user, newEmail);
         var link = BuildLink("confirm-email-change", new Dictionary<string, string>
         {
-            ["userId"] = user.Id, ["newEmail"] = newEmail, ["token"] = token
+            ["userId"] = user.Id,
+            ["newEmail"] = newEmail,
+            ["token"] = token
         });
         await _emailService.SendAsync(newEmail, "Confirm your new Legal Assistant email",
             $"<p>Use this link to confirm your new email address:</p><p><a href=\"{link}\">Confirm new email</a></p>");
@@ -266,7 +270,8 @@ public class AuthController : ControllerBase
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
         var link = BuildLink("confirm-email", new Dictionary<string, string>
         {
-            ["userId"] = user.Id, ["token"] = token
+            ["userId"] = user.Id,
+            ["token"] = token
         });
         await _emailService.SendAsync(user.Email!, "Confirm your Legal Assistant email",
             $"<p>Welcome to Legal Assistant.</p><p><a href=\"{link}\">Confirm email</a></p>");

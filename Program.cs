@@ -119,7 +119,6 @@ builder.Services.AddScoped<ISearchService>(
     sp => sp.GetRequiredService<LexoraRagSearchService>());
 
 // Document Generator (placeholder: one built-in template, token substitution).
-builder.Services.AddScoped<IDocumentGenerationService, TemplateDocumentGenerationService>();
 builder.Services.AddScoped<IGeneratedDocumentRepository, GeneratedDocumentRepository>();
 
 // Chatbot — now backed by the AI-Lexora Python RAG service (as is Search,
@@ -162,6 +161,23 @@ builder.Services.AddHttpClient<LexoraRagChatbotService>((sp, client) =>
     client.BaseAddress = new Uri(baseUrl);
     client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
 });
+// ---------- Package 3: document generation (M1 -> M5 -> M4 pipeline) ----------
+// Same host/port as Package 4 (AiService:BaseUrl) — package_routes.py is
+// mounted on the same main FastAPI app, not a separate M-service port.
+builder.Services.AddHttpClient<LexoraP3DocumentGenerationService>((sp, client) =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    var baseUrl = config["AiService:BaseUrl"] ?? "http://localhost:8000";
+    // P3 = M1 template assembly + M5 clause resolution + M4 validation in one call.
+    var timeoutSeconds =
+        config.GetValue<int?>("AiService:DocumentGenerationTimeoutSeconds")
+        ?? config.GetValue<int?>("AiService:TimeoutSeconds")
+        ?? 180;
+    client.BaseAddress = new Uri(baseUrl);
+    client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
+});
+builder.Services.AddScoped<IPackage3DocumentGenerationService>(
+    sp => sp.GetRequiredService<LexoraP3DocumentGenerationService>());
 builder.Services.AddHttpClient<LexoraDocumentQuestionService>(
     (sp, client) =>
     {
