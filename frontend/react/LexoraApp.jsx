@@ -756,13 +756,13 @@ console.log("STEP 4: analysis started", started);
           {analysis.riskyClauses?.length ? (
             <div className="analysis-result">
               <h3>البنود عالية المخاطر</h3>
-              {analysis.riskyClauses.map((clause, index) => (
-                <article key={`${clause.id || index}-${clause.riskType}`} className="status-card">
-                  <strong>{clause.riskType}</strong>
+                {analysis.riskyClauses.map((clause, index) => (
+                <article key={`${clause.id || index}-${clause.riskType}`} className={`status-card risk-clause-card severity-${clause.severity || "unknown"}`}>
+                  <div className="risk-clause-header">
+                    <span className={`risk-badge severity-${clause.severity || "unknown"}`}>{clause.riskType}</span>
+                  </div>
                   <p>{clause.clauseText}</p>
                   <p>{clause.explanation}</p>
-                  {clause.severity ? <span>{clause.severity}</span> : null}
-                  {clause.severityColor ? <span>{clause.severityColor}</span> : null}
                 </article>
               ))}
             </div>

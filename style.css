@@ -1946,7 +1946,30 @@ textarea {
 .highlighted-document-text mark.importance-high { background: color-mix(in srgb, #d94b45 28%, transparent); text-decoration: underline; text-decoration-color: #d94b45; text-decoration-thickness: 2px; }
 .highlighted-document-text mark.importance-critical { background: color-mix(in srgb, #7a1f1a 38%, transparent); text-decoration: underline; text-decoration-color: #7a1f1a; text-decoration-thickness: 3px; }
 .highlighted-document-text mark.importance-medium { background: color-mix(in srgb, #d99d2b 27%, transparent); }.highlighted-document-text mark.importance-low { background: color-mix(in srgb, #38a169 14%, transparent); }
+/* Risk severity color coding: red (critical/high) -> yellow (medium) -> green (low) */
+.risk-clause-card { border-inline-start: 4px solid #9aa5b1; transition: border-color .15s ease; }
+.risk-clause-card.severity-critical { border-inline-start-color: #7a1f1a; }
+.risk-clause-card.severity-high { border-inline-start-color: #d94b45; }
+.risk-clause-card.severity-medium { border-inline-start-color: #d99d2b; }
+.risk-clause-card.severity-low { border-inline-start-color: #38a169; }
 
+.risk-clause-header { display: flex; justify-content: flex-start; margin-bottom: 4px; }
+.risk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.risk-badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.risk-badge.severity-critical { background: color-mix(in srgb, #7a1f1a 16%, transparent); color: #7a1f1a; }
+.risk-badge.severity-high { background: color-mix(in srgb, #d94b45 16%, transparent); color: #d94b45; }
+.risk-badge.severity-medium { background: color-mix(in srgb, #d99d2b 20%, transparent); color: #9c6d0e; }
+.risk-badge.severity-low { background: color-mix(in srgb, #38a169 16%, transparent); color: #1f7a49; }
+.risk-badge.severity-unknown { background: color-mix(in srgb, #9aa5b1 16%, transparent); color: #5b6674; }
 @media (max-width: 1180px) and (min-width: 761px) {
   .navbar {
     width: 94%;
