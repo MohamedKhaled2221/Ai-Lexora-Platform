@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  downloadGeneratedExport,
   generateBackendDocument,
   getGeneratorTemplates,
   reviewContract as reviewContractRequest,
@@ -211,6 +212,7 @@ export function ContractGenerationPage() {
   const [lastSavedAt, setLastSavedAt] = useState(storedDraft?.lastSavedAt || null);
   const [reviewState, setReviewState] = useState(storedDraft?.reviewState || "idle");
   const [backendTemplates, setBackendTemplates] = useState([]);
+  const [generationResult, setGenerationResult] = useState(null);
   const [approvalOpen, setApprovalOpen] = useState(false);
   const approvalCancelRef = useRef(null);
   const approvalTriggerRef = useRef(null);
@@ -277,23 +279,31 @@ export function ContractGenerationPage() {
 
   function updateField(fieldId, value) {
     setContractData((current) => ({ ...current, [fieldId]: value }));
+    setGenerationResult(null);
     setError("");
   }
 
   function updateMetadata(setter, value) {
     setter(value);
+    setGenerationResult(null);
     setError("");
   }
 
   function buildGenerationRequest() {
-    const backendTemplate = backendTemplates.find((item) => item.key === "nda");
+    const backendTemplate = backendTemplates.find((item) =>
+      /nda|non[ -]?disclosure/i.test(`${item.templateId || ""} ${item.documentType || ""}`),
+    );
     if (!backendTemplate || selectedTemplate.id !== "mutual-nda") return null;
 
     return {
-      templateKey: backendTemplate.key,
-      fields: Object.fromEntries(
-        backendTemplate.requiredFields.map((field) => [field, contractData[field] || ""]),
-      ),
+      documentType: backendTemplate.documentType,
+      jurisdiction,
+      clauseLanguage: language === "en" ? "en" : "ar",
+      fields: Object.fromEntries((backendTemplate.fields || []).map((field) => {
+        const fieldName = field.name || field.Name;
+        const inputKey = Object.keys(contractData).find((key) => key.toLowerCase() === String(fieldName).toLowerCase());
+        return [fieldName, inputKey ? contractData[inputKey] : ""];
+      })),
     };
   }
 
@@ -316,28 +326,27 @@ export function ContractGenerationPage() {
     setLoading(true);
     setError("");
     setSuggestion("");
+    setGenerationResult(null);
     try {
       const generationRequest = buildGenerationRequest();
       if (!generationRequest) {
         throw new Error("اختر قالب NDA المدعوم من Backend لإنشاء الملف.");
       }
 
-      const backendTemplate = backendTemplates.find((item) => item.key === generationRequest.templateKey);
-      const missingBackendFields = (backendTemplate?.requiredFields || [])
-        .filter((field) => !String(generationRequest.fields[field] || "").trim());
-      if (missingBackendFields.length) {
-        throw new Error(`أكمل حقول Backend المطلوبة: ${missingBackendFields.join(", ")}.`);
-      }
-
       const response = await generateBackendDocument(
-        generationRequest.templateKey,
-        generationRequest.fields,
+        generationRequest,
       );
-      const generated = await response.blob.text();
+      const generated = (response.sections || [])
+        .map((section) => [section.title, section.text].filter(Boolean).join("\n"))
+        .join("\n\n");
       if (!generated) throw new Error("empty-response");
+      setGenerationResult(response);
       setContractText(generated);
       setStatus("تم الإنشاء بالذكاء الاصطناعي");
       setReviewState("idle");
+      if (response.validationErrors?.length) {
+        setError(`ملاحظات التحقق: ${response.validationErrors.join("، ")}`);
+      }
     } catch (requestError) {
       setError(userMessage(requestError));
     } finally {
@@ -382,6 +391,7 @@ export function ContractGenerationPage() {
     setJurisdiction("Egypt");
     setStatus("مسودة");
     setReviewState("idle");
+    setGenerationResult(null);
     setError("");
   }
 
@@ -408,29 +418,14 @@ export function ContractGenerationPage() {
     printWindow.print();
   }
 
-  function downloadContract() {
-    if (!contractText) return;
-    const blob = new Blob([contractText], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${contractName || "lexora-contract"}.txt`;
-    link.click();
-    URL.revokeObjectURL(url);
-  }
-
   async function downloadBackendContract() {
-    const generationRequest = buildGenerationRequest();
-    if (!generationRequest) {
-      setError("قالب NDA غير متاح من Backend حاليًا.");
+    if (!generationResult?.exportAllowed || !generationResult?.docxGenerated || !generationResult?.docxFileName) {
+      setError("التصدير غير مسموح لهذه المسودة أو لم ينتج الخادم ملفًا قابلًا للتنزيل.");
       return;
     }
 
     try {
-      const result = await generateBackendDocument(
-        generationRequest.templateKey,
-        generationRequest.fields,
-      );
+      const result = await downloadGeneratedExport(generationResult.docxFileName);
       const url = URL.createObjectURL(result.blob);
       const link = document.createElement("a");
       link.href = url;
@@ -506,7 +501,7 @@ export function ContractGenerationPage() {
             <label>رقم العقد<input value={contractNumber} onChange={(event) => updateMetadata(setContractNumber, event.target.value)} placeholder="CON-2026-001" /></label>
             <label>العميل<input value={clientName} onChange={(event) => updateMetadata(setClientName, event.target.value)} placeholder="اسم العميل أو الشركة" /></label>
             <label>القضية المرتبطة<input value={relatedCase} onChange={(event) => updateMetadata(setRelatedCase, event.target.value)} placeholder="LEX-1024 (محلي فقط)" /></label>
-            <label>لغة العقد<select value={language} onChange={(event) => setLanguage(event.target.value)}>{draftLanguages.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+            <label>لغة العقد<select value={language} onChange={(event) => { setLanguage(event.target.value); setGenerationResult(null); }}>{draftLanguages.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
             <label>الاختصاص القضائي<input value={jurisdiction} onChange={(event) => updateMetadata(setJurisdiction, event.target.value)} /></label>
             <small>هذه البيانات محفوظة محليًا داخل المسودة فقط.</small>
           </div>
@@ -520,9 +515,10 @@ export function ContractGenerationPage() {
 
         <section className="contract-panel review-panel">
           <div className="panel-heading"><div><p className="eyebrow">02 / المراجعة</p><h2>العقد المُنشأ</h2></div><div className="status-actions">{statuses.map((item) => <button key={item} type="button" className={status === item ? "active" : ""} onClick={() => changeStatus(item)}>{item}</button>)}</div></div>
-          {contractText ? <><nav className="contract-sections" aria-label="أقسام العقد"><strong>الأقسام</strong>{getContractSections(contractText).map((section) => <button key={`${section.line}-${section.index}`} type="button" onClick={() => { const position = contractText.indexOf(section.line); editorRef.current?.focus(); editorRef.current?.setSelectionRange(position, position + section.line.length); }}>{section.line}</button>)}</nav><ContractEditor direction={editorDirection} editorRef={editorRef} value={contractText} onChange={(value) => { setContractText(value); if (status === "تم الإنشاء بالذكاء الاصطناعي") setStatus("قيد المراجعة"); }} /></> : <div className="contract-empty"><h3>لا توجد مسودة بعد</h3><p>أكمل بيانات العقد وأنشئ المسودة لتظهر هنا في محرر قابل للتعديل.</p></div>}
+          {contractText ? <><nav className="contract-sections" aria-label="أقسام العقد"><strong>الأقسام</strong>{getContractSections(contractText).map((section) => <button key={`${section.line}-${section.index}`} type="button" onClick={() => { const position = contractText.indexOf(section.line); editorRef.current?.focus(); editorRef.current?.setSelectionRange(position, position + section.line.length); }}>{section.line}</button>)}</nav><ContractEditor direction={editorDirection} editorRef={editorRef} value={contractText} onChange={(value) => { setContractText(value); setGenerationResult(null); if (status === "تم الإنشاء بالذكاء الاصطناعي") setStatus("قيد المراجعة"); }} /></> : <div className="contract-empty"><h3>لا توجد مسودة بعد</h3><p>أكمل بيانات العقد وأنشئ المسودة لتظهر هنا في محرر قابل للتعديل.</p></div>}
+          {generationResult ? <div className="generation-validation" role="status"><strong>{generationResult.requiresLawyerReview ? "المسودة تحتاج مراجعة محامٍ." : "حالة مراجعة المسودة مسجلة."}</strong>{generationResult.validationWarnings?.length ? <ul>{generationResult.validationWarnings.map((warning, index) => <li key={`warning-${index}`}>{warning}</li>)}</ul> : null}{generationResult.validationErrors?.length ? <ul className="contract-alert">{generationResult.validationErrors.map((validationError, index) => <li key={`validation-${index}`}>{validationError}</li>)}</ul> : null}<p>{generationResult.exportAllowed && generationResult.docxGenerated && generationResult.docxFileName ? "ملف DOCX جاهز للتنزيل من الخادم." : "التصدير غير متاح لهذه المسودة حاليًا."}</p></div> : null}
           <div className="review-tools"><h3>مراجعة بمساعدة الذكاء الاصطناعي</h3><div className="review-actions"><button className="ghost-btn" type="button" disabled={reviewLoading} onClick={() => reviewContract("راجع هذا العقد وحدد أهم المشكلات القانونية")}>مراجعة العقد</button><button className="ghost-btn" type="button" disabled={reviewLoading} onClick={() => reviewContract("تحقق من البنود الناقصة في هذا العقد واشرح كل إضافة مقترحة")}>فحص البنود الناقصة</button><button className="ghost-btn" type="button" disabled={reviewLoading} onClick={() => reviewContract("اكتشف التناقضات في الأسماء والتواريخ والمبالغ والالتزامات والمصطلحات المعرفة")}>اكتشاف التناقضات</button></div>{reviewLoading ? <p className="empty-result" role="status">جارٍ تنفيذ المراجعة بالذكاء الاصطناعي...</p> : null}{reviewState === "no-suggestions" ? <p className="empty-result">اكتملت المراجعة ولم تُرجع اقتراحات.</p> : null}{reviewState === "error" ? <p className="contract-alert">تعذر إكمال المراجعة. لم يتم تغيير نص العقد.</p> : null}{suggestion ? <div className={`ai-suggestion suggestion-${reviewState}`}><strong>اقتراحات الذكاء الاصطناعي</strong><textarea value={suggestion} onChange={(event) => setSuggestion(event.target.value)} rows={8} /><div><button className="primary-btn" type="button" onClick={() => { setReviewNotes((current) => `${current}${current ? "\n\n" : ""}${suggestion}`); setSuggestion(""); setReviewState("accepted"); }}>حفظ كملاحظات</button><button className="ghost-btn" type="button" onClick={() => { setSuggestion(""); setReviewState("rejected"); }}>رفض</button></div><small>تبقى الاقتراحات منفصلة ولا تستبدل نص العقد.</small></div> : null}{reviewState === "accepted" ? <p className="review-state review-accepted">تم حفظ الاقتراح كملاحظة محلية.</p> : null}{reviewState === "rejected" ? <p className="review-state review-rejected">تم رفض الاقتراح محليًا.</p> : null}{reviewNotes ? <div className="review-notes"><strong>ملاحظات المحامي</strong><textarea value={reviewNotes} onChange={(event) => setReviewNotes(event.target.value)} rows={6} /></div> : null}</div>
-          <div className="contract-actions"><button className="ghost-btn" type="button" onClick={saveDraftManually}>حفظ محليًا</button><button className="ghost-btn" type="button" onClick={() => void copyContract()} disabled={!contractText || !navigator.clipboard}>نسخ</button><button className="ghost-btn" type="button" onClick={printContract} disabled={!contractText}>طباعة</button><button className="ghost-btn" type="button" onClick={() => { if (backendTemplates.some((item) => item.key === "nda")) void downloadBackendContract(); else downloadContract(); }} disabled={!contractText}>تنزيل TXT</button><button className="primary-btn" type="button" disabled={!contractText.trim() || status !== "تمت المراجعة" || draftState === "unsaved"} onClick={(event) => { approvalTriggerRef.current = event.currentTarget; setApprovalOpen(true); }}>اعتماد محلي</button></div>
+          <div className="contract-actions"><button className="ghost-btn" type="button" onClick={saveDraftManually}>حفظ محليًا</button><button className="ghost-btn" type="button" onClick={() => void copyContract()} disabled={!contractText || !navigator.clipboard}>نسخ</button><button className="ghost-btn" type="button" onClick={printContract} disabled={!contractText}>طباعة</button><button className="ghost-btn" type="button" onClick={() => void downloadBackendContract()} disabled={!generationResult?.exportAllowed || !generationResult?.docxGenerated || !generationResult?.docxFileName}>تنزيل DOCX</button><button className="primary-btn" type="button" disabled={!contractText.trim() || status !== "تمت المراجعة" || draftState === "unsaved"} onClick={(event) => { approvalTriggerRef.current = event.currentTarget; setApprovalOpen(true); }}>اعتماد محلي</button></div>
           <small className="draft-save-status" role="status">{formatSavedTime(lastSavedAt)} · لا يتم الحفظ على الخادم.</small>
         </section>
       </div>

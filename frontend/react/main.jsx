@@ -1,6 +1,9 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import {
+  AccountManagementWidget,
+  AdminUsersWidget,
+  AuthCallbackWidget,
   BackendStatusWidget,
   CaseInsightsWidget,
   ChatbotWidget,
@@ -11,6 +14,8 @@ import {
 import { ContractGenerationPage } from "./ContractGeneration.jsx";
 
 const widgets = {
+  "account-management": AccountManagementWidget,
+  "admin-users": AdminUsersWidget,
   "backend-status": BackendStatusWidget,
   "case-insights": CaseInsightsWidget,
   chatbot: ChatbotWidget,
@@ -31,3 +36,11 @@ document.querySelectorAll("[data-react-widget]").forEach((element) => {
   <Widget {...element.dataset} />,
 );
 });
+
+const callbackAction = window.location.pathname.match(/\/(reset-password|confirm-email|confirm-email-change)\/?$/)?.[1];
+if (callbackAction) {
+  const callbackRoot = document.createElement("div");
+  callbackRoot.id = "auth-callback-root";
+  document.body.appendChild(callbackRoot);
+  createRoot(callbackRoot).render(<AuthCallbackWidget action={callbackAction} />);
+}

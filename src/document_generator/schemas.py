@@ -143,9 +143,9 @@ class GuidedDocumentRequest(BaseModel):
     special_conditions: List[str] = Field(
         default_factory=list
     )
+'''بداية الكومينت'''
 
-
-'''class ApprovedClause(BaseModel):
+class ApprovedClause(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     clause_id: str
@@ -191,6 +191,8 @@ class GuidedDocumentRequest(BaseModel):
     sequence: int = 0
     required: bool = False
 
+'''
+اخر الكومينت 
 '''
 class ClauseDecision(BaseModel):
     model_config = ConfigDict(extra="forbid")

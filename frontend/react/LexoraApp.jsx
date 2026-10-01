@@ -1,17 +1,36 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import {
   askDocuments,
+  changeProfilePassword,
   checkBackendHealth,
+  clearAdminUserAiScope,
+  clearSession,
+  confirmEmail,
+  confirmEmailChange,
   createChatConversation,
   deleteDocument as deleteBackendDocument,
   downloadDocument as downloadBackendDocument,
+  getDocument,
+  getProfile,
+  getSession,
   getChatConversations,
   getChatMessages,
   getContractAnalysis,
+  listAdminUsers,
   requestApi,
+  requestEmailChange,
+  promoteUserToAdmin,
+  resendEmailConfirmation,
+  resetPassword,
+  setAdminUserAiScope,
   sendChatMessage,
   startContractAnalysis,
+  updateAdminUserRole,
+  updateAdminUserStatus,
+  updateDocument,
+  updateProfile,
   uploadDocument,
+  uploadDocumentsBatch,
 } from "./apiClient.js";
 import {
   addProcessingDocument,
@@ -28,6 +47,7 @@ import { demoCases, demoLawyers } from "../demoData.js";
 const documentStatusLabels = {
   processing: "قيد المعالجة",
   processed: "جاهز للبحث",
+  uploaded: "مرفوع - غير مفهرس",
   failed: "فشلت المعالجة",
 };
 
@@ -113,6 +133,169 @@ function CitationList({ citations }) {
         </article>
         );
       })}
+    </div>
+  );
+}
+
+export function AccountManagementWidget() {
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(Boolean(getSession().accessToken));
+  const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!getSession().accessToken) return undefined;
+    let active = true;
+    getProfile()
+      .then((result) => { if (active) setProfile(result); })
+      .catch((requestError) => { if (active) setError(requestError.message); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
+
+  async function submitAction(event, action, successMessage, afterSuccess) {
+    event.preventDefault();
+    if (busy) return;
+    const form = event.currentTarget;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await action(form);
+      form.reset();
+      setNotice(successMessage);
+      afterSuccess?.();
+    } catch (requestError) {
+      setError(requestError.message || "تعذر تنفيذ الطلب.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="panel-card account-management-widget">
+      <div className="table-header">
+        <div><p className="eyebrow">إعدادات الحساب</p><h2>الملف الشخصي والأمان</h2></div>
+        {profile ? <span className="status-pill">{profile.email}</span> : null}
+      </div>
+      {loading ? <p role="status">جاري تحميل الملف الشخصي...</p> : null}
+      {!getSession().accessToken ? <p>سجّل الدخول لإدارة الملف الشخصي وتغيير كلمة المرور أو البريد الإلكتروني.</p> : null}
+      {error ? <p className="document-error" role="alert">{error}</p> : null}
+      {notice ? <p className="account-notice" role="status">{notice}</p> : null}
+
+      {profile ? <div className="account-form-grid">
+        <form onSubmit={(event) => void submitAction(event, async (form) => {
+          const result = await updateProfile(form.elements.fullName.value.trim());
+          setProfile(result);
+        }, "تم تحديث بيانات الملف الشخصي.")}>
+          <h3>البيانات الأساسية</h3>
+          <label>الاسم الكامل<input name="fullName" defaultValue={profile.fullName || ""} maxLength="150" required /></label>
+          <label>الأدوار<input value={(profile.roles || []).join(", ")} readOnly /></label>
+          <button className="primary-btn" type="submit" disabled={busy}>حفظ الملف الشخصي</button>
+        </form>
+
+        <form onSubmit={(event) => void submitAction(event, async (form) => {
+          await changeProfilePassword(form.elements.currentPassword.value, form.elements.newPassword.value);
+          clearSession(false);
+          setProfile(null);
+        }, "تم تغيير كلمة المرور. سجّل الدخول مجددًا.")}>
+          <h3>تغيير كلمة المرور</h3>
+          <label>كلمة المرور الحالية<input name="currentPassword" type="password" autoComplete="current-password" required /></label>
+          <label>كلمة المرور الجديدة<input name="newPassword" type="password" minLength="8" maxLength="100" autoComplete="new-password" required /></label>
+          <button className="ghost-btn" type="submit" disabled={busy}>تغيير كلمة المرور</button>
+        </form>
+
+        <form onSubmit={(event) => void submitAction(event, async (form) => {
+          await requestEmailChange(form.elements.newEmail.value.trim(), form.elements.password.value);
+        }, "أُرسل رابط التأكيد إلى البريد الجديد. لن يتغير البريد حتى تأكيد الرابط.")}>
+          <h3>تغيير البريد الإلكتروني</h3>
+          <label>البريد الجديد<input name="newEmail" type="email" autoComplete="email" required /></label>
+          <label>كلمة المرور للتأكيد<input name="password" type="password" autoComplete="current-password" required /></label>
+          <button className="ghost-btn" type="submit" disabled={busy}>إرسال رابط التأكيد</button>
+        </form>
+      </div> : null}
+
+      <form className="account-resend-form" onSubmit={(event) => void submitAction(event, async (form) => {
+        await resendEmailConfirmation(form.elements.email.value.trim());
+      }, "إذا كان الحساب يحتاج إلى تأكيد، فسيُرسل رابط إلى البريد.")}>
+        <h3>إعادة إرسال تأكيد البريد</h3>
+        <label>البريد الإلكتروني<input name="email" type="email" defaultValue={profile?.email || ""} autoComplete="email" required /></label>
+        <button className="ghost-btn" type="submit" disabled={busy}>إعادة إرسال الرابط</button>
+      </form>
+    </section>
+  );
+}
+
+export function AuthCallbackWidget({ action }) {
+  const params = new URLSearchParams(window.location.search);
+  const [status, setStatus] = useState("waiting");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const initial = {
+    email: params.get("email") || "",
+    userId: params.get("userId") || "",
+    newEmail: params.get("newEmail") || "",
+    token: params.get("token") || "",
+  };
+
+  useEffect(() => {
+    if (action === "reset-password") return;
+    const hasParams = initial.userId && initial.token && (action !== "confirm-email-change" || initial.newEmail);
+    if (!hasParams) {
+      setStatus("error");
+      setError("رابط التأكيد غير مكتمل أو منتهي الصلاحية.");
+      return;
+    }
+    let active = true;
+    const confirm = action === "confirm-email"
+      ? confirmEmail(initial.userId, initial.token)
+      : confirmEmailChange(initial.userId, initial.newEmail, initial.token);
+    confirm.then(() => {
+      if (!active) return;
+      setStatus("success");
+      setMessage(action === "confirm-email" ? "تم تأكيد البريد الإلكتروني." : "تم تغيير البريد الإلكتروني.");
+      if (action === "confirm-email-change") clearSession(false);
+    }).catch((requestError) => {
+      if (active) { setStatus("error"); setError(requestError.message); }
+    });
+    return () => { active = false; };
+  }, [action]);
+
+  async function submitReset(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    setBusy(true);
+    setError("");
+    try {
+      await resetPassword(form.elements.email.value.trim(), form.elements.token.value, form.elements.newPassword.value);
+      clearSession(false);
+      setStatus("success");
+      setMessage("تمت إعادة تعيين كلمة المرور. يمكنك الآن تسجيل الدخول.");
+      window.history.replaceState({}, "", window.location.pathname);
+    } catch (requestError) {
+      setError(requestError.message || "تعذر إعادة تعيين كلمة المرور.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="auth-callback-overlay">
+      <section className="auth-card" role="dialog" aria-modal="true" aria-labelledby="auth-callback-title">
+        <p className="eyebrow">تأكيد الحساب</p>
+        <h2 id="auth-callback-title">{action === "reset-password" ? "إعادة تعيين كلمة المرور" : "تأكيد البريد الإلكتروني"}</h2>
+        {action === "reset-password" ? <form onSubmit={submitReset}>
+          <label>البريد الإلكتروني<input name="email" type="email" defaultValue={initial.email} required /></label>
+          <label>رمز إعادة التعيين<input name="token" defaultValue={initial.token} required /></label>
+          <label>كلمة المرور الجديدة<input name="newPassword" type="password" minLength="8" maxLength="100" autoComplete="new-password" required /></label>
+          <button className="submit-btn" type="submit" disabled={busy}>{busy ? "جارٍ الحفظ..." : "إعادة تعيين كلمة المرور"}</button>
+        </form> : status === "waiting" ? <p role="status">جارٍ تأكيد الرابط...</p> : null}
+        {status === "success" ? <p className="account-notice" role="status">{message}</p> : null}
+        {error ? <p className="document-error" role="alert">{error}</p> : null}
+        <a className="ghost-btn" href="/auth.html">العودة إلى تسجيل الدخول</a>
+      </section>
     </div>
   );
 }
@@ -240,6 +423,121 @@ export function CaseInsightsWidget() {
           </article>
         ))}
       </div>
+    </section>
+  );
+}
+
+export function AdminUsersWidget() {
+  const session = getSession();
+  const isAdmin = String(session.user?.role || "").toLowerCase() === "admin";
+  const [users, setUsers] = useState([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [busyId, setBusyId] = useState("");
+
+  async function loadUsers(nextSearch = search, nextPage = page) {
+    setLoading(true);
+    setError("");
+    try {
+      const result = await listAdminUsers({ page: nextPage, pageSize: 10, search: nextSearch });
+      setUsers(result.items || []);
+      setPage(result.page || nextPage);
+      setTotalPages(result.totalPages || 1);
+    } catch (requestError) {
+      setError(requestError.message || "تعذر تحميل المستخدمين.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (isAdmin) void loadUsers();
+  }, [isAdmin]);
+
+  async function updateUser(userId, operation, successMessage) {
+    setBusyId(userId);
+    setError("");
+    setNotice("");
+    try {
+      await operation();
+      setNotice(successMessage);
+      await loadUsers();
+    } catch (requestError) {
+      setError(requestError.message || "تعذر تحديث المستخدم.");
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function submitPromotion(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    setError("");
+    setNotice("");
+    try {
+      const result = await promoteUserToAdmin(form.elements.email.value.trim());
+      setNotice(result.message || "تم تحديث صلاحية المدير.");
+      form.reset();
+      await loadUsers();
+    } catch (requestError) {
+      setError(requestError.message || "تعذر ترقية المستخدم.");
+    }
+  }
+
+  if (!session.accessToken) {
+    return <section className="panel-card admin-users-widget"><h2>إدارة المستخدمين</h2><p>سجّل الدخول بحساب Admin للوصول إلى هذه الأدوات.</p></section>;
+  }
+  if (!isAdmin) {
+    return <section className="panel-card admin-users-widget"><h2>إدارة المستخدمين</h2><p>هذه الصفحة متاحة لحسابات Admin فقط.</p></section>;
+  }
+
+  return (
+    <section className="panel-card admin-users-widget">
+      <div className="table-header">
+        <div><p className="eyebrow">صلاحيات الإدارة</p><h2>إدارة المستخدمين</h2><p>تغييرات AI scope تسري بعد تسجيل دخول المستخدم أو تجديد جلسته.</p></div>
+        <button className="ghost-btn" type="button" disabled={loading} onClick={() => void loadUsers()}>تحديث القائمة</button>
+      </div>
+      <form className="admin-user-search" onSubmit={(event) => { event.preventDefault(); setPage(1); void loadUsers(search, 1); }}>
+        <label>بحث بالاسم أو البريد<input value={search} onChange={(event) => setSearch(event.target.value)} /></label>
+        <button className="primary-btn" type="submit" disabled={loading}>بحث</button>
+      </form>
+      <form className="admin-promotion-form" onSubmit={(event) => void submitPromotion(event)}>
+        <label>ترقية بالبريد إلى Admin<input name="email" type="email" required /></label>
+        <button className="ghost-btn" type="submit">ترقية إلى Admin</button>
+      </form>
+      {error ? <p className="document-error" role="alert">{error}</p> : null}
+      {notice ? <p className="account-notice" role="status">{notice}</p> : null}
+      {loading ? <p role="status">جاري تحميل المستخدمين...</p> : null}
+      <div className="admin-users-list">
+        {users.map((user) => {
+          const isSelf = user.email?.toLowerCase() === session.user?.email?.toLowerCase();
+          const role = (user.roles || []).includes("Admin") ? "Admin" : "Lawyer";
+          return <article className="admin-user-card" key={user.id}>
+            <div className="admin-user-heading"><div><strong>{user.fullName}</strong><span>{user.email}</span><small>{user.id}</small></div>
+              <label className="admin-inline-control">الدور<select value={role} disabled={isSelf || busyId === user.id} onChange={(event) => void updateUser(user.id, () => updateAdminUserRole(user.id, event.target.value), "تم تحديث الدور.")}><option value="Lawyer">Lawyer</option><option value="Admin">Admin</option></select></label>
+            </div>
+            <div className="admin-user-controls">
+              <label className="checkbox-label"><input type="checkbox" checked={Boolean(user.isActive)} disabled={isSelf || busyId === user.id} onChange={(event) => void updateUser(user.id, () => updateAdminUserStatus(user.id, event.target.checked), "تم تحديث حالة الحساب.")} />الحساب نشط</label>
+              <form onSubmit={(event) => {
+                event.preventDefault();
+                const form = event.currentTarget;
+                void updateUser(user.id, () => setAdminUserAiScope(user.id, form.elements.clientId.value.trim(), form.elements.confidentialityCeiling.value), "تم تحديث AI scope.");
+              }}>
+                <label>Client ID<input name="clientId" pattern="[A-Za-z0-9._:-]{1,100}" maxLength="100" defaultValue={user.clientId || ""} required /></label>
+                <label>مستوى السرية<select name="confidentialityCeiling" defaultValue={user.confidentialityCeiling || "internal"}><option value="public">public</option><option value="internal">internal</option><option value="privileged">privileged</option></select></label>
+                <button className="ghost-btn" type="submit" disabled={busyId === user.id}>حفظ AI scope</button>
+                <button className="icon-btn" type="button" aria-label="مسح AI scope" disabled={busyId === user.id || !user.clientId} onClick={() => void updateUser(user.id, () => clearAdminUserAiScope(user.id), "تم مسح AI scope.")}>مسح النطاق</button>
+              </form>
+            </div>
+          </article>;
+        })}
+        {!loading && !users.length ? <p>لا توجد حسابات مطابقة.</p> : null}
+      </div>
+      <div className="admin-pagination"><button className="ghost-btn" type="button" disabled={page <= 1 || loading} onClick={() => void loadUsers(search, page - 1)}>السابق</button><span>صفحة {page} من {totalPages}</span><button className="ghost-btn" type="button" disabled={page >= totalPages || loading} onClick={() => void loadUsers(search, page + 1)}>التالي</button></div>
     </section>
   );
 }
@@ -782,7 +1080,10 @@ export function DocumentLibraryWidget() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [previewDocument, setPreviewDocument] = useState(null);
+  const [detailsDocument, setDetailsDocument] = useState(null);
+  const [editingDocument, setEditingDocument] = useState(null);
   const fileInputRef = useRef(null);
   const previewCloseRef = useRef(null);
   const previewTriggerRef = useRef(null);
@@ -844,29 +1145,41 @@ export function DocumentLibraryWidget() {
 
     setUploading(true);
     setError("");
+    setNotice("");
+    const pending = files.map((file) => ({
+      id: `processing_${file.name}_${file.lastModified}_${file.size}`,
+      fileName: file.name,
+      sizeBytes: file.size,
+      status: "processing",
+      file,
+    }));
+    pending.forEach(addProcessingDocument);
 
-    for (const file of files) {
-      const processingId = `processing_${file.name}_${file.lastModified}_${file.size}`;
-      addProcessingDocument({
-        id: processingId,
-        fileName: file.name,
-        sizeBytes: file.size,
-        status: "processing",
-        file,
-      });
-
+    for (let offset = 0; offset < files.length; offset += 5) {
+      const batchFiles = files.slice(offset, offset + 5);
+      const placeholders = pending.slice(offset, offset + batchFiles.length);
       try {
-        const uploaded = await uploadDocument(file, "Contract");
-        upsertDocument({ ...uploaded, status: "processed", file });
-      } catch (uploadError) {
-        upsertDocument({
-          id: processingId,
-          fileName: file.name,
-          sizeBytes: file.size,
-          status: "failed",
-          error: uploadError?.message || "تعذرت معالجة المستند.",
-          file,
+        const uploadedDocuments = batchFiles.length > 1
+          ? await uploadDocumentsBatch(batchFiles, "Contract")
+          : [await uploadDocument(batchFiles[0], "Contract")];
+        uploadedDocuments.forEach((uploaded, index) => {
+          const isBatch = batchFiles.length > 1;
+          upsertDocument({
+            ...uploaded,
+            status: isBatch ? "uploaded" : "processed",
+            file: batchFiles[index],
+          });
+          removeStoredDocument(placeholders[index].id);
         });
+        if (batchFiles.length > 1) {
+          setNotice("تم رفع الملفات دفعة واحدة. ملفات الرفع الجماعي مخزنة على الخادم لكنها لا تُفهرس تلقائيًا.");
+        }
+      } catch (uploadError) {
+        placeholders.forEach((placeholder) => upsertDocument({
+          ...placeholder,
+          status: "failed",
+          error: uploadError?.message || "تعذر رفع المستند.",
+        }));
       }
     }
 
@@ -888,6 +1201,30 @@ export function DocumentLibraryWidget() {
     link.download = document.fileName || "document";
     link.click();
     URL.revokeObjectURL(url);
+  }
+
+  async function showDocumentDetails(document) {
+    setError("");
+    try {
+      setDetailsDocument(await getDocument(document.id));
+    } catch (requestError) {
+      setError(requestError.message || "تعذر تحميل تفاصيل المستند.");
+    }
+  }
+
+  async function saveDocumentMetadata(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const fileName = form.elements.fileName.value.trim();
+    const type = form.elements.type.value.trim();
+    try {
+      const updated = await updateDocument(editingDocument.id, { fileName, type });
+      upsertDocument({ ...updated, status: editingDocument.status, file: editingDocument.file });
+      setEditingDocument(null);
+      setNotice("تم تحديث بيانات المستند.");
+    } catch (requestError) {
+      setError(requestError.message || "تعذر تحديث بيانات المستند.");
+    }
   }
 
   function handleDocumentAction(action, document, trigger = null) {
@@ -942,6 +1279,7 @@ export function DocumentLibraryWidget() {
 
       {loading ? <div className="document-state" data-state="loading">جاري تحميل المستندات...</div> : null}
       {error ? <div className="document-state" data-state="error" role="alert"><strong>{error}</strong><button className="ghost-btn" type="button" onClick={() => void refreshDocuments()}>إعادة المحاولة</button></div> : null}
+      {notice ? <div className="document-state" data-state="notice" role="status">{notice}</div> : null}
       {!loading && !error && !documents.length ? (
         <div className="document-state" data-state="empty">
           <strong>لا توجد مستندات في هذه الجلسة.</strong>
@@ -975,11 +1313,14 @@ export function DocumentLibraryWidget() {
             {document.status === "processing" ? <p className="document-detail">يتم رفع الملف وفهرسته الآن.</p> : null}
             {document.status === "failed" ? <p className="document-detail document-error">{document.error}</p> : null}
             {document.status === "processed" ? <p className="document-detail">جاهز للبحث والتنزيل من الخادم.</p> : null}
+            {document.status === "uploaded" ? <p className="document-detail">تم تخزين الملف بواسطة الرفع الجماعي، لكنه غير مفهرس للبحث.</p> : null}
             <div className="document-actions">
               {document.status === "failed" ? <button className="ghost-btn" type="button" onClick={() => retryDocument(document)}>{documentActionLabels.retry}</button> : null}
-              {document.status === "processed" ? <>
+              {document.status === "processed" || document.status === "uploaded" ? <>
                 {document.localFileAvailable ? <button className="ghost-btn" type="button" onClick={(event) => handleDocumentAction("preview", document, event.currentTarget)}>{documentActionLabels.preview}</button> : null}
                 <button className="ghost-btn" type="button" onClick={() => handleDocumentAction("download", document)}>{documentActionLabels.download}</button>
+                <button className="ghost-btn" type="button" onClick={() => void showDocumentDetails(document)}>التفاصيل</button>
+                <button className="ghost-btn" type="button" onClick={() => setEditingDocument(document)}>تعديل البيانات</button>
               </> : null}
               <button className="icon-btn" type="button" aria-label={`إزالة ${document.fileName || "المستند"}`} onClick={() => handleDocumentAction("delete", document)}>×</button>
             </div>
@@ -997,6 +1338,20 @@ export function DocumentLibraryWidget() {
           </div>
         </div>
       ) : null}
+
+      {detailsDocument ? <div className="document-preview" role="dialog" aria-modal="true" aria-labelledby="document-details-title">
+        <div className="document-preview-box"><div className="modal-header"><h3 id="document-details-title">تفاصيل المستند</h3><button className="icon-btn" type="button" aria-label="إغلاق التفاصيل" onClick={() => setDetailsDocument(null)}>×</button></div>
+          <dl className="document-details-list"><dt>الاسم</dt><dd>{detailsDocument.fileName}</dd><dt>النوع</dt><dd>{detailsDocument.type}</dd><dt>الحجم</dt><dd>{formatFileSize(detailsDocument.sizeBytes)}</dd><dt>تاريخ الرفع</dt><dd>{detailsDocument.uploadedAt ? new Date(detailsDocument.uploadedAt).toLocaleString() : "—"}</dd><dt>المعرف</dt><dd>{detailsDocument.id}</dd></dl>
+        </div>
+      </div> : null}
+
+      {editingDocument ? <div className="document-preview" role="dialog" aria-modal="true" aria-labelledby="document-edit-title">
+        <form className="document-preview-box" onSubmit={saveDocumentMetadata}><div className="modal-header"><h3 id="document-edit-title">تعديل بيانات المستند</h3><button className="icon-btn" type="button" aria-label="إغلاق التعديل" onClick={() => setEditingDocument(null)}>×</button></div>
+          <label>اسم الملف<input name="fileName" defaultValue={editingDocument.fileName} maxLength="260" required /></label>
+          <label>النوع<input name="type" defaultValue={editingDocument.type} maxLength="50" required /></label>
+          <button className="primary-btn" type="submit">حفظ التغييرات</button>
+        </form>
+      </div> : null}
     </div>
   );
 }

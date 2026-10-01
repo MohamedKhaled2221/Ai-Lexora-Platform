@@ -248,17 +248,22 @@ export async function getGeneratorTemplates() {
   return requestApi("/api/document-generator/templates");
 }
 
-export async function generateBackendDocument(templateKey, fields) {
-  const accessToken = getAccessToken();
-  const response = await fetch(`${API_BASE}/api/document-generator/generate`, {
+export async function generateBackendDocument({ documentType, jurisdiction, fields, clauseLanguage, matterId }) {
+  return requestApi("/api/document-generator/generate", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-    },
-    body: JSON.stringify({ templateKey, fields }),
+    body: JSON.stringify({ documentType, jurisdiction, fields, clauseLanguage, matterId }),
+  });
+}
+
+export async function downloadGeneratedExport(fileName) {
+  if (!fileName) throw new TypeError("An export file name is required.");
+  const path = `/api/document-generator/exports/${encodeURIComponent(fileName)}`;
+  const send = () => fetch(`${API_BASE}${path}`, {
+    headers: getAccessToken() ? { Authorization: `Bearer ${getAccessToken()}` } : {},
   });
 
+  let response = await send();
+  if (response.status === 401 && await refreshAccessToken()) response = await send();
   if (!response.ok) {
     const payload = await parseResponse(response);
     const error = new Error(getUserErrorMessage({
@@ -266,16 +271,16 @@ export async function generateBackendDocument(templateKey, fields) {
       message: extractErrorMessage(payload, response.status),
     }));
     error.status = response.status;
+    if (response.status === 401) clearSession();
     throw error;
   }
 
   const contentDisposition = response.headers.get("Content-Disposition") || "";
-  const filenameMatch = contentDisposition.match(/filename\*?=(?:UTF-8''|\")?([^\";]+)/i);
-
-  return {
-    blob: await response.blob(),
-    fileName: filenameMatch?.[1] ? decodeURIComponent(filenameMatch[1].trim()) : "generated-contract.txt",
-  };
+  const encodedName = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+  const quotedName = contentDisposition.match(/filename="?([^";]+)"?/i)?.[1];
+  let responseFileName = encodedName || quotedName || fileName;
+  try { responseFileName = decodeURIComponent(responseFileName); } catch { /* Use the header value as-is. */ }
+  return { blob: await response.blob(), fileName: responseFileName };
 }
 
 export async function requestBackendApi(path, options = {}) {
@@ -375,6 +380,99 @@ export async function register(fullName, email, password) {
   }, false));
 }
 
+export async function resetPassword(email, token, newPassword) {
+  return requestApi("/api/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ email, token, newPassword }),
+  });
+}
+
+export async function confirmEmail(userId, token) {
+  return requestApi("/api/auth/confirm-email", {
+    method: "POST",
+    body: JSON.stringify({ userId, token }),
+  });
+}
+
+export async function resendEmailConfirmation(email) {
+  return requestApi("/api/auth/resend-confirmation", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function requestEmailChange(newEmail, password) {
+  return requestApi("/api/auth/change-email", {
+    method: "POST",
+    body: JSON.stringify({ newEmail, password }),
+  });
+}
+
+export async function confirmEmailChange(userId, newEmail, token) {
+  return requestApi("/api/auth/confirm-email-change", {
+    method: "POST",
+    body: JSON.stringify({ userId, newEmail, token }),
+  });
+}
+
+export async function promoteUserToAdmin(email) {
+  return requestApi("/api/auth/promote-to-admin", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function getProfile() {
+  return requestApi("/api/profile");
+}
+
+export async function updateProfile(fullName) {
+  return requestApi("/api/profile", {
+    method: "PUT",
+    body: JSON.stringify({ fullName }),
+  });
+}
+
+export async function changeProfilePassword(currentPassword, newPassword) {
+  return requestApi("/api/profile/password", {
+    method: "PUT",
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+}
+
+export async function listAdminUsers({ page = 1, pageSize = 20, search = "" } = {}) {
+  const query = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+  if (search.trim()) query.set("search", search.trim());
+  return requestApi(`/api/admin/users?${query.toString()}`);
+}
+
+export async function updateAdminUserRole(userId, role) {
+  return requestApi(`/api/admin/users/${encodeURIComponent(userId)}/role`, {
+    method: "PUT",
+    body: JSON.stringify({ role }),
+  });
+}
+
+export async function updateAdminUserStatus(userId, isActive) {
+  return requestApi(`/api/admin/users/${encodeURIComponent(userId)}/status`, {
+    method: "PUT",
+    body: JSON.stringify({ isActive }),
+  });
+}
+
+export async function setAdminUserAiScope(userId, clientId, confidentialityCeiling) {
+  return requestApi(`/api/admin/users/${encodeURIComponent(userId)}/ai-scope`, {
+    method: "PUT",
+    body: JSON.stringify({ clientId, confidentialityCeiling }),
+  });
+}
+
+export async function clearAdminUserAiScope(userId) {
+  return requestApi(`/api/admin/users/${encodeURIComponent(userId)}/ai-scope`, {
+    method: "DELETE",
+  });
+}
+
 export async function logout() {
   try {
     if (getAccessToken()) {
@@ -403,6 +501,37 @@ export async function uploadDocument(file, type = "Contract") {
   });
 
   return normalizeDocument(response);
+}
+
+export async function uploadDocumentsBatch(files, type = "Contract") {
+  const selectedFiles = Array.from(files || []);
+  if (selectedFiles.length < 1 || selectedFiles.length > 5) {
+    throw new RangeError("Batch uploads require between 1 and 5 files.");
+  }
+
+  const formData = new FormData();
+  selectedFiles.forEach((file) => formData.append("files", file));
+  formData.append("type", type);
+
+  const response = await requestApi("/api/documents/batch", {
+    method: "POST",
+    body: formData,
+  });
+  return (Array.isArray(response) ? response : []).map(normalizeDocument);
+}
+
+export async function getDocument(documentId) {
+  return normalizeDocument(await requestApi(`/api/documents/${encodeURIComponent(documentId)}`));
+}
+
+export async function updateDocument(documentId, updates) {
+  const body = {};
+  if (updates.fileName !== undefined) body.fileName = updates.fileName;
+  if (updates.type !== undefined) body.type = updates.type;
+  return normalizeDocument(await requestApi(`/api/documents/${encodeURIComponent(documentId)}`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  }));
 }
 
 export async function startContractAnalysis(documentId) {
@@ -477,7 +606,7 @@ export async function askDocuments(question, documentIds = []) {
 }
 
 export async function generateContract(request) {
-  return generateBackendDocument(request.templateKey, request.fields);
+  return generateBackendDocument(request);
 }
 
 export async function reviewContract(contractText, action) {
