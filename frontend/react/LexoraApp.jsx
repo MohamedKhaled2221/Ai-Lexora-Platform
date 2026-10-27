@@ -906,6 +906,27 @@ export function FileAnalysisWidget() {
     if (pollTimerRef.current) window.clearTimeout(pollTimerRef.current);
   }, []);
 
+  useEffect(() => {
+    const existingId = new URLSearchParams(window.location.search).get("documentId");
+    if (!existingId) return;
+
+    analysisRunRef.current += 1;
+    const runId = analysisRunRef.current;
+
+    setDocumentId(existingId);
+    setAnalysisStatus("processing");
+
+    (async () => {
+      try {
+        await pollContractAnalysis(existingId, runId);
+      } catch (requestError) {
+        if (!isActiveRun(runId)) return;
+        setAnalysisStatus("failed");
+        setAnalysisError(requestError.message || "تعذر تحميل نتيجة التحليل.");
+      }
+    })();
+  }, []);
+
   function isActiveRun(runId) {
     return mountedRef.current && analysisRunRef.current === runId;
   }
@@ -1320,7 +1341,7 @@ export function DocumentLibraryWidget() {
                 {document.localFileAvailable ? <button className="ghost-btn" type="button" onClick={(event) => handleDocumentAction("preview", document, event.currentTarget)}>{documentActionLabels.preview}</button> : null}
                 <button className="ghost-btn" type="button" onClick={() => handleDocumentAction("download", document)}>{documentActionLabels.download}</button>
                 <button className="ghost-btn" type="button" onClick={() => void showDocumentDetails(document)}>التفاصيل</button>
-                <button className="ghost-btn" type="button" onClick={() => setEditingDocument(document)}>تعديل البيانات</button>
+                <a className="ghost-btn" href={`file-analysis.html?documentId=${document.document_id || document.id}`}>عرض التحليل</a>                <button className="ghost-btn" type="button" onClick={() => setEditingDocument(document)}>تعديل البيانات</button>
               </> : null}
               <button className="icon-btn" type="button" aria-label={`إزالة ${document.fileName || "المستند"}`} onClick={() => handleDocumentAction("delete", document)}>×</button>
             </div>
