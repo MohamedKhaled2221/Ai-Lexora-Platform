@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "m1-legal-document-generator"
+version = "0.1.0"
+description = "M1 document template, controlled assembly, export, and knowledge ingestion adapter"
+requires-python = ">=3.10"
+dependencies = [
+  "pydantic>=2.7,<3",
+  "python-docx>=1.1,<2",
+]
+
+[project.optional-dependencies]
+ingestion = ["PyMuPDF>=1.24,<2"]
+dev = ["pytest>=8,<9"]
+
+[project.scripts]
+m1-demo = "m1.demo:main"
+
+[tool.setuptools.packages.find]
+include = ["m1*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

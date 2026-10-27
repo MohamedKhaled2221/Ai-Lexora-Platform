@@ -1,0 +1,33 @@
+{
+  "contract": "M1 -> M6",
+  "package": "P4",
+  "input": {
+    "normalized_legal_records": "NormalizedLegalRecord[]"
+  },
+  "responsibilities": {
+    "m1": [
+      "Provide normalized legal records from approved sources.",
+      "Preserve original legal text.",
+      "Preserve source metadata and provenance.",
+      "Retain pages, sections, clauses, headings and structural metadata when available.",
+      "Do not modify or invent legal content."
+    ],
+    "m6": [
+      "Own canonical persistence.",
+      "Own entity resolution.",
+      "Own legal status governance.",
+      "Manage the canonical knowledge base lifecycle."
+    ]
+  },
+  "source_requirements": [
+    "Every normalized record must originate from an approved source.",
+    "Original text must be preserved.",
+    "Source metadata must be preserved.",
+    "Structural metadata must be retained when available."
+  ],
+  "notes": [
+    "M1 provides normalized source records for downstream knowledge ingestion.",
+    "M6 owns canonical persistence, entity resolution and legal status governance.",
+    "M1 does not own canonical knowledge base persistence or legal status decisions."
+  ]
+}
